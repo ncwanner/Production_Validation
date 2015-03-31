@@ -1,0 +1,69 @@
+%\VignetteIndexEntry{Statistical Working Paper on Imputation Methodology for the FAOSTAT Production Domain}
+%\VignetteEngine{knitr::knitr}
+\documentclass[nojss]{jss}
+\usepackage{url}
+\usepackage[sc]{mathpazo}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{breakurl}
+\usepackage{hyperref}
+\usepackage[ruled, vlined]{algorithm2e}
+\usepackage{mathtools}
+\usepackage{draftwatermark}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{mathrsfs}
+\usepackage{multirow}
+%% \usepackage{mathbbm}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+
+\title{\bf faoswsProductionImputation: A package for the imputation of
+  the production domain of the Statistical Working System}
+
+\author{Joshua M. Browning\\ Food and Agriculture Organization \\ of the United
+    Nations}
+
+\Plainauthor{Joshua M. Browning}
+
+\Plaintitle{faoswsProductionImputation: Package for imputation of the
+  production domain of the ESS Statistical Working System}
+
+\Shorttitle{Imputation Module}
+
+\Abstract{ 
+
+  This vignette provides detailed description of the usage of
+  functions in the \pkg{faoswsProductionImputation} package. \\
+  
+  There are three sections to this paper. The opening will describe
+  the essential setups required for the package to operate. This is
+  then followed by the step-by-step description of each function which
+  consist of the whole entire imputation procedure described in the
+  methodology paper. Arguements and default setting for each function
+  is explained with illustrating example. The final section is for
+  technical readers who are interested in building their ensemble
+  model, from how to design sensible component model to how to build
+  the ensemble.
+  
+}
+
+\Keywords{Imputation, Linear Mixed Model, Agricultural Production, Ensemble Learning}
+\Plainkeywords{Imputation, Linear Mixed Model, Agricultural Production, Ensemble Learning}
+
+\Address{
+  Joshua M. Browning\\
+  Economics and Social Statistics Division (ESS)\\
+  Economic and Social Development Department (ES)\\
+  Food and Agriculture Organization of the United Nations (FAO)\\
+  Viale delle Terme di Caracalla 00153 Rome, Italy\\
+  E-mail: \email{michael.kao@fao.org, joshua.browning@fao.org}\\
+  URL: \url{https://github.com/mkao006/sws_imputation}
+}
+
+
+\begin{document}
+
+\end{document}

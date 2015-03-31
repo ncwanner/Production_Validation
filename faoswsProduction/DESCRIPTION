@@ -1,0 +1,28 @@
+Package: faoswsProduction
+Type: Package
+Title: Package to perform the imputation of area harvested, production and yield for the FAO production domain.
+Version: 1.0.0
+Date: 2015-01-29
+Authors@R: c(person("Joshua M.", "Browning", role = c("aut", "cre"), email = "joshua.browning@fao.org"))
+Author: Joshua M. Browning <joshua.browning@fao.org>, Michael C. J. Kao <michael.kao@fao.org>
+Maintainer: Joshua M. Browning <joshua.browning@fao.org>
+Description: This package provides all the functions to perform imputation of area, production and yield for the FAO production domain.
+URL: https://github.com/mkao006/sws_imputation
+License: GPL (>= 3)
+Imports:
+    lme4 (>= 1.1-7),
+    reshape2 (>= 1.4),
+    earth (>= 3.2-7),
+    forecast (>= 5.5),
+    zoo (>= 1.7-11),
+    RColorBrewer (>= 1.0-5)
+Depends:
+    faoswsFlag (>= 0.1.0),
+    faoswsImputation,
+    faoswsUtil,
+    splines (>= 3.0.2),
+    data.table (>= 1.9.2)
+LazyData: yes
+ZipData: no
+VignetteBuilder: knitr
+Suggests: knitr, ggplot2
