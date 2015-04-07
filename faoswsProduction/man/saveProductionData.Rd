@@ -4,7 +4,8 @@
 \alias{saveProductionData}
 \title{Save Production Data}
 \usage{
-saveProductionData(data)
+saveProductionData(data, areaHarvestedCode = "5312", yieldCode = "5421",
+  productionCode = "5510")
 }
 \arguments{
 \item{data}{The data.table object containing the seed data to be written to
