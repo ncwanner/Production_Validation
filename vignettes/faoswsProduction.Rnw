@@ -1,0 +1,66 @@
+%\VignetteIndexEntry{faoswsProduction: A package for the imputation of the production domain of the Statistical Working System}
+%\VignetteEngine{knitr::knitr}
+\documentclass[nojss]{jss}
+\usepackage{url}
+\usepackage[sc]{mathpazo}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{breakurl}
+\usepackage{hyperref}
+\usepackage[ruled, vlined]{algorithm2e}
+\usepackage{mathtools}
+\usepackage{draftwatermark}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{mathrsfs}
+\usepackage{multirow}
+%% \usepackage{mathbbm}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+
+\title{\bf faoswsProduction: A package for the imputation of
+  the production domain of the Statistical Working System}
+
+\author{Michael. C. J. Kao and Joshua M. Browning\\ Food and Agriculture
+    Organization \\ of the United Nations\\}
+
+\Plainauthor{Michael. C. J. Kao, Joshua M. Browning}
+
+\Plaintitle{faoswsProduction: Package for imputation of the
+  production domain of the ESS Statistical Working System}
+
+\Shorttitle{Imputation Module}
+
+\Keywords{Imputation, Linear Mixed Model, Agricultural Production, Ensemble Learning}
+\Plainkeywords{Imputation, Linear Mixed Model, Agricultural Production, Ensemble Learning}
+
+\Address{
+  Michael. C. J. Kao and Joshua M. Browning\\
+  Economics and Social Statistics Division (ESS)\\
+  Economic and Social Development Department (ES)\\
+  Food and Agriculture Organization of the United Nations (FAO)\\
+  Viale delle Terme di Caracalla 00153 Rome, Italy\\
+  E-mail: \email{michael.kao@fao.org, joshua.browning@fao.org}\\
+  URL: \url{https://github.com/mkao006/sws_imputation}
+}
+
+
+\begin{document}
+
+<<setup, include=FALSE, cache=FALSE>>=
+library(knitr)
+opts_chunk$set(fig.path='figure/', fig.align='center', fig.show='hold',
+               warning=FALSE, message=FALSE, error=FALSE, tidy=FALSE, 
+               results='markup', eval=TRUE, echo=TRUE, cache=FALSE, dpi=200)
+options(replace.assign=TRUE,width=80)
+assign("depthtrigger", 10, data.table:::.global)
+@ 
+
+The documentation for the \pkg{faoswsImputation} provides a very clear example
+for how this package works.  No further documentation is provided in this
+vignette at the moment, but in the future there may be additional functionality
+in this package that should be documented in this vignette.
+
+\end{document}
