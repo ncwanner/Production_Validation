@@ -30,9 +30,7 @@ imputeProductionDomain = function(data, processingParameters,
                            imputationParameters = productionImputationParameters)
     ensureProductionInputs(data = data,
                            processingParameters = processingParameters)
-    stopifnot(yieldImputationParameters$variable == "yield")
-    stopifnot(productionImputationParameters$variable == "production")
-    
+
     cat("Initializing ... \n")
     dataCopy = copy(data)
     setkeyv(x = dataCopy, cols = c(processingParameters$byKey,
