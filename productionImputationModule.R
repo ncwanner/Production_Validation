@@ -2,6 +2,7 @@
 library(faosws)
 library(faoswsUtil)
 library(faoswsFlag)
+library(faoswsImputation)
 library(data.table)
 library(splines)
 library(lme4)
@@ -71,7 +72,6 @@ for(singleItem in uniqueItem){
                 productionValue = datasets$formulaTuples[, output][i],
                 yieldValue = datasets$formulaTuples[, productivity][i],
                 areaHarvestedValue = datasets$formulaTuples[, input][i])
-            processingParams = 
             computeYield(datasets$query, newMethodFlag = "i",
                          processingParameters = processingParams)
 
@@ -84,13 +84,15 @@ for(singleItem in uniqueItem){
             ## default argument of the model function (which is an element of
             ## the S4 ensembleModel object)
             formals(yieldParams$ensembleModels$defaultMixedModel@model)$modelFormula =
-                paste0(yieldValue, " ~ -1 + (1 + bs(timePointYears,",
-                       "df = 2, degree = 1)|geographicAreaM49)")
+                paste0(yieldParams$imputationValueColumn,
+                       " ~ -1 + (1 + bs(timePointYears, df = 2, degree = 1)",
+                       "|geographicAreaM49)")
             yieldParams$estimateNoData = TRUE
             ## Impute production
             productionCode = datasets$formulaTuples[, input][i]
             productionParams = 
                 defaultImputationParameters(variable = as.numeric(productionCode))
+            productionParams$estimateNoData = TRUE
             imputed = imputeProductionDomain(data = datasets$query,
                                              processingParameters = processingParams,
                                              yieldImputationParameters = yieldParams,
