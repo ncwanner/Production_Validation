@@ -21,7 +21,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
     
     ## Define directories
-    apiDirectory = "~/Documents/Github/faoswsProduction/R/"
+    if(Sys.info()[7] == "josh")
+        apiDirectory = "~/Documents/Github/faoswsProduction/R/"
+    if(Sys.info()[7] == "rockc_000")
+        apiDirectory = "~/Github/faoswsProduction/R/"
 
     ## Get SWS Parameters
     GetTestEnvironment(
@@ -36,6 +39,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         source(file)
 }
 
+
+
 fullKey = swsContext.datasets[[1]]
 subKey = fullKey
 uniqueItem = fullKey@dimensions$measuredItemCPC@keys
@@ -45,7 +50,7 @@ for(singleItem in uniqueItem){
     
     impute = try({
         cat("Reading in the data...\n")
-        datasets = getProductionData(subKey)
+        datasets = getProductionData(dataContext = subKey)
         ## NOTE (Michael): The yield should have been
         ##                 calculated a priori to the
         ##                 imputation module.
@@ -79,6 +84,10 @@ for(singleItem in uniqueItem){
             yieldCode = datasets$formulaTuples[, productivity][i]
             yieldParams = 
                 defaultImputationParameters(variable = as.numeric(yieldCode))
+            warning("There's a missing '_' in the faoswsimputation package.  ",
+                    "Once that's fixed, the line below won't be needed.")
+            yieldParams$imputationMethodColumn = paste0(
+                "flagMethod_measuredElement_", as.numeric(yieldCode))
             ## Change the model formula to use a hierarchical mixed model.  The
             ## code to do this is a bit messy because we have to adjust the
             ## default argument of the model function (which is an element of
@@ -92,6 +101,10 @@ for(singleItem in uniqueItem){
             productionCode = datasets$formulaTuples[, input][i]
             productionParams = 
                 defaultImputationParameters(variable = as.numeric(productionCode))
+            warning("There's a missing '_' in the faoswsimputation package.  ",
+                    "Once that's fixed, the line below won't be needed.")
+            productionParams$imputationMethodColumn = paste0(
+                "flagMethod_measuredElement_", as.numeric(productionCode))
             productionParams$estimateNoData = TRUE
             imputed = imputeProductionDomain(data = datasets$query,
                                              processingParameters = processingParams,
