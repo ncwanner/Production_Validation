@@ -4,43 +4,55 @@
 \alias{defaultProcessingParameters}
 \title{Default Processing Parameters}
 \usage{
-defaultProcessingParameters()
+defaultProcessingParameters(productionValue = "5510", yieldValue = "5416",
+  areaHarvestedValue = "5312")
+}
+\arguments{
+\item{productionValue}{The element code corresponding to the production
+variable.}
+
+\item{yieldValue}{The element code corresponding to the yield variable.}
+
+\item{areaHarvestedValue}{The element code corresponding to the area
+  harvested variable.}
 }
 \value{
 Returns a list of the default parameters used in the data
-pre-processing algorithm.
+  pre-processing algorithm.
 }
 \description{
-This function can be used to generate the input parameters for the
-data pre-processing code.  This is a good way to get a list of the required
+This function can be used to generate the input parameters for the data
+pre-processing code.  This is a good way to get a list of the required
 parameters and then modify parameters to match your particular
 configuration.
 }
 \details{
-Below is a description of the parameters:
-\itemize{
-  \item productionValue: The column name of the production variable.
-  \item productionObservationFlag: The column name of the observation flag
-   corresponding to the production variable.
-  \item productionMethodFlag: The column name of the method flag
+Below is a description of the parameters: \itemize{
+\item productionValue: The column name of the production variable.
+\item productionObservationFlag: The column name of the observation flag
   corresponding to the production variable.
-  \item yieldValue: The column name of the yield variable.
-  \item yieldObservationFlag: The column name of the observation flag
+\item productionMethodFlag: The column name of the method flag corresponding
+  to the production variable.
+\item yieldValue: The column name of the yield variable.
+\item
+  yieldObservationFlag: The column name of the observation flag
   corresponding to the yield variable.
-  \item yieldMethodFlag: The column name of the method flag corresponding
-  to the yield variable.
-  \item areaHarvestedValue: The column name of the area harvested variable.
-  \item areaHarvestedObservationFlag: The column name of the observation
-  flag corresponding to the area harvested variable.
-  \item areaHarvestedMethodFlag: The column name of the method flag
+\item yieldMethodFlag: The column
+  name of the method flag corresponding to the yield variable.
+\item
+  areaHarvestedValue: The column name of the area harvested variable.
+\item areaHarvestedObservationFlag: The column name of the observation flag
   corresponding to the area harvested variable.
-  \item yearValue: The column name for the year variable in data.
-  \item byKey: The column name for the variable representing the splitting
-  group.  Usually, this is the country variable.
-  \item removePriorImputation:
-  \item removeConflictValues:
-  \item imputedFlag:
-  \item naFlag: How are missing values specified in the database? Usually,
+\item areaHarvestedMethodFlag: The column name of the method flag
+  corresponding to the area harvested variable.
+\item yearValue: The column name for the year variable in data.
+\item byKey: The column name for the variable
+  representing the splitting group.  Usually, this is the country variable.
+\item removePriorImputation: Should previous imputations be removed?
+\item removeConflictValues: Should values which are marked as missing but
+non-zero be removed?
+\item imputedFlag: What flag should be filled in for imputed values?
+\item naFlag: How are missing values specified in the database? Usually,
   this is "M".
 }
 }

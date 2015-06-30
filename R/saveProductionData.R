@@ -58,7 +58,7 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
         valName = paste0("Value_measuredElement_", code)
         obsFlag = paste0("flagObservationStatus_measuredElement_", code)
         methodFlag = paste0("flagMethod_measuredElement_", code)
-        data[is.na(get(valName)) & get(obsFlag) == "M",
+        data[is.na(get(valName)) | get(obsFlag) == "M",
              `:=`(c(valName, obsFlag, methodFlag),
                   list(0, "M", "n"))]
     }
@@ -75,6 +75,4 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
                      dataset = "agriculture",
                      data = data,
                      normalized = FALSE)
-    if(verbose)
-        cat("Data writing has completed!\n")
 }

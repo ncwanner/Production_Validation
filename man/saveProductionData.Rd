@@ -5,7 +5,8 @@
 \title{Save Production Data}
 \usage{
 saveProductionData(data, areaHarvestedCode = "5312", yieldCode = "5421",
-  productionCode = "5510", verbose = FALSE)
+  productionCode = "5510", verbose = FALSE,
+  context = swsContext.datasets[[1]])
 }
 \arguments{
 \item{data}{The data.table object containing the seed data to be written to
@@ -22,6 +23,11 @@ corresponding to the production variable.}
 
 \item{verbose}{Should output be printed about the progress of the save
 data?  Defaults to FALSE.}
+
+\item{context}{The data context of data.  The production imputation module
+expands most sessions, as it requires at least 15 years of data and all
+countries.  Providing this context parameter ensures that only the data
+relevant to the initial session is saved back to the database.}
 }
 \value{
 No R objects are returned, as this functions purpose is solely to
