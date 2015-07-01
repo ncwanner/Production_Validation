@@ -71,6 +71,8 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
     ## Save the data back
     if(verbose)
         cat("Attempting to write data back to the database.\n")
+    warning("HACK!  Need to fix SaveData!")
+    attr(data, "sorted") = NULL
     faosws::SaveData(domain = "agriculture",
                      dataset = "agriculture",
                      data = data,

@@ -28,10 +28,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 
     ## Get SWS Parameters
     GetTestEnvironment(
-        baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
-        ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        ## token = "90bb0f92-e345-4401-945d-1e43af801167"
+        ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
+        ## token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
+        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        token = "83f0b5a0-16af-4947-8e61-11801db3b919"
     )
 
     ## Source local scripts for this local test
@@ -84,7 +84,7 @@ for(singleItem in uniqueItem){
             yieldCode = datasets$formulaTuples[, productivity][i]
             yieldParams = 
                 defaultImputationParameters(variable = as.numeric(yieldCode))
-            warning("There's a missing '_' in the faoswsimputation package.  ",
+            warning("There's a missing '_' in the faoswsImputation package.  ",
                     "Once that's fixed, the line below won't be needed.")
             yieldParams$imputationMethodColumn = paste0(
                 "flagMethod_measuredElement_", as.numeric(yieldCode))
@@ -101,7 +101,7 @@ for(singleItem in uniqueItem){
             productionCode = datasets$formulaTuples[, input][i]
             productionParams = 
                 defaultImputationParameters(variable = as.numeric(productionCode))
-            warning("There's a missing '_' in the faoswsimputation package.  ",
+            warning("There's a missing '_' in the faoswsImputation package.  ",
                     "Once that's fixed, the line below won't be needed.")
             productionParams$imputationMethodColumn = paste0(
                 "flagMethod_measuredElement_", as.numeric(productionCode))
