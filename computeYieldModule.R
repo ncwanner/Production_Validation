@@ -28,7 +28,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "83f0b5a0-16af-4947-8e61-11801db3b919"
+        token = "056d0a78-8a3e-486d-816a-0b25dc927cc1"
     )
     if(Sys.info()[7] == "josh"){
         files = dir("~/Documents/Github/faoswsProduction/R/",
@@ -85,16 +85,16 @@ getYieldData = function(dataContext){
 ## If all yields should be updated, extend the key
 if(!is.null(swsContext.computationParams$updateAll) &&
    swsContext.computationParams$updateAll == "all"){
-    swsContext.datasets[[1]]@dimensions$geographicAreaM49 =
+    swsContext.datasets[[1]]@dimensions$geographicAreaM49@key =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "geographicAreaM49")[type == "country", code]
-    swsContext.datasets[[1]]@dimensions$measuredElement =
+    swsContext.datasets[[1]]@dimensions$measuredElement@key =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "measuredElement")[type %in% c(31, 41, 51), code]
-    swsContext.datasets[[1]]@dimensions$measuredItemCPC =
+    swsContext.datasets[[1]]@dimensions$measuredItemCPC@key =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "measuredItemCPC")[, code]
-    swsContext.datasets[[1]]@dimensions$timePointYears =
+    swsContext.datasets[[1]]@dimensions$timePointYears@key =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "timePointYears")[description != "wildcard", code]
 }
