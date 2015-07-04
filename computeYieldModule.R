@@ -28,13 +28,21 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "056d0a78-8a3e-486d-816a-0b25dc927cc1"
+        token = "8f2ac965-73ad-4d6d-906c-a7ac49f21fd2"
     )
-    if(Sys.info()[7] == "josh"){
+    if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
                     full.names = TRUE)
-        files = c(files, dir("~/Documents/Github/faoswsProduction/RfaoswsUtilSource/",
-                    full.names = TRUE))
+#         files = c(files, dir("~/Documents/Github/faoswsProduction/otherFuncs/faoswsUtil- install on server/",
+#                     full.names = TRUE))
+#         files = c(files, dir("~/Documents/Github/faoswsProduction/otherFuncs/faoswsImputation- install on server/",
+#                     full.names = TRUE))
+    } else if(Sys.info()[7] == "rockc_000"){ # Josh personal
+        files = dir("~/Github/faoswsProduction/R/", full.names = TRUE)
+#         files = c(files, dir("~/Github/faoswsProduction/otherFuncs/faoswsUtil- install on server/"
+#                     full.names = TRUE))
+#         files = c(files, dir("~/Github/faoswsProduction/otherFuncs/faoswsImputation- install on server/",
+#                     full.names = TRUE))
     } else {
         stop("Add your github directory here!")
     }
@@ -85,16 +93,16 @@ getYieldData = function(dataContext){
 ## If all yields should be updated, extend the key
 if(!is.null(swsContext.computationParams$updateAll) &&
    swsContext.computationParams$updateAll == "all"){
-    swsContext.datasets[[1]]@dimensions$geographicAreaM49@key =
+    swsContext.datasets[[1]]@dimensions$geographicAreaM49@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "geographicAreaM49")[type == "country", code]
-    swsContext.datasets[[1]]@dimensions$measuredElement@key =
+    swsContext.datasets[[1]]@dimensions$measuredElement@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "measuredElement")[type %in% c(31, 41, 51), code]
-    swsContext.datasets[[1]]@dimensions$measuredItemCPC@key =
+    swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "measuredItemCPC")[, code]
-    swsContext.datasets[[1]]@dimensions$timePointYears@key =
+    swsContext.datasets[[1]]@dimensions$timePointYears@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "timePointYears")[description != "wildcard", code]
 }
@@ -116,17 +124,18 @@ for(i in 1:nrow(uniqueLevels)){
         ## call) because the data isn't returned (but rather is just updated as
         ## a data.table).
         subData = data$query[measuredItemCPC %in% currentCPC, ]
-        computeYield(data = subData,
-## CHANGE THIS!!!
-##        faoswsUtil::computeYield(data = subData,
-            productionValue = paste0("Value_measuredElement_", filter[, output]),
-            productionObservationFlag = paste0("flagObservationStatus_measuredElement_", filter[, output]),
-            areaHarvestedValue = paste0("Value_measuredElement_", filter[, input]),
-            areaHarvestedObservationFlag = paste0("flagObservationStatus_measuredElement_", filter[, input]),
-            yieldValue = paste0("Value_measuredElement_", filter[, productivity]),
-            yieldObservationFlag = paste0("flagObservationStatus_measuredElement_", filter[, productivity]),
-            yieldMethodFlag = paste0("flagMethod_measuredElement_", filter[, productivity]),
-            unitConversion = filter[, unitConversion])
+        
+        processingParams = defaultProcessingParameters(
+            productionValue = filter[, output],
+            yieldValue = filter[, productivity],
+            areaHarvestedValue = filter[, input])
+        
+        computeYield(data = subData, processingParameters = processingParams,
+                     unitConversion = filter$unitConversion)
+        balanceProduction(data = subData, processingParameters = processingParams,
+                     unitConversion = filter$unitConversion)
+        balanceAreaHarvested(data = subData, processingParameters = processingParams,
+                     unitConversion = filter$unitConversion)
         saveProductionData(subData, areaHarvestedCode = filter$input,
                            yieldCode = filter$productivity,
                            productionCode = filter$output)

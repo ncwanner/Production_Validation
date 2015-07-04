@@ -1,29 +1,33 @@
-##' Function to compute area harvested when new production and yield
-##' are given.
-##'
+##' Function to compute area harvested when new production and yield are given.
+##' 
 ##' @param data The data.table object containing the data.
-##' @param imputationParameters A list of the parameters for the imputation
-##' algorithms.  See defaultImputationParameters() for a starting point.
-##' @param processingParameters A list of the parameters for the production
-##' processing algorithms.  See defaultProductionParameters() for a starting
-##' point.
-##'
+##' @param processingParameters A list of the parameters for the production 
+##'   processing algorithms.  See defaultProductionParameters() for a starting 
+##'   point.
+##' @param newObservationFlag The flag which should be placed for computed 
+##'   observations as the observation flag.
+##' @param newMethodFlag The flag which should be placed for computed 
+##'   observations as the method flag.
+##' @param unitConversion Yield is computed as (production) / (area) and 
+##'   multiplied by unitConversion.  This parameter defaults to 1.
+##'   
 ##' @export
 ##' 
 
-balanceAreaHarvested = function(data, imputationParameters,
-                                processingParameters){
+balanceAreaHarvested = function(data, processingParameters,
+                             newObservationFlag = "I", newMethodFlag = "i",
+                             unitConversion = 1){
     
     ### Data Quality Checks
-    if(!exists("ensuredImputationData") || !ensuredImputationData)
-        ensureImputationInputs(data = data,
-                             imputationParameters = imputationParameters)
     if(!exists("ensuredProductionData") || !ensuredProductionData)
         ensureProductionInputs(data = data,
                                processingParameters = processingParameters)
 
     ### Save clutter by renaming "processingParameters" to "p" locally.
     p = processingParameters
+    data[get(p$areaHarvestedObservationFlag) == "M",
+         c(p$areaHarvestedValue) := NA]
+
     
     ### Impute only when area and yield are available and production isn't
     filter = data[,is.na(get(p$areaHarvestedValue)) & # area is missing
@@ -31,11 +35,9 @@ balanceAreaHarvested = function(data, imputationParameters,
                   !is.na(get(p$productionValue))]     # production is available
     
     data[filter, c(p$areaHarvestedValue) :=
-             computeRatio(get(p$productionValue), get(p$yieldValue))]
-    data[filter, c(p$areaHarvestedObservationFlag) := aggregateObservationFlag(
-        get(p$productionObservationFlag), get(p$yieldObservationFlag),
-        flagTable = imputationParameters$flagTable)]
+             computeRatio(get(p$productionValue), get(p$yieldValue)) *
+             unitConversion]
+    data[filter, c(p$areaHarvestedObservationFlag) := newObservationFlag]
     ## Wrap last call in invisible() so no data.table is returned
-    invisible(data[filter, c(p$areaHarvestedMethodFlag) :=
-                       imputationParameters$newMethodFlag])
+    invisible(data[filter, c(p$areaHarvestedMethodFlag) := newMethodFlag])
 }

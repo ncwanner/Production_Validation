@@ -1,27 +1,29 @@
 ##' Function to compute and update yield
-##'
+##' 
 ##' @param data The data.table object containing the data.
-##' @param newMethodFlag The flag to be used to update the yield method flag
-##' when imputation occurs.
+##' @param processingParameters A list of the parameters for the production 
+##'   processing algorithms.  See defaultProductionParameters() for a starting 
+##'   point.
+##' @param newObservationFlag The flag which should be placed for computed 
+##'   observations as the observation flag.
+##' @param newMethodFlag The flag to be used to update the yield method flag 
+##'   when imputation occurs.
 ##' @param flagTable see data(faoswsFlagTable) in \pkg{faoswsFlag}
-##' @param unitConversion Yield is computed as (production) / (area) and
-##' multiplied by unitConversion.  This parameter defaults to 1.
-##' @param processingParameters A list of the parameters for the production
-##' processing algorithms.  See defaultProductionParameters() for a starting
-##' point.
-##'
+##' @param unitConversion Yield is computed as (production) / (area) and 
+##'   multiplied by unitConversion.  This parameter defaults to 1.
+##'   
 ##' @export
 ##' 
 
-computeYield = function(data, newMethodFlag, flagTable = faoswsFlagTable,
-                        unitConversion = 1, processingParameters){
+computeYield = function(data, processingParameters, newObservationFlag = "I",
+                        newMethodFlag = "i", flagTable = faoswsFlagTable,
+                        unitConversion = 1){
 
     if(!exists("ensuredProductionData") || !ensuredProductionData)
         ensureProductionInputs(data = data,
                                processingParameters = processingParameters)
     stopifnot(faoswsUtil::checkMethodFlag(newMethodFlag))
-    stopifnot(faoswsUtil::checkObservationFlag(
-        flagTable$flagObservationStatus))
+    stopifnot(faoswsUtil::checkObservationFlag(newObservationFlag))
 
     ## Abbreviate processingParameters since it is used alot
     pp = processingParameters
@@ -32,13 +34,11 @@ computeYield = function(data, newMethodFlag, flagTable = faoswsFlagTable,
     data[missingYield, c(pp$yieldValue) :=
          faoswsUtil::computeRatio(get(pp$productionValue),
                                   get(pp$areaHarvestedValue)) * unitConversion]
-    data[missingYield, c(pp$yieldObservationFlag) :=
-         aggregateObservationFlag(get(pp$productionObservationFlag),
-                                  get(pp$areaHarvestedObservationFlag),
-                                  flagTable = flagTable)]
+    data[missingYield, c(pp$yieldObservationFlag) := newObservationFlag]
     data[missingYield, c(pp$yieldMethodFlag) := newMethodFlag]
     ## If yieldValue is still NA, make sure observation flag is "M".  Note:
     ## this can happen by taking 0 production / 0 area.
     data[is.na(get(pp$yieldValue)), c(pp$yieldObservationFlag) := "M"]
-
+    data[is.na(get(pp$yieldValue)), c(pp$yieldMethodFlag) := "u"]
+    data[is.na(get(pp$yieldValue)), c(pp$yieldValue) := 0]
 }
