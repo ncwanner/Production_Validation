@@ -4,11 +4,18 @@
 \alias{computeYield}
 \title{Function to compute and update yield}
 \usage{
-computeYield(data, newMethodFlag, flagTable = faoswsFlagTable,
-  unitConversion = 1, processingParameters)
+computeYield(data, processingParameters, newObservationFlag = "I",
+  newMethodFlag = "i", flagTable = faoswsFlagTable, unitConversion = 1)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
+
+\item{processingParameters}{A list of the parameters for the production
+processing algorithms.  See defaultProductionParameters() for a starting
+point.}
+
+\item{newObservationFlag}{The flag which should be placed for computed
+observations as the observation flag.}
 
 \item{newMethodFlag}{The flag to be used to update the yield method flag
 when imputation occurs.}
@@ -16,11 +23,7 @@ when imputation occurs.}
 \item{flagTable}{see data(faoswsFlagTable) in \pkg{faoswsFlag}}
 
 \item{unitConversion}{Yield is computed as (production) / (area) and
-multiplied by unitConversion.  This parameter defaults to 1.}
-
-\item{processingParameters}{A list of the parameters for the production
-processing algorithms.  See defaultProductionParameters() for a starting
-point.}
+  multiplied by unitConversion.  This parameter defaults to 1.}
 }
 \description{
 Function to compute and update yield

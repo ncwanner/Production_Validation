@@ -19,6 +19,7 @@ elementVar = "measuredElement"
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
+PROCESSING_CHUNKS = 10
 
 if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
@@ -55,6 +56,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 ## Function for obtaining the data and meta data.
 getYieldData = function(dataContext){
     ## Setups
+
     formulaTuples =
         getYieldFormula(slot(slot(dataContext,
                                   "dimensions")$measuredItemCPC, "keys"))
@@ -66,6 +68,23 @@ getYieldData = function(dataContext){
             flagMethodPrefix = "flagMethod_measuredElement_"
             )
 
+    key = swsContext.datasets[[1]]
+    if (exists("swsContext.modifiedCells")){
+        print("Checking only modified data.")
+        nmodded = nrow(swsContext.modifiedCells)
+    
+        if (nmodded > 0){
+            data2process = TRUE
+            for(cname in colnames(swsContext.modifiedCells)){
+                key@dimensions[[cname]]@keys = as.character(unique(
+                    swsContext.modifiedCells[, cname, with = FALSE]))
+            }
+        }
+    } else {# running in non-interactive mode, so get all the session data
+        print("Reading all data.")
+        data2process = TRUE
+    }
+     
     ## Pivot to vectorize yield computation
     newPivot = c(
         Pivoting(code = areaVar, ascending = TRUE),
@@ -73,17 +92,21 @@ getYieldData = function(dataContext){
         Pivoting(code = yearVar, ascending = FALSE),
         Pivoting(code = elementVar, ascending = TRUE)
         )
-    slot(slot(dataContext, "dimensions")$measuredElement, "keys") =
+    ## Just extract yield-related elements
+    slot(slot(key, "dimensions")$measuredElement, "keys") =
         unique(unlist(formulaTuples[, list(input,
                                            productivity, output)]))
 
-    ## Query the data
-    query = GetData(
-        key = dataContext,
-        flags = TRUE,
-        normalized = FALSE,
-        pivoting = newPivot
-        )
+    if (data2process == TRUE){
+        # Execute the get data call. 
+        query = GetData(
+            key = key,
+            flags = TRUE,
+            normalized = FALSE,
+            pivoting = newPivot
+            )
+    }
+   ## Query the data
     
     list(query = query,
          formulaTuples = formulaTuples,
@@ -136,9 +159,10 @@ for(i in 1:nrow(uniqueLevels)){
                      unitConversion = filter$unitConversion)
         balanceAreaHarvested(data = subData, processingParameters = processingParams,
                      unitConversion = filter$unitConversion)
+        ## Use waitMode = "forget" to avoid server timeouts
         saveProductionData(subData, areaHarvestedCode = filter$input,
                            yieldCode = filter$productivity,
-                           productionCode = filter$output)
+                           productionCode = filter$output, waitMode = "forget")
     })
     queryResult = c(queryResult, is(test, "try-error"))
 }

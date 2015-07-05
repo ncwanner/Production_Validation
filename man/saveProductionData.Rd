@@ -6,7 +6,7 @@
 \usage{
 saveProductionData(data, areaHarvestedCode = "5312", yieldCode = "5421",
   productionCode = "5510", verbose = FALSE,
-  context = swsContext.datasets[[1]])
+  context = swsContext.datasets[[1]], waitMode = "wait")
 }
 \arguments{
 \item{data}{The data.table object containing the seed data to be written to
@@ -28,6 +28,8 @@ data?  Defaults to FALSE.}
 expands most sessions, as it requires at least 15 years of data and all
 countries.  Providing this context parameter ensures that only the data
 relevant to the initial session is saved back to the database.}
+
+\item{waitMode}{See faosws::SaveData.}
 }
 \value{
 No R objects are returned, as this functions purpose is solely to

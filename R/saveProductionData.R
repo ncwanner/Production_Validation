@@ -17,6 +17,7 @@
 ##' expands most sessions, as it requires at least 15 years of data and all
 ##' countries.  Providing this context parameter ensures that only the data
 ##' relevant to the initial session is saved back to the database.
+##' @param waitMode See faosws::SaveData.
 ##' 
 ##' @return No R objects are returned, as this functions purpose is solely to
 ##' write to the database.
@@ -27,7 +28,8 @@
 saveProductionData = function(data, areaHarvestedCode = "5312",
                               yieldCode = "5421", productionCode = "5510",
                               verbose = FALSE,
-                              context = swsContext.datasets[[1]]){
+                              context = swsContext.datasets[[1]],
+                              waitMode = "wait"){
     
     ## Data Quality Checks
     stopifnot(is(data, "data.table"))
@@ -73,8 +75,16 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
         cat("Attempting to write data back to the database.\n")
     warning("HACK!  Need to fix SaveData!")
     attr(data, "sorted") = NULL
-    faosws::SaveData(domain = "agriculture",
-                     dataset = "agriculture",
-                     data = data,
-                     normalized = FALSE)
+    if(nrow(data) > 10000){
+        data = split(data, 1:ceiling(nrow(data)/10000))
+        lapply(data, faosws::SaveData, domain = "agriculture",
+               dataset = "agriculture", normalized = FALSE,
+               waitMode = waitMode)        
+    } else {
+        faosws::SaveData(domain = "agriculture",
+                         dataset = "agriculture",
+                         data = data,
+                         normalized = FALSE,
+                         waitMode = waitMode)
+    }
 }

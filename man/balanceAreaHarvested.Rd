@@ -2,23 +2,28 @@
 % Please edit documentation in R/balanceAreaHarvested.R
 \name{balanceAreaHarvested}
 \alias{balanceAreaHarvested}
-\title{Function to compute area harvested when new production and yield
-are given.}
+\title{Function to compute area harvested when new production and yield are given.}
 \usage{
-balanceAreaHarvested(data, imputationParameters, processingParameters)
+balanceAreaHarvested(data, processingParameters, newObservationFlag = "I",
+  newMethodFlag = "i", unitConversion = 1)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
 
-\item{imputationParameters}{A list of the parameters for the imputation
-algorithms.  See defaultImputationParameters() for a starting point.}
-
 \item{processingParameters}{A list of the parameters for the production
 processing algorithms.  See defaultProductionParameters() for a starting
 point.}
+
+\item{newObservationFlag}{The flag which should be placed for computed
+observations as the observation flag.}
+
+\item{newMethodFlag}{The flag which should be placed for computed
+observations as the method flag.}
+
+\item{unitConversion}{Yield is computed as (production) / (area) and
+  multiplied by unitConversion.  This parameter defaults to 1.}
 }
 \description{
-Function to compute area harvested when new production and yield
-are given.
+Function to compute area harvested when new production and yield are given.
 }
 
