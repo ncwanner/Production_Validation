@@ -16,10 +16,14 @@ yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
 
+## Variable to determine if all yield data should be computed (across entire
+## database) or just local session.
+allData = !is.null(swsContext.computationParams$updateAll) &&
+    swsContext.computationParams$updateAll == "all"
+
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
-PROCESSING_CHUNKS = 10
 
 if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
@@ -29,7 +33,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "8f2ac965-73ad-4d6d-906c-a7ac49f21fd2"
+        token = "8677c74c-0c9f-4671-8693-912de6d7f0fd"
     )
     if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
@@ -114,8 +118,7 @@ getYieldData = function(dataContext){
 }
 
 ## If all yields should be updated, extend the key
-if(!is.null(swsContext.computationParams$updateAll) &&
-   swsContext.computationParams$updateAll == "all"){
+if(allData){
     swsContext.datasets[[1]]@dimensions$geographicAreaM49@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
                     dimension = "geographicAreaM49")[type == "country", code]
@@ -131,40 +134,60 @@ if(!is.null(swsContext.computationParams$updateAll) &&
 }
 
 ## Pull data
-data = getYieldData(swsContext.datasets[[1]])
-uniqueLevels = unique(data$formulaTuples[, list(input, productivity, output,
-                                                unitConversion)])
+## 
+## Create "yearList" to loop over.  If this module is being run on a session, we
+## shouldn't loop over year.  In that case, yearList will just be an list of 
+## length one, and so the loop will be ran once.  Otherwise, yearList will be a
+## list of all the individual years, and so the loop will run over each year
+## individually.
+if(allData){
+    yearList = as.list(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
+} else {
+    yearList = list(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
+}
 queryResult = c()
-for(i in 1:nrow(uniqueLevels)){
-    test = try({
-        filter = uniqueLevels[i, ]
-        ## Get all the CPC codes we need by merging the specific
-        ## production/output/input codes with the dataset.
-        currentCPC = merge(data$formulaTuples, uniqueLevels,
-                           by = c("input", "productivity", "output",
-                                  "unitConversion"))[, measuredItemCPC]
-        ## Note: we have to subset the data here (rather than in the function
-        ## call) because the data isn't returned (but rather is just updated as
-        ## a data.table).
-        subData = data$query[measuredItemCPC %in% currentCPC, ]
-        
-        processingParams = defaultProcessingParameters(
-            productionValue = filter[, output],
-            yieldValue = filter[, productivity],
-            areaHarvestedValue = filter[, input])
-        
-        computeYield(data = subData, processingParameters = processingParams,
-                     unitConversion = filter$unitConversion)
-        balanceProduction(data = subData, processingParameters = processingParams,
-                     unitConversion = filter$unitConversion)
-        balanceAreaHarvested(data = subData, processingParameters = processingParams,
-                     unitConversion = filter$unitConversion)
-        ## Use waitMode = "forget" to avoid server timeouts
-        saveProductionData(subData, areaHarvestedCode = filter$input,
-                           yieldCode = filter$productivity,
-                           productionCode = filter$output, waitMode = "forget")
-    })
-    queryResult = c(queryResult, is(test, "try-error"))
+## FOR LOOP!  This isn't going to cause much of a performance issue since we're 
+## not looping through a ton of items (only at most 50 or 60) and we're not 
+## using those items to access different chunks of a data.frame.
+for(years in yearList){
+    swsContext.datasets[[1]]@dimensions$timePointYears@keys = years
+    data = getYieldData(swsContext.datasets[[1]])
+    uniqueLevels = unique(data$formulaTuples[, list(input, productivity, output,
+                                                    unitConversion)])
+    ## FOR LOOP!  This could be vectorized, but it would require some kind of
+    ## "mapply"-ish vectorization.  It's not worth the confusion in this case,
+    ## especially since there shouldn't be performance problems with this
+    ## appraoch.
+    for(i in 1:nrow(uniqueLevels)){
+        test = try({
+            filter = uniqueLevels[i, ]
+            ## Get all the CPC codes we need by merging the specific
+            ## production/output/input codes with the dataset.
+            currentCPC = merge(data$formulaTuples, uniqueLevels,
+                               by = c("input", "productivity", "output",
+                                      "unitConversion"))[, measuredItemCPC]
+            ## Note: we have to subset the data here (rather than in the function
+            ## call) because the data isn't returned (but rather is just updated as
+            ## a data.table).
+            subData = data$query[measuredItemCPC %in% currentCPC, ]
+            
+            processingParams = defaultProcessingParameters(
+                productionValue = filter[, output],
+                yieldValue = filter[, productivity],
+                areaHarvestedValue = filter[, input])
+            
+            computeYield(data = subData, processingParameters = processingParams,
+                         unitConversion = filter$unitConversion)
+            balanceProduction(data = subData, processingParameters = processingParams,
+                         unitConversion = filter$unitConversion)
+            balanceAreaHarvested(data = subData, processingParameters = processingParams,
+                         unitConversion = filter$unitConversion)
+            saveProductionData(subData, areaHarvestedCode = filter$input,
+                               yieldCode = filter$productivity,
+                               productionCode = filter$output)
+        })
+        queryResult = c(queryResult, is(test, "try-error"))
+    }
 }
 
 paste("Module completed with", sum(queryResult), "errors.")

@@ -55,8 +55,7 @@ imputeProductionDomain = function(data, processingParameters,
     cat("Number of values still missing: ", n.missYield2, "\n")
 
     ## Balance production now using imputed yield
-    balanceProduction(data = data, imputationParameters = imputationParameters,
-                      processingParameters = processingParameters)
+    balanceProduction(data = data, processingParameters = processingParameters)
 
     ## step three: Impute production
     cat("Imputing Production ...\n")
@@ -79,8 +78,6 @@ imputeProductionDomain = function(data, processingParameters,
             dataCopy[[processingParameters$areaHarvestedValue]])))
 
     balanceAreaHarvested(data = dataCopy,
-                         # imputation parameters just needed for flag table
-                         imputationParameters = yieldImputationParameters,
                          processingParameters = processingParameters)
 
     n.missAreaHarvested2 =

@@ -39,9 +39,41 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         source(file)
 }
 
+allCountryCodes = GetCodeList(domain = slot(dataContext, "domain"),
+                             dataset = slot(dataContext, "dataset"),
+                             dimension = areaVar)
+allCountryCodes = unique(allCountryCodes[type == "country", code])
 
+allItemCodes = GetCodeList(domain = "agriculture",
+                          dataset = "agriculture",
+                          dimension = "measuredItemCPC")
+warning("Check that these are the right items!!!")
+allItemCodes = unique(allItemCodes[!is.na(type), code])
 
-fullKey = swsContext.datasets[[1]]
+selectedYears =
+    slot(slot(dataContext, "dimensions")$timePointYears,
+         "keys")
+
+yieldFormula = GetTableData(schemaName = "ess",
+                            tableName = "item_type_yield_elements")
+productionElements = unique(unlist(yieldFormula[, list(element_31, element_41,
+                                                       element_51)]))
+
+fullKey = DatasetKey(
+    domain = "agriculture",
+    dataset = "agriculture",
+    dimensions = list(
+        geographicAreaM49 = Dimension(name = "geographicAreaM49",
+                                      keys = allCountryCodes),
+        measuredElement = Dimension(name = "measuredElement",
+                                    keys = productionElements),
+        measuredItemCPC = Dimension(name = "measuredItemCPC",
+                                    keys = allItemCodes),
+        timePointYears = Dimension(name = "timePointYears",
+                                   keys = as.character(1997:2011)) # 15 years
+        )
+    )
+
 subKey = fullKey
 uniqueItem = fullKey@dimensions$measuredItemCPC@keys
 for(singleItem in uniqueItem){
