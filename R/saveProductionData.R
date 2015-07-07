@@ -75,12 +75,7 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
         cat("Attempting to write data back to the database.\n")
     warning("HACK!  Need to fix SaveData!")
     attr(data, "sorted") = NULL
-    if(nrow(data) > 10000){
-        data = split(data, 1:ceiling(nrow(data)/10000))
-        lapply(data, faosws::SaveData, domain = "agriculture",
-               dataset = "agriculture", normalized = FALSE,
-               waitMode = waitMode)        
-    } else {
+    if(nrow(data) >= 1){ # If invalid dates caused 0 rows, don't try to save.
         faosws::SaveData(domain = "agriculture",
                          dataset = "agriculture",
                          data = data,

@@ -10,16 +10,11 @@ library(faosws)
 library(faoswsFlag)
 library(faoswsUtil)
 
-## Setting up variables
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
-
-## Variable to determine if all yield data should be computed (across entire
-## database) or just local session.
-allData = !is.null(swsContext.computationParams$updateAll) &&
-    swsContext.computationParams$updateAll == "all"
+yieldElements = c(31, 41, 51)
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -33,7 +28,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "8677c74c-0c9f-4671-8693-912de6d7f0fd"
+        token = "d3671429-9fcf-4747-b41f-c2501593401e"
     )
     if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
@@ -56,7 +51,11 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Working on SWS...\n")
 }
 
-    
+## Variable to determine if all yield data should be computed (across entire
+## database) or just local session.
+allData = !is.null(swsContext.computationParams$updateAll) &&
+    swsContext.computationParams$updateAll == "all"
+
 ## Function for obtaining the data and meta data.
 getYieldData = function(dataContext){
     ## Setups
@@ -119,18 +118,18 @@ getYieldData = function(dataContext){
 
 ## If all yields should be updated, extend the key
 if(allData){
-    swsContext.datasets[[1]]@dimensions$geographicAreaM49@keys =
+    swsContext.datasets[[1]]@dimensions[[areaVar]]@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
-                    dimension = "geographicAreaM49")[type == "country", code]
-    swsContext.datasets[[1]]@dimensions$measuredElement@keys =
+                    dimension = areaVar)[type == "country", code]
+    swsContext.datasets[[1]]@dimensions[[elementVar]]@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
-                    dimension = "measuredElement")[type %in% c(31, 41, 51), code]
-    swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys =
+                    dimension = elementVar)[type %in% yieldElements, code]
+    swsContext.datasets[[1]]@dimensions[[itemVar]]@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
-                    dimension = "measuredItemCPC")[, code]
-    swsContext.datasets[[1]]@dimensions$timePointYears@keys =
+                    dimension = itemVar)[, code]
+    swsContext.datasets[[1]]@dimensions[[yearVar]]@keys =
         GetCodeList(domain = "agriculture", dataset = "agriculture",
-                    dimension = "timePointYears")[description != "wildcard", code]
+                    dimension = yearVar)[description != "wildcard", code]
 }
 
 ## Pull data
@@ -182,9 +181,11 @@ for(years in yearList){
                          unitConversion = filter$unitConversion)
             balanceAreaHarvested(data = subData, processingParameters = processingParams,
                          unitConversion = filter$unitConversion)
-            saveProductionData(subData, areaHarvestedCode = filter$input,
-                               yieldCode = filter$productivity,
-                               productionCode = filter$output)
+            if(nrow(subData) >= 1){
+                saveProductionData(subData, areaHarvestedCode = filter$input,
+                                   yieldCode = filter$productivity,
+                                   productionCode = filter$output)
+            }
         })
         queryResult = c(queryResult, is(test, "try-error"))
     }
