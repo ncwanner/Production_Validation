@@ -25,24 +25,16 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     
     ## Get SWS Parameters
     GetTestEnvironment(
-        ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        ## token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
-        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "d3671429-9fcf-4747-b41f-c2501593401e"
+        baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
+        token = "0d1f2750-b8bc-4714-973d-759a81c5d994"
+        ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        ## token = "d3671429-9fcf-4747-b41f-c2501593401e"
     )
     if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
                     full.names = TRUE)
-#         files = c(files, dir("~/Documents/Github/faoswsProduction/otherFuncs/faoswsUtil- install on server/",
-#                     full.names = TRUE))
-#         files = c(files, dir("~/Documents/Github/faoswsProduction/otherFuncs/faoswsImputation- install on server/",
-#                     full.names = TRUE))
     } else if(Sys.info()[7] == "rockc_000"){ # Josh personal
         files = dir("~/Github/faoswsProduction/R/", full.names = TRUE)
-#         files = c(files, dir("~/Github/faoswsProduction/otherFuncs/faoswsUtil- install on server/"
-#                     full.names = TRUE))
-#         files = c(files, dir("~/Github/faoswsProduction/otherFuncs/faoswsImputation- install on server/",
-#                     full.names = TRUE))
     } else {
         stop("Add your github directory here!")
     }
@@ -95,10 +87,6 @@ getYieldData = function(dataContext){
         Pivoting(code = yearVar, ascending = FALSE),
         Pivoting(code = elementVar, ascending = TRUE)
         )
-    ## Just extract yield-related elements
-    slot(slot(key, "dimensions")$measuredElement, "keys") =
-        unique(unlist(formulaTuples[, list(input,
-                                           productivity, output)]))
 
     if (data2process == TRUE){
         # Execute the get data call. 
@@ -150,9 +138,11 @@ queryResult = c()
 ## using those items to access different chunks of a data.frame.
 for(years in yearList){
     swsContext.datasets[[1]]@dimensions$timePointYears@keys = years
-    data = getYieldData(swsContext.datasets[[1]])
-    uniqueLevels = unique(data$formulaTuples[, list(input, productivity, output,
-                                                    unitConversion)])
+    formulaTuples =
+        getYieldFormula(slot(slot(swsContext.datasets[[1]],
+                                  "dimensions")$measuredItemCPC, "keys"))
+    uniqueLevels = unique(formulaTuples[, list(input, productivity, output,
+                                               unitConversion)])
     ## FOR LOOP!  This could be vectorized, but it would require some kind of
     ## "mapply"-ish vectorization.  It's not worth the confusion in this case,
     ## especially since there shouldn't be performance problems with this
@@ -160,29 +150,33 @@ for(years in yearList){
     for(i in 1:nrow(uniqueLevels)){
         test = try({
             filter = uniqueLevels[i, ]
+            
             ## Get all the CPC codes we need by merging the specific
             ## production/output/input codes with the dataset.
-            currentCPC = merge(data$formulaTuples, uniqueLevels,
+            currentCPC = merge(formulaTuples, filter,
                                by = c("input", "productivity", "output",
                                       "unitConversion"))[, measuredItemCPC]
-            ## Note: we have to subset the data here (rather than in the function
-            ## call) because the data isn't returned (but rather is just updated as
-            ## a data.table).
-            subData = data$query[measuredItemCPC %in% currentCPC, ]
+            
+            ## Filter the context to just the revelant item/element keys
+            swsContext.datasets[[1]]@dimensions$measuredElement@keys =
+                as.character(filter[, list(input, output, productivity)])
+            swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys =
+                currentCPC
+            data = getYieldData(swsContext.datasets[[1]])
             
             processingParams = defaultProcessingParameters(
                 productionValue = filter[, output],
                 yieldValue = filter[, productivity],
                 areaHarvestedValue = filter[, input])
             
-            computeYield(data = subData, processingParameters = processingParams,
+            computeYield(data = data$query, processingParameters = processingParams,
                          unitConversion = filter$unitConversion)
-            balanceProduction(data = subData, processingParameters = processingParams,
+            balanceProduction(data = data$query, processingParameters = processingParams,
                          unitConversion = filter$unitConversion)
-            balanceAreaHarvested(data = subData, processingParameters = processingParams,
+            balanceAreaHarvested(data = data$query, processingParameters = processingParams,
                          unitConversion = filter$unitConversion)
-            if(nrow(subData) >= 1){
-                saveProductionData(subData, areaHarvestedCode = filter$input,
+            if(nrow(data$query) >= 1){
+                saveProductionData(data$query, areaHarvestedCode = filter$input,
                                    yieldCode = filter$productivity,
                                    productionCode = filter$output)
             }
