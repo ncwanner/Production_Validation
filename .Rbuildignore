@@ -3,3 +3,5 @@ README.md
 productionImputationModule.R
 productionImputationModule.xml
 productionImputationModule.zip
+^.*\.Rproj$
+^\.Rproj\.user$
