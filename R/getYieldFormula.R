@@ -6,13 +6,14 @@
 ##' 
 ##' @param itemCode The cpc code providing the commodity of interest.  This 
 ##' should be a character string.
+##' @param itemVar The name of the item variable column.
 ##'   
 ##' @return A data.table object providing the relevant element codes.  In some
 ##' cases, there may be multiple rows, as it is possible to have multiple
 ##' elements which hold production, yield, and output data.
 ##' 
 
-getYieldFormula = function(itemCode){
+getYieldFormula = function(itemCode, itemVar = "measuredItemCPC"){
     itemData = GetCodeList(domain = "agriculture", dataset = "agriculture",
                            dimension = "measuredItemCPC", codes = itemCode)
     itemData = itemData[!is.na(type), ]

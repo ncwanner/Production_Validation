@@ -1,7 +1,5 @@
 ########################################################################
 ## Title: Yield Computation Module for SWS
-## Date:2014
-## 2015-06-30
 ## Author: Josh Browning
 ########################################################################
 
@@ -25,10 +23,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     
     ## Get SWS Parameters
     GetTestEnvironment(
-        baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        token = "0d1f2750-b8bc-4714-973d-759a81c5d994"
-        ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        ## token = "d3671429-9fcf-4747-b41f-c2501593401e"
+        # baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
+        # token = "0d1f2750-b8bc-4714-973d-759a81c5d994"
+        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        token = "bed251c6-3ecd-48aa-8e23-74e10ad92577"
     )
     if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
@@ -42,6 +40,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 } else {
     cat("Working on SWS...\n")
 }
+
+startTime = Sys.time()
 
 ## Variable to determine if all yield data should be computed (across entire
 ## database) or just local session.
@@ -185,4 +185,5 @@ for(years in yearList){
     }
 }
 
-paste("Module completed with", sum(queryResult), "errors.")
+paste("Module completed with", sum(queryResult), "errors in",
+      round(difftime(Sys.time(), startTime, units = "min"), 2), "minutes.")

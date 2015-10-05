@@ -12,6 +12,7 @@ areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
+years = 1997:2013
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -21,17 +22,22 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
     
     ## Define directories
-    if(Sys.info()[7] == "josh")
+    if(Sys.info()[7] == "josh"){
         apiDirectory = "~/Documents/Github/faoswsProduction/R/"
-    if(Sys.info()[7] == "rockc_000")
+        R_SWS_SHARE_PATH = "~/Documents/Github/faoswsProduction/Model/"
+        ## R_SWS_SHARE_PATH = "/media/hqlprsws2_prod"
+    } else if(Sys.info()[7] == "rockc_000"){
         apiDirectory = "~/Github/faoswsProduction/R/"
+        stop("Can't connect to share drives!")
+    }
 
     ## Get SWS Parameters
+    SetClientFiles(dir = "~/R certificate files/QA")
     GetTestEnvironment(
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        ## token = "e77abee7-9b0d-4557-8c6f-8968872ba7ca"
+        ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "c585c410-fb9e-44ea-ba36-ef940d32185d"
+        token = "3242f11d-28b2-4429-86b0-6fab97cb50bb"
     )
 
     ## Source local scripts for this local test
@@ -70,7 +76,7 @@ fullKey = DatasetKey(
         measuredItemCPC = Dimension(name = "measuredItemCPC",
                                     keys = allItemCodes),
         timePointYears = Dimension(name = "timePointYears",
-                                   keys = as.character(1997:2011)) # 15 years
+                                   keys = as.character(years)) # 15 years
         )
     )
 
@@ -126,9 +132,10 @@ for(singleItem in uniqueItem){
             ## the S4 ensembleModel object)
             formals(yieldParams$ensembleModels$defaultMixedModel@model)$modelFormula =
                 paste0(yieldParams$imputationValueColumn,
-                       " ~ -1 + (1 + bs(timePointYears, df = 2, degree = 1)",
-                       "|geographicAreaM49)")
+                       " ~ -1 + (1 + bs(", yearVar, ", df = 2, degree = 1)",
+                       "|", areaVar, ")")
             yieldParams$estimateNoData = TRUE
+            yieldParams$byKey = c(areaVar, itemVar)
             ## Impute production
             productionCode = datasets$formulaTuples[, input][i]
             productionParams = 
@@ -138,17 +145,34 @@ for(singleItem in uniqueItem){
             productionParams$imputationMethodColumn = paste0(
                 "flagMethod_measuredElement_", as.numeric(productionCode))
             productionParams$estimateNoData = TRUE
-            imputed = imputeProductionDomain(data = datasets$query,
-                                             processingParameters = processingParams,
-                                             yieldImputationParameters = yieldParams,
-                                             productionImputationParameters = productionParams)
-
-            ## Save back to database
-            saveProductionData(imputed,
-                    areaHarvestedCode = datasets$formulaTuples$input[i],
-                    yieldCode = datasets$formulaTuples$productivity[i],
-                    productionCode = datasets$formulaTuples$output[i],
-                    verbose = TRUE)
+            productionParams$byKey = c(areaVar, itemVar)
+            
+            datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
+            datasets$query = datasets$query[countryCnt > 1, ]
+            datasets$query[, countryCnt := NULL]
+            modelYield = faoswsImputation:::buildEnsembleModel(
+                data = datasets$query, imputationParameters = yieldParams,
+                processingParameters = processingParams)
+            yieldVar = paste0("Value_measuredElement_", yieldCode)
+            ## Have to save the yield estimates to the data because we need to 
+            ## balance and then impute production.  Also, check if fit is NULL
+            ## because it throws an error if no observations are missing and
+            ## estimated.
+            if(!is.null(modelYield$fit$fit)){
+                datasets$query[is.na(get(yieldVar)), yieldVar := modelYield$fit$fit]
+            }
+            
+            ## Impute production
+            balanceProduction(data = datasets$query,
+                              processingParameters = processingParams)
+            modelProduction = faoswsImputation:::buildEnsembleModel(
+                data = datasets$query, imputationParameters = productionParams,
+                processingParameters = processingParams)
+            
+            ## Save models
+            save(modelYield, modelProduction,
+                 file = paste0(R_SWS_SHARE_PATH, "prodModel_", singleItem,
+                               "_", i, ".RData"))
         } # close item type for loop
     }) # close try block
     if(inherits(impute, "try-error")){

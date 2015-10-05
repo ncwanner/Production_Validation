@@ -1,4 +1,4 @@
-##' This is a wrapper for all the data manipulation step before the
+##' This is a wrapper for all the data manipulation steps before the
 ##' preparation of the imputation.
 ##'
 ##' @param data The data
@@ -60,10 +60,10 @@ processProductionDomain = function(data, processingParameters){
         faoswsUtil::removeZeroConflict(data = data,
                            value1 = p$areaHarvestedValue,
                            value2 = p$productionValue,
-                           observationFlag1 = p$areaHarvestedObservationValue,
-                           observationFlag2 = p$productionObservationValue,
-                           methodFlag1 = p$areaHarvestedMethodValue,
-                           methodFlag2 = p$productionMethodValue,
+                           observationFlag1 = p$areaHarvestedObservationFlag,
+                           observationFlag2 = p$productionObservationFlag,
+                           methodFlag1 = p$areaHarvestedMethodFlag,
+                           methodFlag2 = p$productionMethodFlag,
                            missingObservationFlag = p$naFlag)
     }
 
