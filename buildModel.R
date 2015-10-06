@@ -56,10 +56,6 @@ allItemCodes = GetCodeList(domain = slot(swsContext.datasets[[1]], "domain"),
 warning("Check that these are the right items!!!")
 allItemCodes = unique(allItemCodes[!is.na(type), code])
 
-selectedYears =
-    slot(slot(swsContext.datasets[[1]], "dimensions")$timePointYears,
-         "keys")
-
 yieldFormula = GetTableData(schemaName = "ess",
                             tableName = "item_type_yield_elements")
 productionElements = unique(unlist(yieldFormula[, list(element_31, element_41,
@@ -82,6 +78,10 @@ fullKey = DatasetKey(
 
 subKey = fullKey
 uniqueItem = fullKey@dimensions$measuredItemCPC@keys
+
+successCount = 0
+failCount = 0
+
 for(singleItem in uniqueItem){
     subKey@dimensions$measuredItemCPC@keys = singleItem
     print(paste0("Imputation for item: ", singleItem))
@@ -150,7 +150,7 @@ for(singleItem in uniqueItem){
             datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
             datasets$query = datasets$query[countryCnt > 1, ]
             datasets$query[, countryCnt := NULL]
-            modelYield = faoswsImputation:::buildEnsembleModel(
+            modelYield = buildEnsembleModel(
                 data = datasets$query, imputationParameters = yieldParams,
                 processingParameters = processingParams)
             yieldVar = paste0("Value_measuredElement_", yieldCode)
@@ -165,7 +165,7 @@ for(singleItem in uniqueItem){
             ## Impute production
             balanceProduction(data = datasets$query,
                               processingParameters = processingParams)
-            modelProduction = faoswsImputation:::buildEnsembleModel(
+            modelProduction = buildEnsembleModel(
                 data = datasets$query, imputationParameters = productionParams,
                 processingParameters = processingParams)
             
@@ -177,9 +177,12 @@ for(singleItem in uniqueItem){
     }) # close try block
     if(inherits(impute, "try-error")){
         print("Imputation Module Failed")
+        failCount = failCount + 1
     } else {
         print("Imputation Module Executed Successfully")
+        successCount = successCount + 1
     }
 }
 
-"Module completed!"
+paste0("Successfully built ", successCount, " models out of ",
+       failCount + successCount, " commodities.")
