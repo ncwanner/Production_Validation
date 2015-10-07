@@ -150,7 +150,7 @@ for(singleItem in uniqueItem){
             datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
             datasets$query = datasets$query[countryCnt > 1, ]
             datasets$query[, countryCnt := NULL]
-            modelYield = buildEnsembleModel(
+            modelYield = faoswsImputation:::buildEnsembleModel(
                 data = datasets$query, imputationParameters = yieldParams,
                 processingParameters = processingParams)
             yieldVar = paste0("Value_measuredElement_", yieldCode)
@@ -165,14 +165,14 @@ for(singleItem in uniqueItem){
             ## Impute production
             balanceProduction(data = datasets$query,
                               processingParameters = processingParams)
-            modelProduction = buildEnsembleModel(
+            modelProduction = faoswsImputation:::buildEnsembleModel(
                 data = datasets$query, imputationParameters = productionParams,
                 processingParameters = processingParams)
             
             ## Save models
             save(modelYield, modelProduction,
-                 file = paste0(R_SWS_SHARE_PATH, "prodModel_", singleItem,
-                               "_", i, ".RData"))
+                 file = paste0(R_SWS_SHARE_PATH, "/browningj/production/prodModel_",
+                               singleItem, "_", i, ".RData"))
         } # close item type for loop
     }) # close try block
     if(inherits(impute, "try-error")){

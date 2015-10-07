@@ -17,7 +17,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Define directories
     if(Sys.info()[7] == "josh"){
         apiDirectory = "~/Documents/Github/faoswsProduction/R/"
-        R_SWS_SHARE_PATH = "~/Documents/Github/faoswsProduction/Model/"
+        R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/browningj/production"
         ## R_SWS_SHARE_PATH = "/media/hqlprsws2_prod"
     } else if(Sys.info()[7] == "rockc_000"){
         apiDirectory = "~/Github/faoswsProduction/R/"
