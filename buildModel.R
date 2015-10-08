@@ -122,10 +122,6 @@ for(singleItem in uniqueItem){
             yieldCode = datasets$formulaTuples[, productivity][i]
             yieldParams = 
                 defaultImputationParameters(variable = as.numeric(yieldCode))
-            warning("There's a missing '_' in the faoswsImputation package.  ",
-                    "Once that's fixed, the line below won't be needed.")
-            yieldParams$imputationMethodColumn = paste0(
-                "flagMethod_measuredElement_", as.numeric(yieldCode))
             ## Change the model formula to use a hierarchical mixed model.  The
             ## code to do this is a bit messy because we have to adjust the
             ## default argument of the model function (which is an element of
@@ -137,13 +133,9 @@ for(singleItem in uniqueItem){
             yieldParams$estimateNoData = TRUE
             yieldParams$byKey = c(areaVar, itemVar)
             ## Impute production
-            productionCode = datasets$formulaTuples[, input][i]
+            productionCode = datasets$formulaTuples[, output][i]
             productionParams = 
                 defaultImputationParameters(variable = as.numeric(productionCode))
-            warning("There's a missing '_' in the faoswsImputation package.  ",
-                    "Once that's fixed, the line below won't be needed.")
-            productionParams$imputationMethodColumn = paste0(
-                "flagMethod_measuredElement_", as.numeric(productionCode))
             productionParams$estimateNoData = TRUE
             productionParams$byKey = c(areaVar, itemVar)
             
