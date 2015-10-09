@@ -106,5 +106,5 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
     }
 }
 
-paste0("Module completed with ", successCount, " successes out of ",
-       successCount + failureCount, " executions.")
+paste0("Module completed with ", successCount, "/",
+       successCount + failureCount, " commodities imputed.")

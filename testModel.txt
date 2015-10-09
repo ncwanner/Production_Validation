@@ -1,0 +1,24 @@
+Until we have a testing domain configured, we'll need to manually test these modules on the working system.  For production, here's a recommended list of things to check:
+
+- Some countries
+- All production/yield/area harvested keys
+- 0111
+- All years
++ Verify imputation looks reasonable
++ Verify imputation is only on choosen years
+
+- Some countries (include 728, 736)
+- All production/yield/area harvested keys
+- 0111, 02111, 02311, 01330, 23110
+- All years
++ Verify imputation looks reasonable
++ Verify imputation is only on choosen years
++ Verify imputation works for indigienous/biological elements (for meat)
++ Verify flour (23110) is not imputed
++ Verify appropriate codes are used
+
+Other coding checks to implement:
+- Missing values and imputed values get overwritten
+- Calculated values and official figures never get overwritten
+- Data is never written to countries outside their time range (see 728, 736)
+- Yield/Production stepwise imputation/balancing is respected (i.e. production is not imputed if a imputed yield allows it to be balanced)
