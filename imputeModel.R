@@ -30,7 +30,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "8c65d175-6f8a-4156-b90c-860581e302be"
+        token = "bc30a9f6-d472-4969-a153-e15bf9d3b46d"
     )
 
     ## Source local scripts for this local test
@@ -50,7 +50,11 @@ failureCount = 0
 ## Loop through the items and save production/yield data:
 for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
     
-    formulaTuples = getYieldFormula(singleItem)
+    formulaTuples = try(getYieldFormula(singleItem))
+    if(is(formulaTuples, "try-error")){
+        failureCount = failureCount + 1
+        next
+    }
         
     for(i in 1:nrow(formulaTuples)){
         ## Verify that the years requested by the user (in swsContext.params) are
