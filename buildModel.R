@@ -164,21 +164,26 @@ for(singleItem in uniqueItem){
             datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
             datasets$query = datasets$query[countryCnt > 1, ]
             datasets$query[, countryCnt := NULL]
-            modelYield = faoswsImputation:::buildEnsembleModel(
+            modelYield = try(faoswsImputation:::buildEnsembleModel(
                 data = datasets$query, imputationParameters = yieldParams,
-                processingParameters = processingParams)
-            yieldVar = paste0("Value_measuredElement_", yieldCode)
-            ## Have to save the yield estimates to the data because we need to 
-            ## balance and then impute production.  Also, check if fit is NULL
-            ## because it throws an error if no observations are missing and
-            ## estimated.
-            if(!is.null(modelYield$fit$fit)){
-                datasets$query[is.na(get(yieldVar)), yieldVar := modelYield$fit$fit]
+                processingParameters = processingParams))
+            if(!is(modelYield, "try-error")){
+                yieldVar = paste0("Value_measuredElement_", yieldCode)
+                ## Have to save the yield estimates to the data because we need
+                ## to balance and then impute production.  Also, check if fit is
+                ## NULL because it throws an error if no observations are
+                ## missing and estimated.
+                if(!is.null(modelYield$fit$fit)){
+                    datasets$query[is.na(get(yieldVar)),
+                                   yieldVar := modelYield$fit$fit]
+                }
+                balanceProduction(data = datasets$query,
+                                  processingParameters = processingParams)
+            } else {
+                modelYield = NULL
             }
             
             ## Impute production
-            balanceProduction(data = datasets$query,
-                              processingParameters = processingParams)
             modelProduction = faoswsImputation:::buildEnsembleModel(
                 data = datasets$query, imputationParameters = productionParams,
                 processingParameters = processingParams)
