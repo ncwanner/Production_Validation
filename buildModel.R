@@ -24,7 +24,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Define directories
     if(Sys.info()[7] == "josh"){
         apiDirectory = "~/Documents/Github/faoswsProduction/R/"
-        R_SWS_SHARE_PATH = "~/Documents/Github/faoswsProduction/Model/"
+        R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
         ## R_SWS_SHARE_PATH = "/media/hqlprsws2_prod"
     } else if(Sys.info()[7] == "rockc_000"){
         apiDirectory = "~/Github/faoswsProduction/R/"
@@ -126,10 +126,15 @@ for(singleItem in uniqueItem){
         for(i in 1:nrow(datasets$formulaTuples)){
             cat("Processing pair", i, "of", nrow(datasets$formulaTuples),
                 "element triples.\n")
-            
-#             ## Set the names
-#             assignColumnNameVars(prefixTuples = datasets$prefixTuples,
-#                                  formulaTuples = datasets$formulaTuples[i])
+
+            valueCols = paste0(datasets$prefixTuples$valuePrefix,
+                               datasets$formulaTuples[, c("productivity", "output"),
+                                                      with = FALSE])
+            if(all(is.na(datasets$query[[valueCols[1]]])) &
+               all(is.na(datasets$query[[valueCols[2]]]))){
+                stop("No non-missing data!")
+                next
+            }
 
             ## Recompute the yield
             cat("Computing yield...\n")
@@ -167,7 +172,15 @@ for(singleItem in uniqueItem){
             modelYield = try(faoswsImputation:::buildEnsembleModel(
                 data = datasets$query, imputationParameters = yieldParams,
                 processingParameters = processingParams))
-            if(!is(modelYield, "try-error")){
+            if(is(modelYield, "numeric")){
+                ## modelYield **should** be a list, but if no data is missing a 
+                ## vector is returned.  In this case, just balance and continue.
+                balanceProduction(data = datasets$query,
+                                  processingParameters = processingParams)
+                modelYield = NULL
+            } else if(!is(modelYield, "try-error")){
+                ## In this case, we have the expected behaviour: modelYield is a
+                ## list.
                 yieldVar = paste0("Value_measuredElement_", yieldCode)
                 ## Have to save the yield estimates to the data because we need
                 ## to balance and then impute production.  Also, check if fit is
@@ -180,6 +193,8 @@ for(singleItem in uniqueItem){
                 balanceProduction(data = datasets$query,
                                   processingParameters = processingParams)
             } else {
+                ## If model building failed, we still want to continue in case
+                ## we can build a production model.
                 modelYield = NULL
             }
             
@@ -205,3 +220,9 @@ for(singleItem in uniqueItem){
 
 paste0("Successfully built ", successCount, " models out of ",
        failCount + successCount, " commodities.")
+
+# builtModels = dir(paste0(R_SWS_SHARE_PATH, "/browningj/production/"),
+#                   pattern = "prodModel*")
+# builtModels = stringr::str_extract(builtModels, "[0-9.]+")
+# builtModels = unique(builtModels)
+# missingModels = allItemCodes[!allItemCodes %in% builtModels]

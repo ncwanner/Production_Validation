@@ -15,7 +15,7 @@
 
 getYieldFormula = function(itemCode, itemVar = "measuredItemCPC"){
     itemData = GetCodeList(domain = "agriculture", dataset = "agriculture",
-                           dimension = "measuredItemCPC", codes = itemCode)
+                           dimension = itemVar, codes = itemCode)
     itemData = itemData[!is.na(type), ]
     if(nrow(itemData) == 0)
         stop("No valid data to process!  Maybe the item code isn't in the ",
@@ -29,6 +29,10 @@ getYieldFormula = function(itemCode, itemVar = "measuredItemCPC"){
         GetTableData(schemaName = "ess",
                      tableName = "item_type_yield_elements",
                      whereClause = condition)
+    if(any(!uniqueItemTypes %in% yieldFormula$item_type)){
+        stop("No data in item_type_yield_elements for codes supplied",
+             " (item types are ", paste(uniqueItemTypes, collapse = ", "), ")")
+    }
     yieldFormula = merge.data.frame(itemData, yieldFormula,
                                     by.x = "type", by.y = "item_type")
     yieldFormula = yieldFormula[, c("code", "element_31", "element_41",
