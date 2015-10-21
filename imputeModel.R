@@ -30,7 +30,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "bc30a9f6-d472-4969-a153-e15bf9d3b46d"
+        token = "950db956-5664-4df8-b152-818645bf1748"
     )
 
     ## Source local scripts for this local test
@@ -82,30 +82,40 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
             }
             
             ## Restructure modelProduction for saving
-            modelProduction = modelProduction$fit[, variance := NULL]
-            modelProduction = modelProduction[timePointYears <= endYear &
-                                              timePointYears >= startYear &
-                                              geographicAreaM49 %in% countryM49, ]
-            modelProduction[, measuredElement := formulaTuples[i, output]]
-            modelProduction[, Value := fit]
-            modelProduction[, fit := NULL]
-            modelProduction[, flagObservationStatus := "I"]
-            modelProduction[, flagMethod := "e"]
+            if(!is.null(modelProduction)){
+                ## If not NULL, extract needed info.  Otherwise, if NULL (i.e. 
+                ## model failed) don't do anything (as saving a dataset with
+                ## NULL shouldn't cause problems).
+                modelProduction = modelProduction$fit[, variance := NULL]
+                modelProduction = modelProduction[timePointYears <= endYear &
+                                                  timePointYears >= startYear &
+                                                  geographicAreaM49 %in% countryM49, ]
+                modelProduction[, measuredElement := formulaTuples[i, output]]
+                modelProduction[, Value := fit]
+                modelProduction[, fit := NULL]
+                modelProduction[, flagObservationStatus := "I"]
+                modelProduction[, flagMethod := "e"]
+            }
             
-            modelYield = modelYield$fit[, variance := NULL]
-            modelYield = modelYield[timePointYears <= endYear &
-                                    timePointYears >= startYear &
-                                    geographicAreaM49 %in% countryM49, ]
-            modelYield[, measuredElement := formulaTuples[i, productivity]]
-            modelYield[, Value := fit]
-            modelYield[, fit := NULL]
-            modelYield[, flagObservationStatus := "I"]
-            modelYield[, flagMethod := "e"]
+            if(!is.null(modelYield)){
+                ## See comment for modelProduction
+                modelYield = modelYield$fit[, variance := NULL]
+                modelYield = modelYield[timePointYears <= endYear &
+                                        timePointYears >= startYear &
+                                        geographicAreaM49 %in% countryM49, ]
+                modelYield[, measuredElement := formulaTuples[i, productivity]]
+                modelYield[, Value := fit]
+                modelYield[, fit := NULL]
+                modelYield[, flagObservationStatus := "I"]
+                modelYield[, flagMethod := "e"]
+            }
             
             dataToSave = rbind(modelYield, modelProduction)
-            dataToSave = dataToSave[!is.na(Value), ]
-            SaveData(domain = "agriculture", dataset = "agriculture",
-                     data = dataToSave)
+            if(!is.null(dataToSave)){
+                dataToSave = dataToSave[!is.na(Value), ]
+                SaveData(domain = "agriculture", dataset = "agriculture",
+                         data = dataToSave)
+            }
         }
     }
 }
