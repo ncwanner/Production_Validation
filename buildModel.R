@@ -12,7 +12,7 @@ areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
-years = 1997:2013
+years = 1997:2014
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -142,6 +142,9 @@ for(singleItem in uniqueItem){
                 productionValue = datasets$formulaTuples[, output][i],
                 yieldValue = datasets$formulaTuples[, productivity][i],
                 areaHarvestedValue = datasets$formulaTuples[, input][i])
+            ## Don't remove old estimated imputation values, per request from
+            ## Salar.
+            processingParams$removePriorImputation = FALSE
             computeYield(datasets$query, newMethodFlag = "i",
                          processingParameters = processingParams)
 

@@ -38,8 +38,11 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         source(file)
 }
 
-startYear = as.numeric(swsContext.computationParams$startYear)
-endYear = as.numeric(swsContext.computationParams$endYear)
+# startYear = as.numeric(swsContext.computationParams$startYear)
+# endYear = as.numeric(swsContext.computationParams$endYear)
+## Only impute for 2014, as per Salar
+startYear = 2014
+endYear = 2014
 countryM49 = swsContext.datasets[[1]]@dimensions$geographicAreaM49@keys
 
 stopifnot(startYear <= endYear)
