@@ -12,7 +12,7 @@ areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
-years = 1997:2013
+years = 1991:2014
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -135,6 +135,38 @@ for(singleItem in uniqueItem){
                 stop("No non-missing data!")
                 next
             }
+            
+            ## Some rows may be missing entirely, and thus we may fail to impute
+            ## for those years/countries/commodities if we don't add rows with
+            ## missing data.  Do that here:
+            countryCommodity = unique(datasets$query[, c(areaVar, itemVar),
+                                                     with = FALSE])
+            ## To merge two data.tables, we need a key column.  Create a dummy
+            ## one to do the merge.
+            countryCommodity[, mergeKey := 1]
+            year = data.table(years)
+            setnames(year, yearVar)
+            year[, mergeKey := 1]
+            fullData = merge(countryCommodity, year, by = "mergeKey",
+                             allow.cartesian = TRUE)
+            fullData[, mergeKey := NULL]
+            ## Merge fullData back to datasets$query.  If a record was missing
+            ## in datasets$query, it will now exist with NA values/flags.
+            datasets$query = merge(datasets$query, fullData,
+                                   by = c(itemVar, areaVar, yearVar),
+                                   all.y = TRUE)
+            ## Replace NA/NA/NA with 0/M/n
+            valCols = grep("Value_", colnames(datasets$query), value = TRUE)
+            obsFlagCols = grep("flagObservation", colnames(datasets$query),
+                               value = TRUE)
+            metFlagCols = grep("flagMethod", colnames(datasets$query),
+                               value = TRUE)
+            sapply(valCols, function(colname){
+                datasets$query[is.na(get(colname)), c(colname) := 0]})
+            sapply(obsFlagCols, function(colname){
+                datasets$query[is.na(get(colname)), c(colname) := "M"]})
+            sapply(metFlagCols, function(colname){
+                datasets$query[is.na(get(colname)), c(colname) := "n"]})
 
             ## Recompute the yield
             cat("Computing yield...\n")

@@ -7,6 +7,9 @@ yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
 
+defaultStartYear = 2010
+defaultEndYear = 2014
+
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
@@ -30,7 +33,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "950db956-5664-4df8-b152-818645bf1748"
+        token = "c4d486db-8e7b-4495-9bbb-27ec1e284894"
     )
 
     ## Source local scripts for this local test
@@ -38,8 +41,16 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         source(file)
 }
 
-startYear = as.numeric(swsContext.computationParams$startYear)
-endYear = as.numeric(swsContext.computationParams$endYear)
+if(is.null(swsContext.computationParams$startYear)){
+    startYear = defaultStartYear
+} else {
+    startYear = as.numeric(swsContext.computationParams$startYear)
+}
+if(is.null(swsContext.computationParams$endYear)){
+    endYear = defaultEndYear
+} else {
+    endYear = as.numeric(swsContext.computationParams$endYear)
+}
 countryM49 = swsContext.datasets[[1]]@dimensions$geographicAreaM49@keys
 
 stopifnot(startYear <= endYear)
