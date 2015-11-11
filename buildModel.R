@@ -174,6 +174,9 @@ for(singleItem in uniqueItem){
                 productionValue = datasets$formulaTuples[, output][i],
                 yieldValue = datasets$formulaTuples[, productivity][i],
                 areaHarvestedValue = datasets$formulaTuples[, input][i])
+            ## Don't remove old estimated imputation values, per request from
+            ## Salar.
+            processingParams$removePriorImputation = FALSE
             computeYield(datasets$query, newMethodFlag = "i",
                          processingParameters = processingParams)
 
