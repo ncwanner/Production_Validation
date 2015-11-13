@@ -54,7 +54,7 @@ allItemCodes = GetCodeList(domain = slot(swsContext.datasets[[1]], "domain"),
                            dataset = slot(swsContext.datasets[[1]], "dataset"),
                            dimension = "measuredItemCPC")
 allItemCodes = unique(allItemCodes[!is.na(type), code])
-allItemCodes = c("01921.01", "02111", "02112", "02131", "02122", "02123",
+allPrimaryCodes = c("01921.01", "02111", "02112", "02131", "02122", "02123",
                  "02191", "02140", "02132", "02151", "02154", "02153", "02152",
                  "01270", "01253.02", "0142", "01371", "01374", "01376",
                  "01323", "01322", "0141", "01445", "01443", "01447", "01441",
@@ -76,6 +76,15 @@ allItemCodes = c("01921.01", "02111", "02112", "02131", "02122", "02123",
                  "02910", "02212", "01499.05", "01342.02", "01354", "01930.02",
                  "01243", "01252", "01349.20", "01211", "01351.01", "01353.01",
                  "02121.02", "02192.01", "01191", "01377", "02133", "01355.90")
+allDerivedCodes = c(306, 307, 1242, 162, 165, 237, 244, 252, 256, 257, 258,
+                    261, 268, 271, 281, 290, 329, 331, 334, 51, 564, 60, 767,
+                    1745, 1809, 1811, 1816, 1021, 1022, 1043, 1186, 1225, 885,
+                    886, 887, 888, 889, 890, 891, 894, 895, 896, 897, 898, 899,
+                    900, 901, 904, 952, 953, 955, 983, 984)
+allDerivedCodes = faoswsUtil::fcl2cpc(formatC(allDerivedCodes, width = 4, flag = "0"))
+allItemCodes = c(allPrimaryCodes, allDerivedCodes)
+allItemCodes = allItemCodes[!is.na(allItemCodes)]
+
 warning("Should identify this with faoswsUtil:::getCommodityTree")
 
 yieldFormula = GetTableData(schemaName = "ess",
@@ -204,9 +213,12 @@ for(singleItem in uniqueItem){
             datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
             datasets$query = datasets$query[countryCnt > 1, ]
             datasets$query[, countryCnt := NULL]
+            png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/yield_",
+                               singleItem, "_", i, ".png"), width = 2300, height = 2300)
             modelYield = try(faoswsImputation:::buildEnsembleModel(
                 data = datasets$query, imputationParameters = yieldParams,
                 processingParameters = processingParams))
+            dev.off()
             if(is(modelYield, "numeric")){
                 ## modelYield **should** be a list, but if no data is missing a 
                 ## vector is returned.  In this case, just balance and continue.
@@ -234,12 +246,15 @@ for(singleItem in uniqueItem){
             }
             
             ## Impute production
+            png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/production_",
+                   singleItem, "_", i, ".png"), width = 2300, height = 2300)
             modelProduction = faoswsImputation:::buildEnsembleModel(
                 data = datasets$query, imputationParameters = productionParams,
                 processingParameters = processingParams)
+            dev.off()
             
             ## Save models
-            save(modelYield, modelProduction,
+            save(modelYield, modelProduction, years,
                  file = paste0(R_SWS_SHARE_PATH, "/browningj/production/prodModel_",
                                singleItem, "_", i, ".RData"))
         } # close item type for loop

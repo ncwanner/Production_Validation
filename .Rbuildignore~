@@ -4,6 +4,5 @@ productionImputationModule.R
 productionImputationModule.xml
 productionImputationModule.zip
 Model
-sandbox
 ^.*\.Rproj$
 ^\.Rproj\.user$

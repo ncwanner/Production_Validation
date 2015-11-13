@@ -33,7 +33,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "c4d486db-8e7b-4495-9bbb-27ec1e284894"
+        token = "ffa49f3a-67b1-4968-ae9e-5052ca624a35"
     )
 
     ## Source local scripts for this local test
@@ -81,15 +81,11 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         
             obsStartYear = min(modelProduction$fit$timePointYears)
             obsEndYear = max(modelProduction$fit$timePointYears)
-            if(obsStartYear > startYear){
-                stop(paste0("Model has been constructed on data that only exists ",
-                            "after the supplied start year.  Start Year must be at ",
-                            "least ", obsStartYear))
-            }
-            if(obsEndYear < endYear){
-                stop(paste0("Model has been constructed on data that only exists ",
-                            "before the supplied year.  End Year must be at ",
-                            "most ", obsEndYear))
+            if(any(!startYear:endYear %in% years)){
+                stop(paste0("Model has been constructed on data that does not ",
+                            "contain the desired imputation range!  Please ",
+                            "update start and end year to fall in this range: ",
+                            paste(years, collapse = ", ")))
             }
             
             ## Restructure modelProduction for saving
