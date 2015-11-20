@@ -26,7 +26,6 @@ swsDatasetDepends:
     agriculture:agriculture,
     item_type_yield_elements,
 swsModuleDepends:
-    none
 LazyData: yes
 ZipData: no
 VignetteBuilder: knitr
