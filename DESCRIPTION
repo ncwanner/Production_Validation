@@ -22,6 +22,11 @@ Depends:
     faoswsUtil,
     splines (>= 3.0.2),
     data.table (>= 1.9.2)
+swsDatasetDepends:
+    agriculture:agriculture,
+    item_type_yield_elements,
+swsModuleDepends:
+    none
 LazyData: yes
 ZipData: no
 VignetteBuilder: knitr
