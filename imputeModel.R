@@ -120,8 +120,10 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
             dataToSave = rbind(modelYield, modelProduction)
             if(!is.null(dataToSave)){
                 dataToSave = dataToSave[!is.na(Value), ]
-                SaveData(domain = "agriculture", dataset = "agriculture",
-                         data = dataToSave)
+                saveProductionData(data = dataToSave,
+                        areaHarvestedCode = datasets$formulaTuples[i, input],
+                        yieldCode = datasets$formulaTuples[i, productivity],
+                        productionCode = datasets$formulaTuples[i, output])
             }
         }
     }

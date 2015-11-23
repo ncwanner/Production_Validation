@@ -24,7 +24,7 @@ Depends:
     data.table (>= 1.9.2)
 swsDatasetDepends:
     agriculture:agriculture,
-    item_type_yield_elements,
+    item_type_yield_elements
 swsModuleDepends:
 LazyData: yes
 ZipData: no

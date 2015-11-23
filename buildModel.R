@@ -37,7 +37,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "3242f11d-28b2-4429-86b0-6fab97cb50bb"
+        token = "9999fcbd-b439-401e-a572-717908f0b0dc"
     )
 
     ## Source local scripts for this local test
@@ -49,6 +49,11 @@ allCountryCodes = GetCodeList(domain = slot(swsContext.datasets[[1]], "domain"),
                               dataset = slot(swsContext.datasets[[1]], "dataset"),
                               dimension = areaVar)
 allCountryCodes = unique(allCountryCodes[type == "country", code])
+## HACK: Update China
+warning("Hack below!  Fix once the geographicAreaM49 dimension is fixed!")
+allCountryCodes = allCountryCodes[!allCountryCodes %in% c("1249", "156")]
+allCountryCodes = c(allCountryCodes, "158", "1248")
+allCountryCodes = unique(allCountryCodes)
 
 allItemCodes = GetCodeList(domain = slot(swsContext.datasets[[1]], "domain"),
                            dataset = slot(swsContext.datasets[[1]], "dataset"),
@@ -229,6 +234,13 @@ for(singleItem in uniqueItem){
                 ## In this case, we have the expected behaviour: modelYield is a
                 ## list.
                 yieldVar = paste0("Value_measuredElement_", yieldCode)
+                ## Yield must be zero if production or area harvested are 0.
+                zeroYield = datasets$query[get(processingParams$areaHarvestedValue) == 0 |
+                                           get(processingParams$productionValue) == 0,
+                                           c(yieldParams$yearValue, yieldParams$byKey),
+                                           with = FALSE]
+                datasets$query =
+                    datasets$query[!zeroYield, on = c(yieldParams$yearValue, yieldParams$byKey)]
                 ## Have to save the yield estimates to the data because we need
                 ## to balance and then impute production.  Also, check if fit is
                 ## NULL because it throws an error if no observations are
