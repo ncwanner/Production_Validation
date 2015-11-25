@@ -1,6 +1,6 @@
 ##' Save Production Data
 ##' 
-##' This function takes the a seed data dataset and saves it back to the
+##' This function takes the a production data dataset and saves it back to the
 ##' database.
 ##' 
 ##' @param data The data.table object containing the seed data to be written to
@@ -29,7 +29,7 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
                               yieldCode = "5421", productionCode = "5510",
                               verbose = FALSE,
                               context = swsContext.datasets[[1]],
-                              waitMode = "wait"){
+                              waitMode = "wait", normalized = FALSE){
     
     ## Data Quality Checks
     stopifnot(is(data, "data.table"))
@@ -39,16 +39,21 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
     requiredColumns = c("geographicAreaM49", "measuredItemCPC",
                         "timePointYears")
     requiredCodes = c(areaHarvestedCode, yieldCode, productionCode)
-    additionalColumns = lapply(requiredCodes, function(x)
-        paste0(c("Value_measuredElement_",
-                 "flagObservationStatus_measuredElement_",
-                 "flagMethod_measuredElement_"), x))
-    requiredColumns = c(requiredColumns, do.call("c", additionalColumns))
+#     additionalColumns = lapply(requiredCodes, function(x)
+#         paste0(c("Value_measuredElement_",
+#                  "flagObservationStatus_measuredElement_",
+#                  "flagMethod_measuredElement_"), x))
+#     requiredColumns = c(requiredColumns, do.call("c", additionalColumns))
     missingColumns = requiredColumns[!requiredColumns %in% colnames(data)]
     if(length(missingColumns) > 0)
         stop("Missing required columns, so data cannot be saved!  Missing:\n",
              paste0(missingColumns, collapse = "\n"))
-    data = data[, requiredColumns, with = FALSE]
+    if(!normalized){
+        data = data[, requiredColumns, with = FALSE]
+    } else {
+        data = data[, c(requiredColumns, "measuredElement", "Value",
+                        "flagObservationStatus", "flagMethod"), with = FALSE]
+    }
     
     ## Filter the data by removing any invalid date/country combinations
     if(verbose)
@@ -56,13 +61,19 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
     data = removeInvalidDates(data)
     
     ## Can't save NA's back to the database, so convert to 0M
-    for(code in c(areaHarvestedCode, yieldCode, productionCode)){
-        valName = paste0("Value_measuredElement_", code)
-        obsFlag = paste0("flagObservationStatus_measuredElement_", code)
-        methodFlag = paste0("flagMethod_measuredElement_", code)
-        data[is.na(get(valName)) | get(obsFlag) == "M",
-             `:=`(c(valName, obsFlag, methodFlag),
-                  list(0, "M", "n"))]
+    if(!normalized){
+        for(code in c(areaHarvestedCode, yieldCode, productionCode)){
+            valName = paste0("Value_measuredElement_", code)
+            obsFlag = paste0("flagObservationStatus_measuredElement_", code)
+            methodFlag = paste0("flagMethod_measuredElement_", code)
+            data[is.na(get(valName)) | get(obsFlag) == "M",
+                 `:=`(c(valName, obsFlag, methodFlag),
+                      list(0, "M", "n"))]
+        }
+    } else {
+        data[is.na(Value) | flagObservationStatus == "M",
+                 `:=`(c("Value", "flagObservationStatus", "flagMethod"),
+                      list(0, "M", "n"))]
     }
     
     ## Collapse to passed context
@@ -73,13 +84,19 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
     ## Save the data back
     if(verbose)
         cat("Attempting to write data back to the database.\n")
-    warning("HACK!  Need to fix SaveData!")
+    warning("HACK!  Sorting because of SaveData issue!")
     attr(data, "sorted") = NULL
-    if(nrow(data) >= 1){ # If invalid dates caused 0 rows, don't try to save.
+    if(nrow(data) >= 1 & !normalized){ # If invalid dates caused 0 rows, don't try to save.
         faosws::SaveData(domain = "agriculture",
                          dataset = "agriculture",
                          data = data,
                          normalized = FALSE,
                          waitMode = waitMode)
-    }
+    } else if(nrow(data) >= 1){
+        faosws::SaveData(domain = "agriculture",
+                         dataset = "agriculture",
+                         data = data,
+                         normalized = TRUE,
+                         waitMode = waitMode)
+    }        
 }
