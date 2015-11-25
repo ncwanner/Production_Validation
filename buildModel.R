@@ -50,8 +50,7 @@ allCountryCodes = GetCodeList(domain = slot(swsContext.datasets[[1]], "domain"),
                               dimension = areaVar)
 allCountryCodes = unique(allCountryCodes[type == "country", code])
 ## HACK: Update China
-warning("Hack below!  Fix once the geographicAreaM49 dimension is fixed!")
-allCountryCodes = allCountryCodes[!allCountryCodes %in% c("1249", "156")]
+warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
 allCountryCodes = c(allCountryCodes, "158", "1248")
 allCountryCodes = unique(allCountryCodes)
 
@@ -169,18 +168,18 @@ for(singleItem in uniqueItem){
             datasets$query = merge(datasets$query, fullData,
                                    by = c(itemVar, areaVar, yearVar),
                                    all.y = TRUE)
-            ## Replace NA/NA/NA with 0/M/n
+            ## Replace NA/NA/NA with 0/M/u
             valCols = grep("Value_", colnames(datasets$query), value = TRUE)
             obsFlagCols = grep("flagObservation", colnames(datasets$query),
                                value = TRUE)
             metFlagCols = grep("flagMethod", colnames(datasets$query),
                                value = TRUE)
-            sapply(valCols, function(colname){
-                datasets$query[is.na(get(colname)), c(colname) := 0]})
             sapply(obsFlagCols, function(colname){
                 datasets$query[is.na(get(colname)), c(colname) := "M"]})
             sapply(metFlagCols, function(colname){
-                datasets$query[is.na(get(colname)), c(colname) := "n"]})
+                datasets$query[is.na(get(colname)), c(colname) := "u"]})
+            sapply(valCols, function(colname){
+                datasets$query[is.na(get(colname)), c(colname) := 0]})
 
             ## Recompute the yield
             cat("Computing yield...\n")
@@ -237,10 +236,22 @@ for(singleItem in uniqueItem){
                 ## Yield must be zero if production or area harvested are 0.
                 zeroYield = datasets$query[get(processingParams$areaHarvestedValue) == 0 |
                                            get(processingParams$productionValue) == 0,
-                                           c(yieldParams$yearValue, yieldParams$byKey),
+                                           c(processingParams$yearValue, yieldParams$byKey),
                                            with = FALSE]
-                datasets$query =
-                    datasets$query[!zeroYield, on = c(yieldParams$yearValue, yieldParams$byKey)]
+                modelYield[[1]] =
+                    modelYield[[1]][!zeroYield, on = c(processingParams$yearValue, yieldParams$byKey)]
+                ## Yield should not be imputed on 0Mn observations.  These are
+                ## "missing but assumed negligble."
+                warning("HACK!  Not currently imputing on 0Mu but should (just ",
+                        "uncomment, once it's ok to do so)!")
+                assumedZero = datasets$query[(get(processingParams$yieldValue) == 0 |
+                                              is.na(get(processingParams$yieldValue))) &
+                                             get(processingParams$yieldMethodFlag) == "n" &
+                                             get(processingParams$yieldObservationFlag) == "M",
+                                             c(processingParams$yearValue, yieldParams$byKey),
+                                             with = FALSE]
+                modelYield[[1]] =
+                    modelYield[[1]][!assumedZero, on = c(processingParams$yearValue, yieldParams$byKey)]
                 ## Have to save the yield estimates to the data because we need
                 ## to balance and then impute production.  Also, check if fit is
                 ## NULL because it throws an error if no observations are
@@ -264,7 +275,27 @@ for(singleItem in uniqueItem){
                 data = datasets$query, imputationParameters = productionParams,
                 processingParameters = processingParams)
             dev.off()
-            
+            ## Production must be zero if area harvested is 0.
+            zeroProd = datasets$query[get(processingParams$areaHarvestedValue) == 0,
+                                      c(processingParams$yearValue, productionParams$byKey),
+                                      with = FALSE]
+            modelProduction[[1]] =
+                modelProduction[[1]][!zeroProd,
+                                     on = c(processingParams$yearValue, productionParams$byKey)]
+            ## Production should not be imputed on 0Mn observations.  These are 
+            ## "missing but assumed negligble."
+            warning("HACK!  Not currently imputing on 0Mu but should (just ",
+                    "uncomment, once it's ok to do so)!")
+            assumedZero = datasets$query[(get(processingParams$productionValue) == 0 |
+                                          is.na(get(processingParams$productionValue))) &
+                                         get(processingParams$productionMethodFlag) == "n" &
+                                         get(processingParams$productionObservationFlag) == "M",
+                                         c(processingParams$yearValue, productionParams$byKey),
+                                         with = FALSE]
+            modelProduction[[1]] =
+                modelProduction[[1]][!assumedZero,
+                                     on = c(processingParams$yearValue, productionParams$byKey)]
+
             ## Save models
             save(modelYield, modelProduction, years,
                  file = paste0(R_SWS_SHARE_PATH, "/browningj/production/prodModel_",

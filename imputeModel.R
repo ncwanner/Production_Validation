@@ -1,4 +1,5 @@
 library(faosws)
+library(faoswsUtil)
 library(data.table)
 
 ## Setting up variables
@@ -33,7 +34,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "ffa49f3a-67b1-4968-ae9e-5052ca624a35"
+        token = "8bf8b4f3-7414-4c84-af1a-aeefc59ed0f4"
     )
 
     ## Source local scripts for this local test
@@ -118,12 +119,16 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
             }
             
             dataToSave = rbind(modelYield, modelProduction)
-            if(!is.null(dataToSave)){
+            ## HACK: Update China
+            warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
+            dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156"), ]
+            if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
                 dataToSave = dataToSave[!is.na(Value), ]
                 saveProductionData(data = dataToSave,
-                        areaHarvestedCode = datasets$formulaTuples[i, input],
-                        yieldCode = datasets$formulaTuples[i, productivity],
-                        productionCode = datasets$formulaTuples[i, output])
+                        areaHarvestedCode = formulaTuples[i, input],
+                        yieldCode = formulaTuples[i, productivity],
+                        productionCode = formulaTuples[i, output],
+                        normalized = TRUE)
             }
         }
     }
