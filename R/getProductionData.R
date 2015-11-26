@@ -7,6 +7,10 @@
 ##' @param dataContext An object of type DatasetKey (defined in faosws).  This
 ##' parameter provides the configuration of the dataset (i.e. which countries,
 ##' commodities, etc.).
+##' @param itemVar The column name of the commodity code column.
+##' @param areaVar The column name of the country code column.
+##' @param elementVar The column name of the element code column.
+##' @param yearVar The column name of the year column.
 ##'   
 ##' @return A list of length 3:
 ##' \itemize{
@@ -19,7 +23,10 @@
 ##' }
 ##'   
 
-getProductionData = function(dataContext){
+getProductionData = function(dataContext, itemVar = "measuredItemCPC",
+                             areaVar = "geographicAreaM49",
+                             elementVar = "measuredElement",
+                             yearVar = "timePointYears"){
     ## Setups
     formulaTuples =
         getYieldFormula(slot(slot(dataContext,

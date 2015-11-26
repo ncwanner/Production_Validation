@@ -242,8 +242,8 @@ for(singleItem in uniqueItem){
                     modelYield[[1]][!zeroYield, on = c(processingParams$yearValue, yieldParams$byKey)]
                 ## Yield should not be imputed on 0Mn observations.  These are
                 ## "missing but assumed negligble."
-                warning("HACK!  Not currently imputing on 0Mu but should (just ",
-                        "uncomment, once it's ok to do so)!")
+#                 warning("HACK!  Not currently imputing on 0Mu but should (just ",
+#                         "uncomment, once it's ok to do so)!")
                 assumedZero = datasets$query[(get(processingParams$yieldValue) == 0 |
                                               is.na(get(processingParams$yieldValue))) &
                                              get(processingParams$yieldMethodFlag) == "n" &
@@ -284,8 +284,8 @@ for(singleItem in uniqueItem){
                                      on = c(processingParams$yearValue, productionParams$byKey)]
             ## Production should not be imputed on 0Mn observations.  These are 
             ## "missing but assumed negligble."
-            warning("HACK!  Not currently imputing on 0Mu but should (just ",
-                    "uncomment, once it's ok to do so)!")
+#             warning("HACK!  Not currently imputing on 0Mu but should (just ",
+#                     "uncomment, once it's ok to do so)!")
             assumedZero = datasets$query[(get(processingParams$productionValue) == 0 |
                                           is.na(get(processingParams$productionValue))) &
                                          get(processingParams$productionMethodFlag) == "n" &
