@@ -39,16 +39,16 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
     requiredColumns = c("geographicAreaM49", "measuredItemCPC",
                         "timePointYears")
     requiredCodes = c(areaHarvestedCode, yieldCode, productionCode)
-#     additionalColumns = lapply(requiredCodes, function(x)
-#         paste0(c("Value_measuredElement_",
-#                  "flagObservationStatus_measuredElement_",
-#                  "flagMethod_measuredElement_"), x))
-#     requiredColumns = c(requiredColumns, do.call("c", additionalColumns))
     missingColumns = requiredColumns[!requiredColumns %in% colnames(data)]
     if(length(missingColumns) > 0)
         stop("Missing required columns, so data cannot be saved!  Missing:\n",
              paste0(missingColumns, collapse = "\n"))
     if(!normalized){
+        additionalColumns = lapply(requiredCodes, function(x)
+            paste0(c("Value_measuredElement_",
+                     "flagObservationStatus_measuredElement_",
+                     "flagMethod_measuredElement_"), x))
+        requiredColumns = c(requiredColumns, do.call("c", additionalColumns))
         data = data[, requiredColumns, with = FALSE]
     } else {
         data = data[, c(requiredColumns, "measuredElement", "Value",
@@ -88,13 +88,13 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
     attr(data, "sorted") = NULL
     if(nrow(data) >= 1 & !normalized){ # If invalid dates caused 0 rows, don't try to save.
         faosws::SaveData(domain = "agriculture",
-                         dataset = "agriculture",
+                         dataset = "aproduction",
                          data = data,
                          normalized = FALSE,
                          waitMode = waitMode)
     } else if(nrow(data) >= 1){
         faosws::SaveData(domain = "agriculture",
-                         dataset = "agriculture",
+                         dataset = "aproduction",
                          data = data,
                          normalized = TRUE,
                          waitMode = waitMode)
