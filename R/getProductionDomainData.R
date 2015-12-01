@@ -15,7 +15,7 @@ getProductionDomainData = function(key){
     ### Data Quality Checks
     stopifnot(is(key, "DatasetKey"))
     stopifnot(key@domain == "agriculture")
-    stopifnot(key@dataset == "agriculture")
+    stopifnot(key@dataset == "aproduction")
     requiredDimensions = c("geographicAreaM49", "measuredElement",
                            "measuredItemCPC", "timePointYears")
     stopifnot(names(key@dimensions) %in% requiredDimensions)

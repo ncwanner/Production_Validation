@@ -14,7 +14,7 @@
 ##' 
 
 getYieldFormula = function(itemCode, itemVar = "measuredItemCPC"){
-    itemData = GetCodeList(domain = "agriculture", dataset = "agriculture",
+    itemData = GetCodeList(domain = "agriculture", dataset = "aproduction",
                            dimension = itemVar, codes = itemCode)
     itemData = itemData[!is.na(type), ]
     if(nrow(itemData) == 0)

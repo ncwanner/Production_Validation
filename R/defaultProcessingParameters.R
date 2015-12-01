@@ -21,13 +21,11 @@
 ##' \item productionMethodFlag: The column name of the method flag corresponding
 ##'   to the production variable.
 ##' \item yieldValue: The column name of the yield variable.
-##' \item 
-##'   yieldObservationFlag: The column name of the observation flag 
+##' \item yieldObservationFlag: The column name of the observation flag 
 ##'   corresponding to the yield variable.
 ##' \item yieldMethodFlag: The column 
 ##'   name of the method flag corresponding to the yield variable.
-##' \item 
-##'   areaHarvestedValue: The column name of the area harvested variable.
+##' \item areaHarvestedValue: The column name of the area harvested variable.
 ##' \item areaHarvestedObservationFlag: The column name of the observation flag 
 ##'   corresponding to the area harvested variable. 
 ##' \item areaHarvestedMethodFlag: The column name of the method flag

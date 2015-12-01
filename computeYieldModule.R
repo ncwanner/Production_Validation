@@ -26,7 +26,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         # baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         # token = "0d1f2750-b8bc-4714-973d-759a81c5d994"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "bed251c6-3ecd-48aa-8e23-74e10ad92577"
+        token = "4a3d81b9-0c10-4e13-9390-d6edc842581b"
     )
     if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
@@ -107,16 +107,16 @@ getYieldData = function(dataContext){
 ## If all yields should be updated, extend the key
 if(allData){
     swsContext.datasets[[1]]@dimensions[[areaVar]]@keys =
-        GetCodeList(domain = "agriculture", dataset = "agriculture",
+        GetCodeList(domain = "agriculture", dataset = "aproduction",
                     dimension = areaVar)[type == "country", code]
     swsContext.datasets[[1]]@dimensions[[elementVar]]@keys =
-        GetCodeList(domain = "agriculture", dataset = "agriculture",
+        GetCodeList(domain = "agriculture", dataset = "aproduction",
                     dimension = elementVar)[type %in% yieldElements, code]
     swsContext.datasets[[1]]@dimensions[[itemVar]]@keys =
-        GetCodeList(domain = "agriculture", dataset = "agriculture",
+        GetCodeList(domain = "agriculture", dataset = "aproduction",
                     dimension = itemVar)[, code]
     swsContext.datasets[[1]]@dimensions[[yearVar]]@keys =
-        GetCodeList(domain = "agriculture", dataset = "agriculture",
+        GetCodeList(domain = "agriculture", dataset = "aproduction",
                     dimension = yearVar)[description != "wildcard", code]
 }
 
@@ -178,7 +178,7 @@ for(years in yearList){
             if(nrow(data$query) >= 1){
                 saveProductionData(data$query, areaHarvestedCode = filter$input,
                                    yieldCode = filter$productivity,
-                                   productionCode = filter$output)
+                                   productionCode = filter$output, normalized = FALSE)
             }
         })
         queryResult = c(queryResult, is(test, "try-error"))

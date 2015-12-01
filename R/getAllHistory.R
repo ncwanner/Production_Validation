@@ -46,20 +46,20 @@ getAllHistory = function(){
 
     allCountries =
         GetCodeList(domain = "agriculture",
-                    dataset = "agriculture",
+                    dataset = "aproduction",
                     dimension = "geographicAreaM49")[type == "country", code]
 
     ## Lets just test on subtree
     allItems =
         adjacent2edge(GetCodeTree(domain = "agriculture",
-                                  dataset = "agriculture",
+                                  dataset = "aproduction",
                                   dimension = "measuredItemCPC",
                                   roots = "01"))$children
 
     ## Only data after 1990 has history
     allYears =
         GetCodeList(domain = "agriculture",
-                    dataset = "agriculture",
+                    dataset = "aproduction",
                     dimension = "timePointYears")[description != "wildcard" ,code]
     allYears = as.numeric(allYears)
     allYears = allYears[allYears >= 1990]
@@ -67,7 +67,7 @@ getAllHistory = function(){
     ## Create the new expanded keys
     newKey = DatasetKey(
         domain = "agriculture",
-        dataset = "agriculture",
+        dataset = "aproduction",
         dimensions = list(
             Dimension(name = "geographicAreaM49",
                       keys = allCountries),
