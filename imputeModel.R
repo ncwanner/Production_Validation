@@ -34,7 +34,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "8bf8b4f3-7414-4c84-af1a-aeefc59ed0f4"
+        token = "8ace5d70-ddb5-42dd-9a5d-3a250d3dc6b4"
     )
 
     ## Source local scripts for this local test

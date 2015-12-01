@@ -37,7 +37,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "9999fcbd-b439-401e-a572-717908f0b0dc"
+        token = "bf9800f1-ffd7-455c-9977-ebcea8a5c6aa"
     )
 
     ## Source local scripts for this local test
@@ -45,8 +45,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         source(file)
 }
 
-allCountryCodes = GetCodeList(domain = slot(swsContext.datasets[[1]], "domain"),
-                              dataset = slot(swsContext.datasets[[1]], "dataset"),
+allCountryCodes = GetCodeList(domain = "agriculture",
+                              dataset = "aproduction",
                               dimension = areaVar)
 allCountryCodes = unique(allCountryCodes[type == "country", code])
 ## HACK: Update China
@@ -54,8 +54,8 @@ warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
 allCountryCodes = c(allCountryCodes, "158", "1248")
 allCountryCodes = unique(allCountryCodes)
 
-allItemCodes = GetCodeList(domain = slot(swsContext.datasets[[1]], "domain"),
-                           dataset = slot(swsContext.datasets[[1]], "dataset"),
+allItemCodes = GetCodeList(domain = "agriculture",
+                           dataset = "aproduction",
                            dimension = "measuredItemCPC")
 allItemCodes = unique(allItemCodes[!is.na(type), code])
 allPrimaryCodes = c("01921.01", "02111", "02112", "02131", "02122", "02123",
@@ -88,17 +88,18 @@ allDerivedCodes = c(306, 307, 1242, 162, 165, 237, 244, 252, 256, 257, 258,
 allDerivedCodes = faoswsUtil::fcl2cpc(formatC(allDerivedCodes, width = 4, flag = "0"))
 allItemCodes = c(allPrimaryCodes, allDerivedCodes)
 allItemCodes = allItemCodes[!is.na(allItemCodes)]
+# For testing purposes:
+# allItemCodes = swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys
 
 warning("Should identify this with faoswsUtil:::getCommodityTree")
 
-yieldFormula = GetTableData(schemaName = "ess",
-                            tableName = "item_type_yield_elements")
+yieldFormula = ReadDatatable(table = "item_type_yield_elements")
 productionElements = unique(unlist(yieldFormula[, list(element_31, element_41,
                                                        element_51)]))
 
 fullKey = DatasetKey(
-    domain = slot(swsContext.datasets[[1]], "domain"),
-    dataset = slot(swsContext.datasets[[1]], "dataset"),
+    domain = "agriculture",
+    dataset = "aproduction",
     dimensions = list(
         geographicAreaM49 = Dimension(name = "geographicAreaM49",
                                       keys = allCountryCodes),
@@ -150,8 +151,10 @@ for(singleItem in uniqueItem){
             }
             
             ## Some rows may be missing entirely, and thus we may fail to impute
-            ## for those years/countries/commodities if we don't add rows with
-            ## missing data.  Do that here:
+            ## for those years/countries/commodities if we don't add rows with 
+            ## missing data.  However, if the last observed value was a 0 we
+            ## should assume that commodity has remained 0.  0Mu, or missing,
+            ## should not be considered for this adjustment.
             countryCommodity = unique(datasets$query[, c(areaVar, itemVar),
                                                      with = FALSE])
             ## To merge two data.tables, we need a key column.  Create a dummy
@@ -168,6 +171,12 @@ for(singleItem in uniqueItem){
             datasets$query = merge(datasets$query, fullData,
                                    by = c(itemVar, areaVar, yearVar),
                                    all.y = TRUE)
+            ## Replace NA/NA/NA with 0/E/i if last non missing value was 0
+            lastVal = getLastValue(d = datasets$query, missingObsFlag = "M",
+                                   missingMetFlag = "u")
+            lastVal = lastVal[, stopSeries := lastValue == 0]
+            datasets$query[lastVal, stopSeries := stopSeries,
+                           on = c("geographicAreaM49", "measuredItemCPC")]
             ## Replace NA/NA/NA with 0/M/u
             valCols = grep("Value_", colnames(datasets$query), value = TRUE)
             obsFlagCols = grep("flagObservation", colnames(datasets$query),
@@ -177,7 +186,13 @@ for(singleItem in uniqueItem){
             sapply(obsFlagCols, function(colname){
                 datasets$query[is.na(get(colname)), c(colname) := "M"]})
             sapply(metFlagCols, function(colname){
-                datasets$query[is.na(get(colname)), c(colname) := "u"]})
+                # Note: originally this code was designed to work by imputing 
+                # 0M.  Then, it was realized that 0Mn should not be imputed. 
+                # Then it was decided that most of the 0Mu were created by 0M in
+                # the old system, and some of these are actually 0Mn while some 
+                # are 0Mu.  Thus, it was decided to not impute on these either. 
+                # The module needs a flag to impute on, though, so make up 0MXX.
+                datasets$query[is.na(get(colname)), c(colname) := "XX"]})
             sapply(valCols, function(colname){
                 datasets$query[is.na(get(colname)), c(colname) := 0]})
 
@@ -246,7 +261,7 @@ for(singleItem in uniqueItem){
 #                         "uncomment, once it's ok to do so)!")
                 assumedZero = datasets$query[(get(processingParams$yieldValue) == 0 |
                                               is.na(get(processingParams$yieldValue))) &
-                                             get(processingParams$yieldMethodFlag) == "n" &
+                                             get(processingParams$yieldMethodFlag) %in% c("u", "n") &
                                              get(processingParams$yieldObservationFlag) == "M",
                                              c(processingParams$yearValue, yieldParams$byKey),
                                              with = FALSE]
@@ -257,8 +272,9 @@ for(singleItem in uniqueItem){
                 ## NULL because it throws an error if no observations are
                 ## missing and estimated.
                 if(!is.null(modelYield$fit$fit)){
-                    datasets$query[is.na(get(yieldVar)),
-                                   yieldVar := modelYield$fit$fit]
+                    datasets$query[modelYield$fit, c(yieldVar) := fit,
+                                   on = c("timePointYears", "geographicAreaM49",
+                                          "measuredItemCPC"), all = TRUE]
                 }
                 balanceProduction(data = datasets$query,
                                   processingParameters = processingParams)
@@ -284,11 +300,11 @@ for(singleItem in uniqueItem){
                                      on = c(processingParams$yearValue, productionParams$byKey)]
             ## Production should not be imputed on 0Mn observations.  These are 
             ## "missing but assumed negligble."
-#             warning("HACK!  Not currently imputing on 0Mu but should (just ",
-#                     "uncomment, once it's ok to do so)!")
+            warning("HACK!  Not currently imputing on 0Mu but should (just ",
+                    "uncomment, once it's ok to do so)!")
             assumedZero = datasets$query[(get(processingParams$productionValue) == 0 |
                                           is.na(get(processingParams$productionValue))) &
-                                         get(processingParams$productionMethodFlag) == "n" &
+                                         get(processingParams$productionMethodFlag) %in% c("n") &
                                          get(processingParams$productionObservationFlag) == "M",
                                          c(processingParams$yearValue, productionParams$byKey),
                                          with = FALSE]
