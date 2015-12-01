@@ -43,6 +43,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Source local scripts for this local test
     for(file in dir(apiDirectory, full.names = T))
         source(file)
+    
+    suppressPackageStartupMessages(library(doParallel))
+    library(foreach)
+    registerDoParallel(cores=detectCores(all.tests=TRUE))
 }
 
 allCountryCodes = GetCodeList(domain = "agriculture",
@@ -90,6 +94,7 @@ allItemCodes = c(allPrimaryCodes, allDerivedCodes)
 allItemCodes = allItemCodes[!is.na(allItemCodes)]
 # For testing purposes:
 # allItemCodes = swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys
+# allItemCodes = GetCodeList("agriculture", "aproduction", "measuredItemCPC")[type == "LSPR", code]
 
 warning("Should identify this with faoswsUtil:::getCommodityTree")
 
@@ -111,14 +116,16 @@ fullKey = DatasetKey(
                                    keys = as.character(years)) # 15 years
         )
     )
-
+        
 subKey = fullKey
 uniqueItem = fullKey@dimensions$measuredItemCPC@keys
 
 successCount = 0
 failCount = 0
-
-for(singleItem in uniqueItem){
+        
+for(iter in 1:length(uniqueItem)){
+# foreach(iter = 1:length(uniqueItem)){
+    singleItem = uniqueItem[iter]
     subKey@dimensions$measuredItemCPC@keys = singleItem
     print(paste0("Imputation for item: ", singleItem))
     
@@ -129,20 +136,32 @@ for(singleItem in uniqueItem){
         ##                 calculated a priori to the
         ##                 imputation module.
         
-        ## Some commodities have multiple formulas.  For example, the LNSP
-        ## (livestock non-primary) item type has beef, indigenous beef, and
-        ## biological beef.  Rather than being different commodities, these
-        ## three commodities are stored under the beef commodity with
-        ## different element codes for production/yield/output.  So, we
-        ## need to process each one and thus loop over all the
-        ## formulaTuples (which specifies the multiple element codes if
-        ## applicable).
+        ## Some commodities have multiple formulas.  For example, the LNSP 
+        ## (livestock non-primary) item type has beef, indigenous beef, and 
+        ## biological beef.  Rather than being different commodities, these 
+        ## three commodities are stored under the beef commodity with different 
+        ## element codes for production/yield/output.  So, we need to process 
+        ## each one and thus loop over all the formulaTuples (which specifies 
+        ## the multiple element codes if applicable).  In this looping, we'll 
+        ## filter datasets$query as required, so we need to copy and save it
+        ## here.
+        savedData = copy(datasets$query)
         for(i in 1:nrow(datasets$formulaTuples)){
             cat("Processing pair", i, "of", nrow(datasets$formulaTuples),
                 "element triples.\n")
+            datasets$query = copy(savedData)
+            codes = datasets$formulaTuples[i, c("input", "productivity",
+                                                "output"), with = FALSE]
+            allCols = c("measuredItemCPC", "geographicAreaM49", "timePointYears",
+                        sapply(codes, function(code){
+                            paste0(c("Value", "flagObservationStatus", "flagMethod"),
+                                   "_measuredElement_", code)
+                        })
+            )
+            datasets$query = datasets$query[, allCols, with = FALSE]
 
             valueCols = paste0(datasets$prefixTuples$valuePrefix,
-                               datasets$formulaTuples[, c("productivity", "output"),
+                               datasets$formulaTuples[i, c("productivity", "output"),
                                                       with = FALSE])
             if(all(is.na(datasets$query[[valueCols[1]]])) &
                all(is.na(datasets$query[[valueCols[2]]]))){
@@ -171,31 +190,10 @@ for(singleItem in uniqueItem){
             datasets$query = merge(datasets$query, fullData,
                                    by = c(itemVar, areaVar, yearVar),
                                    all.y = TRUE)
-            ## Replace NA/NA/NA with 0/E/i if last non missing value was 0
-            lastVal = getLastValue(d = datasets$query, missingObsFlag = "M",
-                                   missingMetFlag = "u")
-            lastVal = lastVal[, stopSeries := lastValue == 0]
-            datasets$query[lastVal, stopSeries := stopSeries,
-                           on = c("geographicAreaM49", "measuredItemCPC")]
-            ## Replace NA/NA/NA with 0/M/u
-            valCols = grep("Value_", colnames(datasets$query), value = TRUE)
-            obsFlagCols = grep("flagObservation", colnames(datasets$query),
-                               value = TRUE)
-            metFlagCols = grep("flagMethod", colnames(datasets$query),
-                               value = TRUE)
-            sapply(obsFlagCols, function(colname){
-                datasets$query[is.na(get(colname)), c(colname) := "M"]})
-            sapply(metFlagCols, function(colname){
-                # Note: originally this code was designed to work by imputing 
-                # 0M.  Then, it was realized that 0Mn should not be imputed. 
-                # Then it was decided that most of the 0Mu were created by 0M in
-                # the old system, and some of these are actually 0Mn while some 
-                # are 0Mu.  Thus, it was decided to not impute on these either. 
-                # The module needs a flag to impute on, though, so make up 0MXX.
-                datasets$query[is.na(get(colname)), c(colname) := "XX"]})
-            sapply(valCols, function(colname){
-                datasets$query[is.na(get(colname)), c(colname) := 0]})
-
+            ## Replace NA/NA/NA with 0/E/i or 0/M/u
+            ignoreZeroSeries(datasets$query, missingObsFlag = "M", missingMetFlag = "u",
+                             firstImputeYear = 2010)
+            
             ## Recompute the yield
             cat("Computing yield...\n")
             processingParams = defaultProcessingParameters(
@@ -222,16 +220,29 @@ for(singleItem in uniqueItem){
                        "|", areaVar, ")")
             yieldParams$estimateNoData = TRUE
             yieldParams$byKey = c(areaVar, itemVar)
+            ## Add moving average model with period of 3 years
+            yieldParams$ensembleModels[[length(yieldParams$ensembleModels)+1]] =
+                ensembleModel(model = defaultMovingAverage,
+                              extrapolationRange = Inf, level = "local")
+            names(yieldParams$ensembleModels)[[length(yieldParams$ensembleModels)]] =
+                "defaultMovingAverage"
             ## Impute production
             productionCode = datasets$formulaTuples[, output][i]
             productionParams = 
                 defaultImputationParameters(variable = as.numeric(productionCode))
             productionParams$estimateNoData = TRUE
             productionParams$byKey = c(areaVar, itemVar)
+            ## Add moving average model with period of 3 years
+            productionParams$ensembleModels[[length(productionParams$ensembleModels)+1]] =
+                ensembleModel(model = defaultMovingAverage,
+                              extrapolationRange = Inf, level = "local")
+            names(productionParams$ensembleModels)[[length(productionParams$ensembleModels)]] =
+                "defaultMovingAverage"
             
             datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
             datasets$query = datasets$query[countryCnt > 1, ]
             datasets$query[, countryCnt := NULL]
+            cat("Imputing yield...\n")
             png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/yield_",
                                singleItem, "_", i, ".png"), width = 2300, height = 2300)
             modelYield = try(faoswsImputation:::buildEnsembleModel(
@@ -285,6 +296,7 @@ for(singleItem in uniqueItem){
             }
             
             ## Impute production
+            cat("Imputing production...\n")
             png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/production_",
                    singleItem, "_", i, ".png"), width = 2300, height = 2300)
             modelProduction = faoswsImputation:::buildEnsembleModel(
@@ -298,6 +310,8 @@ for(singleItem in uniqueItem){
             modelProduction[[1]] =
                 modelProduction[[1]][!zeroProd,
                                      on = c(processingParams$yearValue, productionParams$byKey)]
+            ## Round production values to whole numbers
+            modelProduction[[1]][, fit := round(fit)]
             ## Production should not be imputed on 0Mn observations.  These are 
             ## "missing but assumed negligble."
             warning("HACK!  Not currently imputing on 0Mu but should (just ",
