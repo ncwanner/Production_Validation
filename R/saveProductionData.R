@@ -60,21 +60,23 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
         cat("Removing invalid date/country combinations from the dataset.\n")
     data = removeInvalidDates(data)
     
+    ## Code edit: If a value is NA, we don't really know if it's 0Mu, 0Mn, or
+    ## something else.  So, let's just not save it!
     ## Can't save NA's back to the database, so convert to 0M
-    if(!normalized){
-        for(code in c(areaHarvestedCode, yieldCode, productionCode)){
-            valName = paste0("Value_measuredElement_", code)
-            obsFlag = paste0("flagObservationStatus_measuredElement_", code)
-            methodFlag = paste0("flagMethod_measuredElement_", code)
-            data[is.na(get(valName)) | get(obsFlag) == "M",
-                 `:=`(c(valName, obsFlag, methodFlag),
-                      list(0, "M", "n"))]
-        }
-    } else {
-        data[is.na(Value) | flagObservationStatus == "M",
-                 `:=`(c("Value", "flagObservationStatus", "flagMethod"),
-                      list(0, "M", "n"))]
-    }
+#     if(!normalized){
+#         for(code in c(areaHarvestedCode, yieldCode, productionCode)){
+#             valName = paste0("Value_measuredElement_", code)
+#             obsFlag = paste0("flagObservationStatus_measuredElement_", code)
+#             methodFlag = paste0("flagMethod_measuredElement_", code)
+#             data[is.na(get(valName)) | get(obsFlag) == "M",
+#                  `:=`(c(valName, obsFlag, methodFlag),
+#                       list(0, "M", "n"))]
+#         }
+#     } else {
+#         data[is.na(Value) | flagObservationStatus == "M",
+#                  `:=`(c("Value", "flagObservationStatus", "flagMethod"),
+#                       list(0, "M", "n"))]
+#     }
     
     ## Collapse to passed context
     data = data[geographicAreaM49 %in% context@dimensions$geographicAreaM49@keys &
