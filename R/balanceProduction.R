@@ -22,7 +22,8 @@ balanceProduction = function(data, processingParameters,
     
     ### Type "p" instead of "processingParameters"
     p = processingParameters
-    data[get(p$productionObservationFlag) == "M",
+    data[get(p$productionObservationFlag) == "M" &
+         get(p$productionMethodFlag) == "u",
          c(p$productionValue) := NA]
         
     ### Impute only when area and yield are available and production isn't
@@ -31,8 +32,8 @@ balanceProduction = function(data, processingParameters,
                    !is.na(get(p$yieldValue))]          # yield is missing
 
     data[filter, c(p$productionValue) :=
-             get(p$areaHarvestedValue) * get(p$yieldValue) /
-             unitConversion]
+             sapply(get(p$areaHarvestedValue) * get(p$yieldValue) /
+                        unitConversion, FUN = roundResults)]
     data[filter, c(p$productionObservationFlag) := newObservationFlag]
     ## Wrap last call in invisible() so no data.table is returned
     invisible(data[filter, c(p$productionMethodFlag) := newMethodFlag])

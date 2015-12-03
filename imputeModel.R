@@ -34,7 +34,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "8ace5d70-ddb5-42dd-9a5d-3a250d3dc6b4"
+        token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
     )
 
     ## Source local scripts for this local test
@@ -100,6 +100,7 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                                                   geographicAreaM49 %in% countryM49, ]
                 modelProduction[, measuredElement := formulaTuples[i, output]]
                 modelProduction[, Value := fit]
+                modelProduction[, Value := sapply(Value, roundResults)]
                 modelProduction[, fit := NULL]
                 modelProduction[, flagObservationStatus := "I"]
                 modelProduction[, flagMethod := "e"]
@@ -122,8 +123,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
             ## HACK: Update China
             warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
             dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156"), ]
+            dataToSave = dataToSave[!is.na(Value), ]
             if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
-                dataToSave = dataToSave[!is.na(Value), ]
                 saveProductionData(data = dataToSave,
                         areaHarvestedCode = formulaTuples[i, input],
                         yieldCode = formulaTuples[i, productivity],

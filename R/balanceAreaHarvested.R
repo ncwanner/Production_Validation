@@ -25,7 +25,8 @@ balanceAreaHarvested = function(data, processingParameters,
 
     ### Save clutter by renaming "processingParameters" to "p" locally.
     p = processingParameters
-    data[get(p$areaHarvestedObservationFlag) == "M",
+    data[get(p$areaHarvestedObservationFlag) == "M" &
+         get(p$areaHarvestedMethodFlag) == "u",
          c(p$areaHarvestedValue) := NA]
 
     
@@ -35,8 +36,8 @@ balanceAreaHarvested = function(data, processingParameters,
                   !is.na(get(p$productionValue))]     # production is available
     
     data[filter, c(p$areaHarvestedValue) :=
-             computeRatio(get(p$productionValue), get(p$yieldValue)) *
-             unitConversion]
+             sapply(computeRatio(get(p$productionValue), get(p$yieldValue)) *
+                        unitConversion, roundResults)]
     data[filter, c(p$areaHarvestedObservationFlag) := newObservationFlag]
     ## Wrap last call in invisible() so no data.table is returned
     invisible(data[filter, c(p$areaHarvestedMethodFlag) := newMethodFlag])
