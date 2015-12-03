@@ -20,22 +20,24 @@ DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
 if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
-    
-    ## Get SWS Parameters
-    GetTestEnvironment(
-        # baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        # token = "0d1f2750-b8bc-4714-973d-759a81c5d994"
-        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "4a3d81b9-0c10-4e13-9390-d6edc842581b"
-    )
+
     if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
                     full.names = TRUE)
+        SetClientFiles("~/R certificate files/QA/")
     } else if(Sys.info()[7] == "rockc_000"){ # Josh personal
         files = dir("~/Github/faoswsProduction/R/", full.names = TRUE)
     } else {
         stop("Add your github directory here!")
     }
+        
+    ## Get SWS Parameters
+    GetTestEnvironment(
+        # baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
+        # token = "0d1f2750-b8bc-4714-973d-759a81c5d994"
+        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        token = "feed1154-6590-4ea9-9e6e-2c81f960d0dd"
+    )
     sapply(files, source)
 } else {
     cat("Working on SWS...\n")
@@ -140,7 +142,8 @@ for(years in yearList){
     swsContext.datasets[[1]]@dimensions$timePointYears@keys = years
     formulaTuples =
         getYieldFormula(slot(slot(swsContext.datasets[[1]],
-                                  "dimensions")$measuredItemCPC, "keys"))
+                                  "dimensions")$measuredItemCPC, "keys"),
+                        warn = TRUE)
     uniqueLevels = unique(formulaTuples[, list(input, productivity, output,
                                                unitConversion)])
     ## FOR LOOP!  This could be vectorized, but it would require some kind of

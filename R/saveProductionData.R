@@ -83,6 +83,22 @@ saveProductionData = function(data, areaHarvestedCode = "5312",
                 measuredItemCPC %in% context@dimensions$measuredItemCPC@keys &
                 timePointYears %in% context@dimensions$timePointYears@keys, ]
         
+#     ## Round the data
+#     if(!normalized){
+#         valCols = paste0("Value_measuredElement_",
+#                          c(areaHarvestedCode, productionCode))
+#         for(code in c(areaHarvestedCode, productionCode)){
+#             data[get(paste0("flagObservationStatus_measuredElement_", code)) == "I" &
+#                  get(paste0("flagObservationStatus_measuredElement_", code)) %in% c("i", "e"),
+#                      c(paste0("Value_measuredElement_", code) :=
+#                            sapply(get(paste0("Value_measuredElement_", code)),
+#                                   roundResults)]
+#         }
+#     } else {
+#         data[measuredElement %in% c(areaHarvestedCode, productionCode),
+#              Value := sapply(Value, roundResults)]
+#     }
+    
     ## Save the data back
     if(verbose)
         cat("Attempting to write data back to the database.\n")

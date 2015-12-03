@@ -43,7 +43,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Source local scripts for this local test
     for(file in dir(apiDirectory, full.names = T))
         source(file)
-    
+
     suppressPackageStartupMessages(library(doParallel))
     library(foreach)
     registerDoParallel(cores=detectCores(all.tests=TRUE))
@@ -62,6 +62,7 @@ allItemCodes = GetCodeList(domain = "agriculture",
                            dataset = "aproduction",
                            dimension = "measuredItemCPC")
 allItemCodes = unique(allItemCodes[!is.na(type), code])
+
 allPrimaryCodes = c("01921.01", "02111", "02112", "02131", "02122", "02123",
                  "02191", "02140", "02132", "02151", "02154", "02153", "02152",
                  "01270", "01253.02", "0142", "01371", "01374", "01376",
@@ -95,6 +96,7 @@ allItemCodes = allItemCodes[!is.na(allItemCodes)]
 # For testing purposes:
 # allItemCodes = swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys
 # allItemCodes = GetCodeList("agriculture", "aproduction", "measuredItemCPC")[type == "LSPR", code]
+# allItemCodes = grep("011.*", allItemCodes, value = TRUE)
 
 warning("Should identify this with faoswsUtil:::getCommodityTree")
 
@@ -268,11 +270,9 @@ for(iter in 1:length(uniqueItem)){
                     modelYield[[1]][!zeroYield, on = c(processingParams$yearValue, yieldParams$byKey)]
                 ## Yield should not be imputed on 0Mn observations.  These are
                 ## "missing but assumed negligble."
-#                 warning("HACK!  Not currently imputing on 0Mu but should (just ",
-#                         "uncomment, once it's ok to do so)!")
                 assumedZero = datasets$query[(get(processingParams$yieldValue) == 0 |
                                               is.na(get(processingParams$yieldValue))) &
-                                             get(processingParams$yieldMethodFlag) %in% c("u", "n") &
+                                             get(processingParams$yieldMethodFlag) %in% c("-", "n") &
                                              get(processingParams$yieldObservationFlag) == "M",
                                              c(processingParams$yearValue, yieldParams$byKey),
                                              with = FALSE]
@@ -313,12 +313,13 @@ for(iter in 1:length(uniqueItem)){
             ## Round production values to whole numbers
             modelProduction[[1]][, fit := round(fit)]
             ## Production should not be imputed on 0Mn observations.  These are 
-            ## "missing but assumed negligble."
-            warning("HACK!  Not currently imputing on 0Mu but should (just ",
-                    "uncomment, once it's ok to do so)!")
+            ## "missing but assumed negligble."  Additionally, we have not been 
+            ## able to identify 0M from the old system as 0Mu or 0Mn and have
+            ## thus assigned them the flags 0M-.  These should be treated as
+            ## 0Mn in this case.
             assumedZero = datasets$query[(get(processingParams$productionValue) == 0 |
                                           is.na(get(processingParams$productionValue))) &
-                                         get(processingParams$productionMethodFlag) %in% c("n") &
+                                         get(processingParams$productionMethodFlag) %in% c("-", "n") &
                                          get(processingParams$productionObservationFlag) == "M",
                                          c(processingParams$yearValue, productionParams$byKey),
                                          with = FALSE]

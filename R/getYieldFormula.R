@@ -1,19 +1,21 @@
 ##' Get Yield Formula
 ##' 
 ##' This function provides the element codes (for production, yield, and output)
-##' and conversion factor which correspond to the particular item code of
+##' and conversion factor which correspond to the particular item code of 
 ##' interest.
 ##' 
 ##' @param itemCode The cpc code providing the commodity of interest.  This 
-##' should be a character string.
+##'   should be a character string.
 ##' @param itemVar The name of the item variable column.
+##' @param warn Logical.  If FALSE, an error is thrown for missing element
+##'   types.  If TRUE, it is simply a warning.
 ##'   
-##' @return A data.table object providing the relevant element codes.  In some
-##' cases, there may be multiple rows, as it is possible to have multiple
-##' elements which hold production, yield, and output data.
-##' 
+##' @return A data.table object providing the relevant element codes.  In some 
+##'   cases, there may be multiple rows, as it is possible to have multiple 
+##'   elements which hold production, yield, and output data.
+##'   
 
-getYieldFormula = function(itemCode, itemVar = "measuredItemCPC"){
+getYieldFormula = function(itemCode, itemVar = "measuredItemCPC", warn = FALSE){
     itemData = GetCodeList(domain = "agriculture", dataset = "aproduction",
                            dimension = itemVar, codes = itemCode)
     itemData = itemData[!is.na(type), ]
@@ -22,16 +24,19 @@ getYieldFormula = function(itemCode, itemVar = "measuredItemCPC"){
              "database?")
     uniqueItemTypes = unique(itemData$type)
     condition =
-        paste0("WHERE item_type IN (",
+        paste0("item_type IN (",
                paste(paste0("'", as.character(uniqueItemTypes), "'"),
                       collapse = ", "), ")")
-    yieldFormula =
-        GetTableData(schemaName = "ess",
-                     tableName = "item_type_yield_elements",
-                     whereClause = condition)
+    yieldFormula = ReadDatatable(table = "item_type_yield_elements",
+                                 where = condition)
     if(any(!uniqueItemTypes %in% yieldFormula$item_type)){
-        stop("No data in item_type_yield_elements for codes supplied",
-             " (item types are ", paste(uniqueItemTypes, collapse = ", "), ")")
+        if(!warn){
+            stop("No data in item_type_yield_elements for codes supplied",
+                 " (item types are ", paste(uniqueItemTypes, collapse = ", "), ")")
+        } else {
+            warning("No data in item_type_yield_elements for codes supplied",
+                 " (item types are ", paste(uniqueItemTypes, collapse = ", "), ")")
+        }
     }
     yieldFormula = merge.data.frame(itemData, yieldFormula,
                                     by.x = "type", by.y = "item_type")
