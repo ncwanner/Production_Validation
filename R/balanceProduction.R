@@ -30,6 +30,9 @@ balanceProduction = function(data, processingParameters,
     filter = data[,!is.na(get(p$areaHarvestedValue)) & # area is available
                     is.na(get(p$productionValue)) &    # production is missing
                    !is.na(get(p$yieldValue))]          # yield is missing
+    filter2 = data[,get(p$areaHarvestedObservationFlag) != "M" &
+                    get(p$yieldObservationFlag) != "M"]
+    filter = filter & filter2
 
     data[filter, c(p$productionValue) :=
              sapply(get(p$areaHarvestedValue) * get(p$yieldValue) /

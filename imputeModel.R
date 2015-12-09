@@ -120,9 +120,9 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
             }
             
             dataToSave = rbind(modelYield, modelProduction)
-            ## HACK: Update China
+            ## HACK: Update China and Pacific
             warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
-            dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156"), ]
+            dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156", "582"), ]
             dataToSave = dataToSave[!is.na(Value), ]
             if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
                 saveProductionData(data = dataToSave,

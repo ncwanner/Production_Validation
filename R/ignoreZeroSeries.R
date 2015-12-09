@@ -44,11 +44,22 @@ ignoreZeroSeries = function(d, missingObsFlag = "M", missingMetFlag = "u",
     metFlagCols = grep("flagMethod", colnames(d), value = TRUE)
     postfix = gsub("Value", "", valCols)
     
+    ## If any value is 0M-, stop the series
+    filter = lapply(postfix, function(code){
+        d[, (is.na(get(paste0("Value", code))) |
+                 get(paste0("Value", code)) == 0) &
+            sapply(get(paste0("flagObservationStatus", code)), identical, y = "M") &
+            sapply(get(paste0("flagMethod", code)), identical, y = "-")]
+    })
+    ## May be a better way to do this:
+    filter = apply(do.call("cbind", filter), 1, any)
+    d[, stopSeries := stopSeries | filter]
+    
     sapply(postfix, function(p){
-        d[is.na(get(paste0("Value", p))) & stopSeries,
+        d[(stopSeries),
                 c(paste0(c("Value", "flagObservationStatus", "flagMethod"), p)) :=
                     list(0, "E", "-")]
-        d[is.na(get(paste0("Value", p))) & !stopSeries,
+        d[is.na(get(paste0("Value", p))) & !(stopSeries),
                 c(paste0(c("Value", "flagObservationStatus", "flagMethod"), p)) :=
                     list(0, "M", "u")]
         })

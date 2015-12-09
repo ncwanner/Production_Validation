@@ -21,24 +21,35 @@ DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
     
+    # server = "QA"
+    server = "Prod"
+    
+    stopifnot(server %in% c("QA", "Prod"))
     ## Define directories
     if(Sys.info()[7] == "josh"){
         apiDirectory = "~/Documents/Github/faoswsProduction/R/"
-        R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
-        ## R_SWS_SHARE_PATH = "/media/hqlprsws2_prod"
+        R_SWS_SHARE_PATH = ifelse(server == "Prod", "/media/hqlprsws2_prod/",
+                                  "/media/hqlprsws1_qa/")
     } else if(Sys.info()[7] == "rockc_000"){
         apiDirectory = "~/Github/faoswsProduction/R/"
         stop("Can't connect to share drives!")
     }
 
     ## Get SWS Parameters
-    SetClientFiles(dir = "~/R certificate files/QA")
-    GetTestEnvironment(
-        ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
-        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "bf9800f1-ffd7-455c-9977-ebcea8a5c6aa"
-    )
+    SetClientFiles(dir = ifelse(server == "Prod",
+                                "~/R certificate files/Production/",
+                                "~/R certificate files/QA/"))
+    if(server == "Prod"){
+        GetTestEnvironment(
+            baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
+            token = "b3c0a795-29dd-45e9-9b96-175a9f19f7f9"
+        )
+    } else {
+        GetTestEnvironment(
+            baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+            token = "bf9800f1-ffd7-455c-9977-ebcea8a5c6aa"
+        )
+    }
 
     ## Source local scripts for this local test
     for(file in dir(apiDirectory, full.names = T))
@@ -71,7 +82,8 @@ allPrimaryCodes = c("01921.01", "02111", "02112", "02131", "02122", "02123",
                  "01312", "01801", "01640", "01610", "0231", "01460", "02194",
                  "01290.90", "01359.90", "01442", "01444", "02211", "0111",
                  "0112", "0118", "0113", "01703", "01707", "01809", "0115",
-                 "01491.01", "0114", "01520.01", "01802", "01950.01", "01510",
+                 "01491.01", "0114", "01520", "01540", "01599.91",
+                 "01520.01", "01802", "01950.01", "01510",
                  "02121.01", "01234", "01343", "01315", "01321", "01342.01",
                  "01345", "01446", "0116", "01314", "01599.91", "01313",
                  "21170.92", "01318", "01192", "01195", "01199.02", "01704",
@@ -122,11 +134,14 @@ fullKey = DatasetKey(
 subKey = fullKey
 uniqueItem = fullKey@dimensions$measuredItemCPC@keys
 
+# load("/media/hqlprsws2_prod/browningj/production/failures.RData")
+# uniqueItem = as.character(failures)
+
 successCount = 0
-failCount = 0
-        
+failList = c()
+
+# result = foreach(iter = 1:length(uniqueItem)) %dopar% {
 for(iter in 1:length(uniqueItem)){
-# foreach(iter = 1:length(uniqueItem)){
     singleItem = uniqueItem[iter]
     subKey@dimensions$measuredItemCPC@keys = singleItem
     print(paste0("Imputation for item: ", singleItem))
@@ -335,15 +350,24 @@ for(iter in 1:length(uniqueItem)){
     }) # close try block
     if(inherits(impute, "try-error")){
         print("Imputation Module Failed")
-        failCount = failCount + 1
+        failList = c(failList, singleItem)
     } else {
         print("Imputation Module Executed Successfully")
         successCount = successCount + 1
     }
+    data.frame(cpc = singleItem, success = !inherits(impute, "try-error"))
 }
 
-paste0("Successfully built ", successCount, " models out of ",
-       failCount + successCount, " commodities.")
+result = do.call("rbind", result)
+paste0("Successfully built ", sum(result$success), " models out of ",
+       nrow(result), " commodities.\n",
+       "Failed commodities: ", paste(result$cpc[!result$success], collapse = ", "))
+
+failures = result$cpc[!result$success]
+save(failures, file = ifelse(
+    server == "Prod", "/media/hqlprsws2_prod/browningj/production/failures.RData",
+    "/media/hqlprsws1_qa/browningj/production/failures.RData"))
+    
 
 # builtModels = dir(paste0(R_SWS_SHARE_PATH, "/browningj/production/"),
 #                   pattern = "prodModel*")
