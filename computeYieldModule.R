@@ -24,7 +24,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     if(Sys.info()[7] == "josh"){ # Josh work
         files = dir("~/Documents/Github/faoswsProduction/R/",
                     full.names = TRUE)
-        SetClientFiles("~/R certificate files/QA/")
+        SetClientFiles("~/R certificate files/Production/")
     } else if(Sys.info()[7] == "rockc_000"){ # Josh personal
         files = dir("~/Github/faoswsProduction/R/", full.names = TRUE)
     } else {
@@ -33,10 +33,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         
     ## Get SWS Parameters
     GetTestEnvironment(
-        # baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        # token = "0d1f2750-b8bc-4714-973d-759a81c5d994"
-        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "feed1154-6590-4ea9-9e6e-2c81f960d0dd"
+        baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
+        token = "916b73ad-2ef5-4141-b1c4-769c73247edd"
+        # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        # token = "feed1154-6590-4ea9-9e6e-2c81f960d0dd"
     )
     sapply(files, source)
 } else {

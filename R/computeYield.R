@@ -31,11 +31,16 @@ computeYield = function(data, processingParameters, newObservationFlag = "I",
     ## Balance yield values only when they're missing
     missingYield = is.na(data[[pp$yieldValue]]) |
         data[[pp$yieldObservationFlag]] == "M"
-    data[missingYield, c(pp$yieldValue) :=
+    filter = missingYield &
+        !is.na(data[[pp$productionValue]]) &
+        !is.na(data[[pp$areaHarvestedValue]]) &
+        data[[pp$productionObservationFlag]] != "M" &
+        data[[pp$areaHarvestedObservationFlag]] != "M"
+    data[filter, c(pp$yieldValue) :=
          faoswsUtil::computeRatio(get(pp$productionValue),
                                   get(pp$areaHarvestedValue)) * unitConversion]
-    data[missingYield, c(pp$yieldObservationFlag) := newObservationFlag]
-    data[missingYield, c(pp$yieldMethodFlag) := newMethodFlag]
+    data[filter, c(pp$yieldObservationFlag) := newObservationFlag]
+    data[filter, c(pp$yieldMethodFlag) := newMethodFlag]
     ## If yieldValue is still NA, make sure observation flag is "M".  Note:
     ## this can happen by taking 0 production / 0 area.
     data[is.na(get(pp$yieldValue)), c(pp$yieldObservationFlag) := "M"]
