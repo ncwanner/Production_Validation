@@ -1,0 +1,75 @@
+measuredItemCPC,description
+0111,Wheat
+0112,Maize (corn)
+0113,Rice
+0114,Sorghum
+0115,Barley
+0116,Rye
+0117,Oats
+0118,Millet
+01191,Triticale
+01192,Buckwheat
+01193,Fonio
+01194,Quinoa
+01195,Canary seed
+01199,Other cereals
+01199.01,Teff
+01199.02,Mixed grain
+01199.90,Other cereals n.e.
+01510,Potatoes
+01520,Cassava
+01530,Sweet potatoes
+01540,Yams
+01550,Taro
+01591,Yautia
+01599,"Other edible roots and tubers with high starch or inulin content, n.e."
+01701,"Beans, dry"
+01702,"Broad beans and horse beans, dry"
+01703,"Chick peas, dry"
+01704,"Lentils, dry"
+01705,"Peas, dry"
+01706,"Cow peas, dry"
+01707,"Pigeon peas, dry"
+01708,"Bambara beans, dry"
+01709.01,Vetches
+01709.02,Lupins
+01709.90,Pulses n.e.
+0141,Soya beans
+0142,"Groundnuts, excluding shelled"
+0143,Cottonseed
+01441,Linseed
+01442,Mustard seed
+01443,Rapeseed or colza seed
+01444,Sesame seed
+01445,Sunflower seed
+01446,Safflower seed
+01447,Castor oil seeds
+01448,Poppy seed
+01449.01,Melonseed
+01449.02,Hempseed
+01449.90,"Other oil seeds, n.e."
+01450,Olives
+01460,"Coconuts, in shell"
+01491.01,Oil palm fruit
+01491.02,Palm kernels
+01492,Copra
+01499.01,Karite Nuts (Sheanuts)
+01499.02,Tung Nuts
+01499.03,Jojoba Seeds
+01499.04,[Tallowtree Seeds]
+01499.05,[Kapok fruit]
+01801,Sugar beet
+01802,Sugar cane
+01809,Other sugar crops n.e.
+02111,Cattle
+02112,Buffalo
+02121.01,Camels
+02121.02,Other camelids
+02122,Sheep
+02123,Goats
+02131,Horses
+02132,Asses
+02133,Mules and hinnies
+02140,Swine / pigs
+02199.10,"Other live animals non food, n.e."
+02199.20,"Other live animals, n.e."

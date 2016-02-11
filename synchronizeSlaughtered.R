@@ -13,7 +13,6 @@
 
 library(data.table)
 library(faosws)
-library(faoswsUtil)
 
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
