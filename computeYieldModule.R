@@ -65,7 +65,7 @@ getYieldData = function(dataContext){
             flagMethodPrefix = "flagMethod_measuredElement_"
             )
 
-    key = swsContext.datasets[[1]]
+    key = dataContext
     if (exists("swsContext.modifiedCells")){
         print("Checking only modified data.")
         nmodded = nrow(swsContext.modifiedCells)
