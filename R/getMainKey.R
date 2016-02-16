@@ -26,11 +26,11 @@ getMainKey = function(years){
     allItemCodes = unique(allItemCodes[!is.na(type), code])
     
     # List of primary codes from Nic Sakoff:
-    allPrimaryCodes = fread("~/Documents/Github/faoswsProduction/sandbox/codesToDisseminate.csv",
+    allPrimaryCodes = fread(paste0(R_SWS_SHARE_PATH, "/browningj/production/codesToDisseminate.csv"),
                             colClasses = "char")
     # List of all disseminated codes from FAOSTAT: (really need a better way of
     # doing this...)
-    allPrimaryCodes = fread("~/Documents/Github/faoswsProduction/sandbox/allPrimaryCodes.csv",
+    allPrimaryCodes = fread(paste0(R_SWS_SHARE_PATH, "/browningj/production/allPrimaryCodes.csv"),
                             colClasses = "char")
     allPrimaryCodes = allPrimaryCodes[, measuredItemCPC]
     ## Derived codes provided by Tomasz:

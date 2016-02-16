@@ -3,13 +3,15 @@
 ##' This function contains the logic that we'll use to define the imputation 
 ##' models and their parameters.
 ##' 
-##' @param datasets The object being imputed on, typically created by
+##' @param datasets The object being imputed on, typically created by 
 ##'   getProductionData.
+##' @param i The row number of formulaTuples.  This allows R to produce the
+##'   correct formula tuple/yield codes, and is typically 1.
 ##'   
 ##' @return A list with the yield and production imputation parameters.
 ##'   
 
-getImputationParameters = function(datasets){
+getImputationParameters = function(datasets, i = 1){
 
     ## Impute yield
     yieldCode = datasets$formulaTuples[, productivity][i]
