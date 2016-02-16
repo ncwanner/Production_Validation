@@ -41,10 +41,39 @@ compare = compare[, c("geographicAreaM49", "measuredItemCPC", "measuredElement",
                       "flagMethod"), with = FALSE]
 
 write.csv(compare, file = "~/Documents/Github/faoswsProduction/sandbox/slaughtered_after_fix.csv", row.names = FALSE)
+compareMeta = copy(compare)
+setnames(compareMeta, c("Value", "flagObservationStatus", "flagMethod"),
+         c("Data Value", "Status", "Method"))
+compareMeta[, "Metadata Type" := "[GENERAL] General"]
+compareMeta[, "Metadata Id" := 1]
+compareMeta[, "Metadata Element Type" := "[COMMENT] Comment"]
+compareMeta[, Language := "[en] English"]
+compareMeta[, Value := "Copied from corresponding meat commodity as erroneously imported from questionaire"]
+compareMeta = compareMeta[, c("geographicAreaM49", "measuredItemCPC", "measuredElement",
+                      "timePointYears", "Metadata Type", "Metadata Id",
+                      "Metadata Element Type", "Language", "Value", "Data Value",
+                      "Status", "Method"), with = FALSE]
+write.csv(compareMeta, file = "~/Documents/Github/faoswsProduction/sandbox/slaughteredMeta_after_fix.csv",
+          row.names = FALSE)
 
 deleteObs = d[flagObservationStatus == "" & flagMethod == "q" &
                   measuredElement %in% c("5320", "5321"), ]
 deleteObs[, Value := 0]
 deleteObs[, flagObservationStatus := "M"]
 deleteObs[, flagMethod := "u"]
+deleteObs[, c("Geographic Area", "Item", "Element", "Year") := NULL]
 write.csv(deleteObs, file = "~/Documents/Github/faoswsProduction/sandbox/slaughteredMeat_after_fix.csv", row.names = FALSE)
+deleteMeta = copy(deleteObs)
+setnames(deleteMeta, c("Value", "flagObservationStatus", "flagMethod"),
+         c("Data Value", "Status", "Method"))
+deleteMeta[, "Metadata Type" := "[GENERAL] General"]
+deleteMeta[, "Metadata Id" := 1]
+deleteMeta[, "Metadata Element Type" := "[COMMENT] Comment"]
+deleteMeta[, Language := "[en] English"]
+deleteMeta[, Value := "Copied from corresponding meat commodity as erroneously imported from questionaire"]
+deleteMeta = deleteMeta[, c("geographicAreaM49", "measuredItemCPC", "measuredElement",
+                            "timePointYears", "Metadata Type", "Metadata Id",
+                            "Metadata Element Type", "Language", "Value", "Data Value",
+                            "Status", "Method"), with = FALSE]
+write.csv(deleteMeta, file = "~/Documents/Github/faoswsProduction/sandbox/slaughteredMeatMeta_after_fix.csv",
+          row.names = FALSE)
