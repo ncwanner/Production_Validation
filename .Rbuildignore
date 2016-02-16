@@ -1,8 +1,12 @@
 README.md
 .git
 productionImputationModule.R
-productionImputationModule.xml
-productionImputationModule.zip
+computeYield.R
+imputeModel.R
+buildModel.R
+*.zip
+*.xml
+synchSlaughtered.*
 Model
 sandbox
 ^.*\.Rproj$

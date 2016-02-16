@@ -1,0 +1,61 @@
+---
+title: "Synchronization"
+output: word_document
+date: "February 10, 2016"
+---
+
+Suppose we have the following table, where all numbers represent the number of animals slaughtered under each particular commodity:
+
+```{r, echo = FALSE}
+d = data.frame(commodity = c("Cattle", "Meat of Cattle", "Offals of Cattle", "Hides and Skins of Cattle", "Fat of Cattle"),
+               value = c(1000, 950, 0, 1000, 0),
+               flag = c("", "C", "M", "C", "M"))
+knitr::kable(d)
+```
+
+```{r, echo = FALSE, eval = FALSE}
+# Sticking in R as an alternative to commenting
+# For most countries, this table becomes:
+# 
+# ```{r, echo = FALSE}
+# print = d
+# print$value = 1000
+# print$flag = ""
+# knitr::kable(print)
+# ```
+# 
+# For the countries (i.e. the countries where we don't want to blindly copy), we have several options.  We could just copy the most recent or most recent official over all the missing cells:
+# 
+# ```{r, echo = FALSE}
+# print = d
+# print$value[d$flag == "M"] = 1000
+# print$flag[d$flag == "M"] = ""
+# knitr::kable(print)
+# ```
+```
+
+The "Synchronized Slaughtered" R module can be used to synchronize the values across all these commodities.  For example, suppose this country has a shares table like below:
+
+```{r, echo = FALSE}
+share = data.frame(parent = "Cattle", child = c("Meat", "Offals", "Hides and Skins", "Fat"),
+                   share = c(85, 100, 100, 0))
+knitr::kable(share)
+```
+
+Then, the table becomes
+
+```{r, echo = FALSE}
+print = d
+print$value = c(1000, 850, 1000, 1000, 0)
+print$flag = c("", "", "", "", "M")
+knitr::kable(print)
+```
+
+In other words, if the animal number is not missing and if a non-zero share exists then the value and flags for animals slaughtered of the animal commodity is copied to the product(s).  In the case of missing data for the number of animals slaughtered under the animal element, nothing is done.  For example, the following table will not be adjusted by the module:
+
+```{r, echo = FALSE}
+data = data.frame(commodity = c("Cattle", "Meat of Cattle", "Offals of Cattle", "Hides and Skins of Cattle", "Fat of Cattle"),
+               value = c(0, 950, 0, 1000, 0),
+               flag = c("M", "C", "M", "C", "M"))
+knitr::kable(data)
+```

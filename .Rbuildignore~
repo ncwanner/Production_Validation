@@ -1,8 +1,0 @@
-README.md
-.git
-productionImputationModule.R
-productionImputationModule.xml
-productionImputationModule.zip
-Model
-^.*\.Rproj$
-^\.Rproj\.user$
