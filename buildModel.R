@@ -22,8 +22,8 @@ DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
     
-    # server = "QA"
-    server = "Prod"
+    server = "QA"
+    # server = "Prod"
     
     stopifnot(server %in% c("QA", "Prod"))
     ## Define directories
@@ -49,7 +49,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     } else {
         GetTestEnvironment(
             baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-            token = "bf9800f1-ffd7-455c-9977-ebcea8a5c6aa"
+            token = "5eed31f5-2318-470e-a884-c30c3db6d3db"
         )
     }
 
@@ -109,9 +109,11 @@ runModel = function(iter){
                 productionValue = datasets$formulaTuples[, output][i],
                 yieldValue = datasets$formulaTuples[, productivity][i],
                 areaHarvestedValue = datasets$formulaTuples[, input][i])
-            p = getImputationParameters(datasets)
+            p = getImputationParameters(datasets, i = i)
             yieldParams = p$yieldParams
+            yieldParams$ensembleModels$defaultLogistic@model = defaultLogistic
             productionParams = p$productionParams
+            productionParams$ensembleModels$defaultLogistic@model = defaultLogistic
 
             if(isPrimary){
                 cat("Computing yield...\n")
@@ -125,12 +127,13 @@ runModel = function(iter){
                 datasets$query = datasets$query[countryCnt > 1, ]
                 datasets$query[, countryCnt := NULL]
                 cat("Imputing yield...\n")
-                png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/yield_",
-                                   singleItem, "_", i, ".png"), width = 2300, height = 2300)
-                modelYield = try(faoswsImputation:::buildEnsembleModel(
+                ## Useful when running locally to examine model results:
+                # png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/yield_",
+                #                    singleItem, "_", i, ".png"), width = 2300, height = 2300)
+                modelYield = try(buildEnsembleModel(
                     data = datasets$query, imputationParameters = yieldParams,
                     processingParameters = processingParams))
-                dev.off()
+                # dev.off()
             } else {
                 ## No yield model if imputing derived, as we just impute on the
                 ## production time series.
@@ -188,13 +191,14 @@ runModel = function(iter){
             
             ## Impute production
             cat("Imputing production...\n")
-            png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/production_",
-                   singleItem, "_", i, ".png"), width = 2300, height = 2300)
+            ## Useful when running locally to examine model results:
+            # png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/production_",
+            #        singleItem, "_", i, ".png"), width = 2300, height = 2300)
             ## Use try to make sure that we call dev.off() before exiting.
-            modelProduction = try(faoswsImputation:::buildEnsembleModel(
+            modelProduction = try(buildEnsembleModel(
                 data = datasets$query, imputationParameters = productionParams,
                 processingParameters = processingParams))
-            dev.off()
+            # dev.off()
             if(is(modelProduction, "try-error")){
                 stop(attr(modelProduction, "condition")$message)
             }
@@ -234,8 +238,8 @@ runModel = function(iter){
         print("Imputation Module Executed Successfully")
     }
     message = ifelse(inherits(impute, "try-error"), attr(impute, "condition")$message, "")
-    data.frame(cpc = singleItem, success = !inherits(impute, "try-error"),
-               errorMessage = message)
+    return(data.frame(cpc = singleItem, success = !inherits(impute, "try-error"),
+               errorMessage = message))
 }
 
 if(runParallel){
@@ -243,9 +247,11 @@ if(runParallel){
         runModel(iter)
     }
 } else {
-    result = foreach(iter = 1:nrow(uniqueItem), .combine = rbind) %do% {
-        runModel(iter)
+    result = list()
+    for(iter in 1:nrow(uniqueItem)){
+        result[[length(result) + 1]] = runModel(iter)
     }
+    result = do.call("rbind", result)
 }
 
 paste0("Successfully built ", sum(result$success), " models out of ",
