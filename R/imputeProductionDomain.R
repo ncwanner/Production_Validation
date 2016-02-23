@@ -1,27 +1,30 @@
 ##' This function imputes the whole production domain.
-##'
-##' The function will impute production, area harvested and yield at
-##' the same time.
-##'
-##' Transformation in the yield formula is not allowed and will not be
-##' taken into account.
-##'
+##' 
+##' The function will impute production, area harvested and yield at the same
+##' time.
+##' 
+##' Transformation in the yield formula is not allowed and will not be taken
+##' into account.
+##' 
 ##' @param data The data
-##' @param processingParameters A list of the parameters for the production
-##' processing algorithms.  See defaultProductionParameters() for a starting
-##' point.
-##' @param yieldImputationParameters A list of the parameters for the
-##' yield imputation.  See defaultImputationParameters() for a starting point.
-##' @param productionImputationParameters A list of the parameters for the
-##' production imputation.  See defaultImputationParameters() for a starting
-##' point.
-##'
+##' @param processingParameters A list of the parameters for the production 
+##'   processing algorithms.  See defaultProductionParameters() for a starting 
+##'   point.
+##' @param yieldImputationParameters A list of the parameters for the yield
+##'   imputation.  See defaultImputationParameters() for a starting point.
+##' @param productionImputationParameters A list of the parameters for the 
+##'   production imputation.  See defaultImputationParameters() for a starting 
+##'   point.
+##' @param unitConversion The multiplicative factor used for the particular
+##'   commodity in calculating the yield.
+##'   
 ##' @export
 ##' 
 
 imputeProductionDomain = function(data, processingParameters,
                                   yieldImputationParameters,
-                                  productionImputationParameters){
+                                  productionImputationParameters,
+                                  unitConversion){
 
     ### Data Quality Checks
     ensureImputationInputs(data = data,
@@ -55,7 +58,8 @@ imputeProductionDomain = function(data, processingParameters,
     cat("Number of values still missing: ", n.missYield2, "\n")
 
     ## Balance production now using imputed yield
-    balanceProduction(data = data, processingParameters = processingParameters)
+    balanceProduction(data = data, processingParameters = processingParameters,
+                      unitConversion = unitConversion)
 
     ## step three: Impute production
     cat("Imputing Production ...\n")
@@ -78,7 +82,8 @@ imputeProductionDomain = function(data, processingParameters,
             dataCopy[[processingParameters$areaHarvestedValue]])))
 
     balanceAreaHarvested(data = dataCopy,
-                         processingParameters = processingParameters)
+                         processingParameters = processingParameters,
+                         unitConversion = unitConversion)
 
     n.missAreaHarvested2 =
         length(which(is.na(

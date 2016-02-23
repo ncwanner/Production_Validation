@@ -3,6 +3,7 @@
 export(balanceAreaHarvested)
 export(balanceProduction)
 export(computeYield)
+export(defaultLogistic)
 export(defaultProcessingParameters)
 export(ensureProductionInputs)
 export(getAllHistory)

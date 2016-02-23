@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
 	<Name>Synchronize Slaughtered</Name>
 	<Description>Synchronize values for slaughtered animals across various elements.</Description>
-	<Category>Computation</Category>
+	<Category>Imputation</Category>
 	<Authors>
 		<Author>
 			<Name>Josh Browning</Name>

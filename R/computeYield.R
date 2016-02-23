@@ -12,12 +12,16 @@
 ##' @param unitConversion Yield is computed as (production) / (area) and 
 ##'   multiplied by unitConversion.  This parameter defaults to 1.
 ##'   
+##' @return The updated data.table.  This is important in the case where the
+##'   data is normalized, as the data.table must be cast and reshaped (and thus
+##'   can't be modified by reference).
+##'   
 ##' @export
 ##' 
 
-computeYield = function(data, processingParameters, newObservationFlag = "I",
-                        newMethodFlag = "i", flagTable = faoswsFlagTable,
-                        unitConversion = 1){
+computeYield = function(data, processingParameters, normalized = FALSE,
+                        newObservationFlag = "I", newMethodFlag = "i",
+                        flagTable = faoswsFlagTable, unitConversion = 1){
 
     if(!exists("ensuredProductionData") || !ensuredProductionData)
         ensureProductionInputs(data = data,
@@ -27,7 +31,7 @@ computeYield = function(data, processingParameters, newObservationFlag = "I",
 
     ## Abbreviate processingParameters since it is used alot
     pp = processingParameters
-    
+
     ## Balance yield values only when they're missing
     missingYield = is.na(data[[pp$yieldValue]]) |
         data[[pp$yieldObservationFlag]] == "M"
@@ -46,4 +50,6 @@ computeYield = function(data, processingParameters, newObservationFlag = "I",
     data[is.na(get(pp$yieldValue)), c(pp$yieldObservationFlag) := "M"]
     data[is.na(get(pp$yieldValue)), c(pp$yieldMethodFlag) := "u"]
     data[is.na(get(pp$yieldValue)), c(pp$yieldValue) := 0]
+    
+    return(data)
 }

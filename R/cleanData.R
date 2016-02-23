@@ -47,6 +47,7 @@ cleanData = function(datasets, i){
     ## To merge two data.tables, we need a key column.  Create a dummy
     ## one to do the merge.
     countryCommodity[, mergeKey := 1]
+    years = unique(datasets$query[, get(yearVar)])
     year = data.table(years)
     setnames(year, yearVar)
     year[, mergeKey := 1]
