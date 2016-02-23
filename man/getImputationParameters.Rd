@@ -4,11 +4,14 @@
 \alias{getImputationParameters}
 \title{Get Imputation Parameters}
 \usage{
-getImputationParameters(datasets)
+getImputationParameters(datasets, i = 1)
 }
 \arguments{
-\item{datasets}{The object being imputed on, typically created by
+\item{datasets}{The object being imputed on, typically created by 
 getProductionData.}
+
+\item{i}{The row number of formulaTuples.  This allows R to produce the
+correct formula tuple/yield codes, and is typically 1.}
 }
 \value{
 A list with the yield and production imputation parameters.
