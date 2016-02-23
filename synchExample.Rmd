@@ -1,8 +1,10 @@
 ---
-title: "Synchronization"
-output: word_document
-date: "February 10, 2016"
+title: "Synchronization of the number of slaughtered animals"
+output: pdf_document
+date: "February 16, 2016"
 ---
+
+## Methodology
 
 Suppose we have the following table, where all numbers represent the number of animals slaughtered under each particular commodity:
 
@@ -58,4 +60,16 @@ data = data.frame(commodity = c("Cattle", "Meat of Cattle", "Offals of Cattle", 
                value = c(0, 950, 0, 1000, 0),
                flag = c("M", "C", "M", "C", "M"))
 knitr::kable(data)
+```
+
+## Reference Table
+
+Below is a reference table containing the commodities and element codes used by this module (as provided by Tomasz, but converted into CPC using the current mapping table).
+
+```{r, echo = FALSE}
+dRef = read.csv("/media/hqlprsws1_qa/browningj/production/slaughtered_synchronized.csv",
+                colClasses = "character")
+colnames(dRef) = c("Parent CPC", "Parent Item", "Parent Element",
+                   "Child CPC", "Child Item", "Child Element")
+knitr::kable(dRef)
 ```
