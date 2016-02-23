@@ -2,7 +2,7 @@
 <RScript xmlns="http://www.fao.org/rScript" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
 	<Name>Impute Slaughtered</Name>
-	<Description>Impute values for animals slaughtered in the animal commodity, using information from the corresponding meat.</Description>
+	<Description>Impute values for animals slaughtered in the animal commodity, using information from the corresponding meat.  Note: this module runs on all countries!</Description>
 	<Category>Computation</Category>
 	<Authors>
 		<Author>
@@ -10,14 +10,46 @@
 			<Mail>joshua.browning@fao.org</Mail>
 		</Author>
 	</Authors>
+	<Params>
+		<Param xsi:type="Number">
+	        <Code>firstDataYear</Code>
+	            <Label>First Year to pull data for the model (recommended: 1991)</Label>
+		        <Description>
+			    Please specify the first year for which the imputation data should be pulled and thus which will be used for models.
+		        </Description>
+		        <Compulsory>true</Compulsory>
+                <Min>1991</Min>
+                <Max>2050</Max>
+   </Param>
+		<Param xsi:type="Number">
+	        <Code>firstYear</Code>
+	            <Label>First Year to Impute</Label>
+		        <Description>
+			    Please specify the first year for which the imputation module should be ran for.
+		        </Description>
+		        <Compulsory>true</Compulsory>
+                <Min>1991</Min>
+                <Max>2050</Max>
+   </Param>
+		<Param xsi:type="Number">
+	        <Code>lastYear</Code>
+	            <Label>Last Year to Impute</Label>
+		        <Description>
+			    Please specify the last year for which the imputation module should be ran for.
+		        </Description>
+		        <Compulsory>true</Compulsory>
+                <Min>1991</Min>
+                <Max>2050</Max>
+   </Param>
+  </Params>
 	<Datasets>
 		<MainDataset>
 			<Code>aproduction</Code>
 			<SelectableDimensions>
-				<SelectableDimension compulsory="true">geographicAreaM49</SelectableDimension>
+				<SelectableDimension compulsory="false">geographicAreaM49</SelectableDimension>
 				<SelectableDimension compulsory="true">measuredItemCPC</SelectableDimension>
 				<SelectableDimension compulsory="false">measuredElement</SelectableDimension>
-				<SelectableDimension compulsory="true">timePointYears</SelectableDimension>
+				<SelectableDimension compulsory="false">timePointYears</SelectableDimension>
 			</SelectableDimensions>
 		</MainDataset>
 	</Datasets>
