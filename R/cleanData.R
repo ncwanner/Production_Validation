@@ -9,12 +9,19 @@
 ##'   multiple different imputations (biological and indigineous meat is stored 
 ##'   under the code for meat).  This is likely to be changed eventually, and 
 ##'   this argument would then no longer be needed.
+##' @param The final values in a time series can be blank cells, and this 
+##'   algorithm should provide estimates for such missing values.  As such, this
+##'   function creates 0Mu values up to the maximum year required.  This maximum
+##'   year is determined by either the maximum of the year variable in datasets 
+##'   (if this parameter is NULL) or by this parameter.  Note that setting a
+##'   maximum year that is smaller than the maximum year in the dataset will do
+##'   nothing.
 ##'   
-##' @return No object is returned, but the passed dataset is modified in place
+##' @return No object is returned, but the passed dataset is modified in place 
 ##'   via data.table.
 ##'   
 
-cleanData = function(datasets, i){
+cleanData = function(datasets, i, maxYear = NULL){
     
     codes = datasets$formulaTuples[i, c("input", "productivity",
                                     "output"), with = FALSE]
@@ -48,6 +55,8 @@ cleanData = function(datasets, i){
     ## one to do the merge.
     countryCommodity[, mergeKey := 1]
     years = unique(datasets$query[, get(yearVar)])
+    if(!is.null(maxYear))
+        years = union(years, years[1]:maxYear)
     year = data.table(years)
     setnames(year, yearVar)
     year[, mergeKey := 1]

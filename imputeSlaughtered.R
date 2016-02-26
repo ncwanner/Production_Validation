@@ -59,7 +59,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Get SWS Parameters
     GetTestEnvironment(
         baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        token = "14404d78-c701-4104-b0ea-488b4c93af97"
+        token = "393b08d8-d11a-46d3-ae98-ff2b1ab8fafe"
         # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
         # token = "0289dc2c-4cf7-4c54-8954-f45a4d4b8c28"
     )
@@ -83,7 +83,7 @@ toProcess = fread(paste0(R_SWS_SHARE_PATH,
                   colClasses = "character")
 toProcess[, c("Item Name", "Child Item Name") := NULL]
 # Filter to just meats => CPC code like 2111* or 2112* (21111.01, 21112, ...)
-toProcess = toProcess[grepl("^211(1|2).*", measuredItemChildCPC), ]
+toProcess = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
 
 ## Read the data.  The years and countries provided in the session are used, and
 ## the commodities in the session are somewhat considered. For example, if 02111
@@ -99,6 +99,10 @@ rowsIncluded = toProcess[, measuredItemParentCPC %in% key@dimensions$measuredIte
                            measuredItemChildCPC %in% key@dimensions$measuredItemCPC@keys]
 requiredMeats = toProcess[rowsIncluded, c(measuredItemParentCPC, measuredItemChildCPC)]
 key@dimensions[[itemVar]]@keys = requiredMeats
+if(length(key@dimensions$measuredItemCPC@keys) == 0){
+    stop("No meat/animal commodities are in the session, and thus this ",
+         "module has nothing to do.")
+}
 
 ## Update the measuredElements
 key@dimensions[[elementVar]]@keys =
@@ -166,7 +170,7 @@ for(iter in 1:length(uniqueItem)){
         for(i in 1:nrow(datasets$formulaTuples)){
             cat("Processing pair", i, "of", nrow(datasets$formulaTuples),
                 "element triples.\n")
-            datasets = cleanData(datasets, i = i)
+            datasets = cleanData(datasets, i = i, maxYear = 2014)
             
             ## Setup for the imputation
             processingParams = defaultProcessingParameters(
