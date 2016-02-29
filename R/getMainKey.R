@@ -21,9 +21,9 @@ getMainKey = function(years){
     allCountryCodes = c(allCountryCodes, "158", "1248")
     allCountryCodes = unique(allCountryCodes)
     
-    allItemCodes = GetCodeList(domain = "agriculture", dataset = "aproduction",
+    allItemCodesSWS = GetCodeList(domain = "agriculture", dataset = "aproduction",
                                dimension = "measuredItemCPC")
-    allItemCodes = unique(allItemCodes[!is.na(type), code])
+    allItemCodesSWS = unique(allItemCodesSWS[!is.na(type), code])
     
     # List of primary codes from Nic Sakoff:
     allPrimaryCodes = fread(paste0(R_SWS_SHARE_PATH, "/browningj/production/codesToDisseminate.csv"),
@@ -42,6 +42,7 @@ getMainKey = function(years){
     allDerivedCodes = faoswsUtil::fcl2cpc(formatC(allDerivedCodes, width = 4, flag = "0"))
     allItemCodes = c(allPrimaryCodes, allDerivedCodes)
     allItemCodes = unique(allItemCodes[!is.na(allItemCodes)])
+    allItemCodes = allItemCodes[allItemCodes %in% allItemCodesSWS]
     # For testing purposes:
     # allItemCodes = swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys
     # allItemCodes = GetCodeList("agriculture", "aproduction", "measuredItemCPC")[type == "LSPR", code]
