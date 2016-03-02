@@ -12,6 +12,9 @@ GetTestEnvironment(
     token = "ac1d3ae0-20f7-4632-b59b-d9b954e5a061"
 )
 
+files = dir("~/Documents/Github/faoswsProduction/R", full.names = TRUE)
+sapply(files, source)
+
 fullKey = getMainKey(years = 1991:2011)
 d = GetData(fullKey)
 yieldFormula = ReadDatatable(table = "item_type_yield_elements")
@@ -43,6 +46,7 @@ dNew = merge(dVal, dFlag)
 validObsCnt = function(x){
     sum(x %in% c("", "E", "-"), na.rm = TRUE)
 }
+
 stats = dNew[, list(inputObs = validObsCnt(input_flag),
                     productivityObs = validObsCnt(productivity_flag),
                     productionObs = validObsCnt(production_flag),

@@ -5,10 +5,10 @@
 ##' used to fill in imputed values and generate predictions using the originally
 ##' developed model (rather than requiring the model be refit each time).
 ##' 
-##' To actually construct and save such a model object is unfortunately quite a
-##' large task: we must save a model object for each individual model in
+##' To actually construct and save such a model object is unfortunately quite a 
+##' large task: we must save a model object for each individual model in 
 ##' addition to the weights/errors from fitting these models to the data.  Thus,
-##' instead of this task, we can just save the imputations and fill those in
+##' instead of this task, we can just save the imputations and fill those in 
 ##' when the impute module is called.  This also gives us the ability to version
 ##' control the imputations: we could put them in a new table in the SWS.
 ##' 
@@ -19,21 +19,27 @@
 ##' @param processingParameters A list of the parameters for the production 
 ##'   processing algorithms.  See defaultProductionParameters() for a starting 
 ##'   point.
+##' @param unitConversion A ratio specifying the relationship between yield, 
+##'   production, and area harvested.
 ##'   
 ##' @return A list containing the model fit, model errors, and model weights.
 ##'   
 
-buildEnsembleModel = function(data, imputationParameters, processingParameters){
+buildEnsembleModel = function(data, imputationParameters, processingParameters,
+                              unitConversion){
     
-    ### Data Quality Checks
+    ## Data Quality Checks
     if(!exists("ensuredImputationData") || !ensuredImputationData)
         ensureImputationInputs(data = data,
                                imputationParameters = imputationParameters)
 
+    ## Pre-process the data
     setkeyv(x = data, cols = c(processingParameters$byKey,
                                processingParameters$yearValue))
     processProductionDomain(data = data,
                             processingParameters = processingParameters)
+    computeYield(data, processingParameters = processingParams,
+                 unitConversion = unitConversion)
     valueMissingIndex = is.na(
         data[[imputationParameters$imputationValueColumn]])
     flagMissingIndex = (data[[imputationParameters$imputationFlagColumn]] ==

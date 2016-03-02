@@ -29,12 +29,12 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     }
 
     ## Get SWS Parameters
-    SetClientFiles(dir = "~/R certificate files/QA")
+    SetClientFiles(dir = "~/R certificate files/Production/")
     GetTestEnvironment(
-        ## baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        ## token = "7b588793-8c9a-4732-b967-b941b396ce4d"
-        baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
+        baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
+        token = "63901ad4-384a-447d-a192-3339a9854984"
+        # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        # token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
     )
 
     ## Source local scripts for this local test
@@ -118,8 +118,14 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                 modelYield[, flagObservationStatus := "I"]
                 modelYield[, flagMethod := "e"]
             }
-            
+
             dataToSave = rbind(modelYield, modelProduction)
+            if(exists("modelComputeYield")){
+                modelComputeYield = modelComputeYield[
+                    timePointYears <= endYear & timePointYears >= startYear &
+                    geographicAreaM49 %in% countryM49, ]
+                dataToSave = rbind(dataToSave, modelComputeYield)
+            }
             ## HACK: Update China and Pacific
             warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
             dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156", "582"), ]

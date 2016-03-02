@@ -22,7 +22,7 @@ DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
     
-    server = "QA"
+    server = "Prod"
     # server = "Prod"
     
     stopifnot(server %in% c("QA", "Prod"))
@@ -71,8 +71,9 @@ uniqueItem = data.table(measuredItemCPC = uniqueItem)
 uniqueItem[, isPrimary := grepl("^0", measuredItemCPC)]
 warning("Primary items should be identified with a table in the SWS!!!")
 
-completed = dir(saveDir, pattern = "^prodModel.*\\.RData$")
-completed = gsub("prodModel_|_[1-9]\\.RData", "", completed)
+# completed = dir(saveDir, pattern = "^prodModel.*\\.RData$")
+# completed = gsub("prodModel_|_[1-9]\\.RData", "", completed)
+completed = NULL
 uniqueItem = uniqueItem[!measuredItemCPC %in% completed, ]
 
 runModel = function(iter){
@@ -111,33 +112,47 @@ runModel = function(iter){
                 areaHarvestedValue = datasets$formulaTuples[, input][i])
             p = getImputationParameters(datasets, i = i)
             yieldParams = p$yieldParams
-            yieldParams$ensembleModels$defaultLogistic@model = defaultLogistic
             productionParams = p$productionParams
-            productionParams$ensembleModels$defaultLogistic@model = defaultLogistic
 
             if(isPrimary){
-                cat("Computing yield...\n")
-                ## Don't remove old estimated imputation values, per request from
-                ## Salar.
-                processingParams$removePriorImputation = FALSE
-                computeYield(datasets$query, newMethodFlag = "i",
-                             processingParameters = processingParams)
+                ## Original design was to remove old estimated imputation
+                ## values.  Salar then requested to keep them, and then we
+                ## decided to remove them again.
+                processingParams$removePriorImputation = TRUE
+                processingParams$imputedFlag = "I"
+                ## Commented because it's done inside buildEnsembleModel
+#                 cat("Computing yield...\n")
+#                 processProductionDomain(datasets$query, processingParams)
+#                 computeYield(datasets$query, newMethodFlag = "i",
+#                              processingParameters = processingParams,
+#                              unitConversion = datasets$formulaTuples[i, unitConversion])
 
                 datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
                 datasets$query = datasets$query[countryCnt > 1, ]
                 datasets$query[, countryCnt := NULL]
                 cat("Imputing yield...\n")
+                originalData = copy(datasets$query)
                 ## Useful when running locally to examine model results:
                 # png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/yield_",
                 #                    singleItem, "_", i, ".png"), width = 2300, height = 2300)
                 modelYield = try(buildEnsembleModel(
                     data = datasets$query, imputationParameters = yieldParams,
-                    processingParameters = processingParams))
+                    processingParameters = processingParams,
+                    unitConversion = datasets$formulaTuples[i, unitConversion]))
                 # dev.off()
+                
+                # Use original data to figure out which observations were
+                # updated (not imputed, but updated via compute yield)
+                diffs = getUpdatedObs(dataOld = originalData,
+                                      dataNew = datasets$query,
+                                      key = c(yieldParams$byKey,
+                                              processingParams$yearValue),
+                                      wideVarName = "measuredElement")
             } else {
                 ## No yield model if imputing derived, as we just impute on the
                 ## production time series.
                 modelYield = NULL
+                diffs = NULL
             }
             if(isPrimary & is(modelYield, "numeric")){
                 ## modelYield **should** be a list, but if no data is missing a 
@@ -181,8 +196,19 @@ runModel = function(iter){
                                    on = c("timePointYears", "geographicAreaM49",
                                           "measuredItemCPC"), all = TRUE]
                 }
+                originalData = copy(datasets$query)
                 balanceProduction(data = datasets$query,
-                                  processingParameters = processingParams)
+                                  processingParameters = processingParams,
+                                  unitConversion =
+                                      datasets$formulaTuples[i, unitConversion])
+                # Use original data to figure out which observations were
+                # updated (not imputed, but updated via compute yield)
+                diffs = rbind(diffs,
+                              getUpdatedObs(dataOld = originalData,
+                                            dataNew = datasets$query,
+                                            key = c(yieldParams$byKey,
+                                                    processingParams$yearValue),
+                                            wideVarName = "measuredElement"))
             } else {
                 ## If model building failed, we still want to continue in case
                 ## we can build a production model.
@@ -191,13 +217,23 @@ runModel = function(iter){
             
             ## Impute production
             cat("Imputing production...\n")
+            ## We don't want to remove imputations at this point, as those
+            ## imputations are from the yield imputation!
+            processingParams$removePriorImputation = FALSE
+            originalData = copy(datasets$query)
             ## Useful when running locally to examine model results:
             # png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/production_",
             #        singleItem, "_", i, ".png"), width = 2300, height = 2300)
             ## Use try to make sure that we call dev.off() before exiting.
             modelProduction = try(buildEnsembleModel(
                 data = datasets$query, imputationParameters = productionParams,
-                processingParameters = processingParams))
+                processingParameters = processingParams,
+                unitConversion = datasets$formulaTuples[i, unitConversion]))
+            diffs = rbind(diffs, getUpdatedObs(dataOld = originalData,
+                                               dataNew = datasets$query,
+                                               key = c(yieldParams$byKey,
+                                                       processingParams$yearValue),
+                                               wideVarName = "measuredElement"))
             # dev.off()
             if(is(modelProduction, "try-error")){
                 stop(attr(modelProduction, "condition")$message)
@@ -226,8 +262,36 @@ runModel = function(iter){
                 modelProduction[[1]][!assumedZero,
                                      on = c(processingParams$yearValue, productionParams$byKey)]
 
+            ## Update the differences that would occur when running the compute
+            ## yield module at the end.
+            ## 
+            ## We have to save the production estimates to the data because we
+            ## need to balance.  Also, check if fit is NULL because it throws an
+            ## error if no observations are missing and estimated.
+            if(!is.null(modelProduction$fit$fit)){
+                productionVar = paste0("Value_measuredElement_",
+                                       datasets$formulaTuples$output)
+                datasets$query[modelProduction$fit,
+                               c(productionVar,
+                                 productionParams$imputationFlagColumn,
+                                 productionParams$imputationMethodColumn) :=
+                                   list(fit, "I", "e"),
+                               on = c("timePointYears", "geographicAreaM49",
+                                      "measuredItemCPC"), all = TRUE]
+            }
+            originalData = copy(datasets$query)
+            balanceAreaHarvested(data = datasets$query,
+                processingParameters = processingParams,
+                unitConversion = datasets$formulaTuples[i, unitConversion])
+            diffs = rbind(diffs, getUpdatedObs(dataOld = originalData,
+                                               dataNew = datasets$query,
+                                               key = c(yieldParams$byKey,
+                                                       processingParams$yearValue),
+                                               wideVarName = "measuredElement"))
+            
             ## Save models
-            save(modelYield, modelProduction, years,
+            modelComputeYield = diffs
+            save(modelYield, modelProduction, modelComputeYield, years,
                  file = paste0(saveDir, "prodModel_",
                                singleItem, "_", i, ".RData"))
         } # close item type for loop

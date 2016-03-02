@@ -49,7 +49,6 @@ computeYield = function(data, processingParameters, normalized = FALSE,
     ## this can happen by taking 0 production / 0 area.
     data[is.na(get(pp$yieldValue)), c(pp$yieldObservationFlag) := "M"]
     data[is.na(get(pp$yieldValue)), c(pp$yieldMethodFlag) := "u"]
-    data[is.na(get(pp$yieldValue)), c(pp$yieldValue) := 0]
     
     return(data)
 }

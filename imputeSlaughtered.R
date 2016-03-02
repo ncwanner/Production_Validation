@@ -185,9 +185,10 @@ for(iter in 1:length(uniqueItem)){
             # Delete these next line(s) after 18/02/2016
             productionParams$ensembleModels$defaultLogistic@model = defaultLogistic
 
-            ## Don't remove old estimated imputation values, per request from
-            ## Salar.
-            processingParams$removePriorImputation = FALSE
+            ## Original design was to remove old estimated imputation values. 
+            ## Salar then requested to keep them, and then we decided to remove
+            ## them again.
+            processingParams$removePriorImputation = TRUE
             computeYield(datasets$query, newMethodFlag = "i",
                          processingParameters = processingParams,
                          unitConversion = datasets$formulaTuples$unitConversion)
