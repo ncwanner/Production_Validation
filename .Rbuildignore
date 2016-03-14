@@ -4,8 +4,8 @@ productionImputationModule.R
 computeYield.R
 imputeModel.R
 buildModel.R
-*.zip
-*.xml
+.*.zip
+.*.xml
 synchSlaughtered.*
 Model
 sandbox

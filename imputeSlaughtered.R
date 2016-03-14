@@ -27,13 +27,14 @@
 
 ## Step 0. Initial set-up
 
-cat("Beginning impute slaughtered script...")
+cat("Beginning impute slaughtered script...\n")
 
 library(data.table)
 library(faosws)
 library(faoswsFlag)
 library(faoswsUtil)
 library(faoswsImputation)
+library(splines)
 
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -59,7 +60,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Get SWS Parameters
     GetTestEnvironment(
         baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        token = "393b08d8-d11a-46d3-ae98-ff2b1ab8fafe"
+        token = "b04efc88-87d5-4a8d-9541-a573e8d8eaa6"
         # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
         # token = "0289dc2c-4cf7-4c54-8954-f45a4d4b8c28"
     )
@@ -70,12 +71,11 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 
 startTime = Sys.time()
 
-cat("Loading preliminary data...")
+cat("Loading preliminary data...\n")
 firstDataYear = as.numeric(swsContext.computationParams$firstDataYear)
 firstYear = as.numeric(swsContext.computationParams$firstYear)
 lastYear = as.numeric(swsContext.computationParams$lastYear)
 stopifnot(firstDataYear <= firstYear)
-stopifnot(firstYear <= lastYear)
 stopifnot(firstYear <= lastYear)
 
 toProcess = fread(paste0(R_SWS_SHARE_PATH,
@@ -117,7 +117,7 @@ key@dimensions[[areaVar]]@keys =
     GetCodeList("agriculture", "aproduction", "geographicAreaM49")[type == "country", code]
 
 # Execute the get data call.
-cat("Pulling the data")
+cat("Pulling the data...\n")
 data = GetData(key = key)
 
 
@@ -155,6 +155,8 @@ uniqueItem = uniqueItem[uniqueItem %in% toProcess$measuredItemChildCPC]
 uniqueItem = as.character(uniqueItem)
 
 result = NULL
+successCount = 0
+failCount = 0
 for(iter in 1:length(uniqueItem)){
     singleItem = uniqueItem[iter]
     subKey = key
@@ -179,19 +181,15 @@ for(iter in 1:length(uniqueItem)){
                 areaHarvestedValue = datasets$formulaTuples[, input][i])
             p = getImputationParameters(datasets, i = i)
             yieldParams = p$yieldParams
-            # Delete this next line after 18/02/2016
-            yieldParams$ensembleModels$defaultLogistic@model = defaultLogistic
             productionParams = p$productionParams
-            # Delete these next line(s) after 18/02/2016
-            productionParams$ensembleModels$defaultLogistic@model = defaultLogistic
 
             ## Original design was to remove old estimated imputation values. 
             ## Salar then requested to keep them, and then we decided to remove
             ## them again.
             processingParams$removePriorImputation = TRUE
-            computeYield(datasets$query, newMethodFlag = "i",
-                         processingParameters = processingParams,
-                         unitConversion = datasets$formulaTuples$unitConversion)
+            processingParams$imputedFlag = c("I", "E")
+            datasets$query = processProductionDomain(data = datasets$query,
+                                processingParameters = processingParams)
 
             datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
             datasets$query = datasets$query[countryCnt > 1, ]
@@ -223,7 +221,7 @@ for(iter in 1:length(uniqueItem)){
             out = imputeProductionDomain(datasets$query, processingParameters = processingParams,
                     yieldImputationParameters = yieldParams,
                     productionImputationParameters = productionParams,
-                    unitConversion = datasets$formulaTuples$unitConversion)
+                    unitConversion = datasets$formulaTuples[i, unitConversion])
             
             ## Remove the observations we don't want to impute on
             ## Use keys so we can do an anti-join
@@ -239,9 +237,11 @@ for(iter in 1:length(uniqueItem)){
         out
     }) # close try block
     if(inherits(impute, "try-error")){
-        print("Imputation Module Failed")
+        print("Imputation Module Failed!")
+        failCount = failCount + 1
     } else {
-        print("Imputation Module Executed Successfully")
+        print("Imputation Module Executed Successfully!")
+        successCount = successCount + 1
         SaveData("agriculture", "aproduction", data = impute, normalized = FALSE)
         ## Just need to return the numbers slaughtered code:
         impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
@@ -256,38 +256,39 @@ for(iter in 1:length(uniqueItem)){
 }
 
 
+if(!is.null(result)){
+    ## Step 3. Copy the slaughtered animal numbers in meat back to the animal commodity.
+    childData = copy(result)
+    setnames(childData, c(itemVar, elementVar),
+             c("measuredItemChildCPC", "measuredElementChild"))
+    parentData = merge(childData, toProcess,
+                      by = c("measuredItemChildCPC", "measuredElementChild"))
+    parentData[, c("measuredItemChildCPC", "measuredElementChild") := NULL]
+    setnames(parentData, c("measuredItemParentCPC", "measuredElementParent"),
+             c(itemVar, elementVar))
+    parentData[, timePointYears := as.character(timePointYears)]
+    ## Only need to keep the updated data
+    data = merge(data, parentData, all.y = TRUE, suffixes = c("", ".new"),
+                 by = c(areaVar, itemVar, elementVar, yearVar))
+    data = data[is.na(Value) & !is.na(Value.new), ]
+    data[, c("Value", "flagObservationStatus", "flagMethod") :=
+             list(Value.new, flagObservationStatus.new, flagMethod.new)]
+    data[, c("Value.new", "flagObservationStatus.new", "flagMethod.new") := NULL]
+    
+    
+    
+    ## Step 4. Save all three variables for meat (production/animals
+    ## slaughterd/carcass weight) and the animals slaughtered for the animal.
+    ## 
+    ## Note: the first saving has been done, we just need to now save the data under
+    ## the animal element.
+    
+    saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
+                          data = data)
+}
 
-
-## Step 3. Copy the slaughtered animal numbers in meat back to the animal commodity.
-childData = copy(result)
-setnames(childData, c(itemVar, elementVar),
-         c("measuredItemChildCPC", "measuredElementChild"))
-parentData = merge(childData, toProcess,
-                  by = c("measuredItemChildCPC", "measuredElementChild"))
-parentData[, c("measuredItemChildCPC", "measuredElementChild") := NULL]
-setnames(parentData, c("measuredItemParentCPC", "measuredElementParent"),
-         c(itemVar, elementVar))
-parentData[, timePointYears := as.character(timePointYears)]
-## Only need to keep the updated data
-data = merge(data, parentData, all.y = TRUE, suffixes = c("", ".new"),
-             by = c(areaVar, itemVar, elementVar, yearVar))
-data = data[is.na(Value) & !is.na(Value.new), ]
-data[, c("Value", "flagObservationStatus", "flagMethod") :=
-         list(Value.new, flagObservationStatus.new, flagMethod.new)]
-data[, c("Value.new", "flagObservationStatus.new", "flagMethod.new") := NULL]
-
-
-
-## Step 4. Save all three variables for meat (production/animals
-## slaughterd/carcass weight) and the animals slaughtered for the animal.
-## 
-## Note: the first saving has been done, we just need to now save the data under
-## the animal element.
-
-saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
-                      data = data)
-
-message = paste("Module completed successfully.")
+message = paste("Module completed with", successCount,
+                "commodities imputed out of", successCount + failCount)
 cat(message)
 
 message

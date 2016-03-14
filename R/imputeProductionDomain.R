@@ -38,8 +38,11 @@ imputeProductionDomain = function(data, processingParameters,
     dataCopy = copy(data)
     setkeyv(x = dataCopy, cols = c(processingParameters$byKey,
                                    processingParameters$yearValue))
-    processProductionDomain(data = dataCopy,
-                            processingParameters = processingParameters)
+    dataCopy = processProductionDomain(data = dataCopy,
+                    processingParameters = processingParameters)
+    computeYield(dataCopy, newMethodFlag = "i",
+                 processingParameters = processingParams,
+                 unitConversion = unitConversion)
 
     ## Step two: Impute Yield
     cat("Imputing Yield ...\n")

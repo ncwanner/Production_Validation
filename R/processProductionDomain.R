@@ -1,13 +1,18 @@
-##' This is a wrapper for all the data manipulation steps before the
-##' preparation of the imputation.
-##'
-##' @param data The data
-##' @param processingParameters A list of the parameters for the production
-##' processing algorithms.  See defaultProductionParameters() for a starting
-##' point.
+##' This is a wrapper for all the data manipulation steps before the preparation
+##' of the imputation.
 ##' 
+##' @param data The data
+##' @param processingParameters A list of the parameters for the production 
+##'   processing algorithms.  See defaultProductionParameters() for a starting 
+##'   point.
+##'   
 ##' @export
 ##' 
+##' @return Currently it returns the passed data.table after performing some
+##'   checks and clean up of the data.  Eventually, it should modify the
+##'   data.table in place, but this will require an update to data.table (see
+##'   comment by the return statement).
+##'   
 
 processProductionDomain = function(data, processingParameters){
     
@@ -78,6 +83,8 @@ processProductionDomain = function(data, processingParameters){
     # This should be removed/fixed once row deletion by reference is
     # implemented for data.table, see
     # http://stackoverflow.com/questions/10790204/how-to-delete-a-row-by-reference-in-r-data-table
-    dataTableName = as.character(match.call()$data)
-    assign(x = dataTableName, value = data, envir = parent.frame(1))
+    # This return approach seems a bit too hacky.  Let's just return it the normal way.
+    ## dataTableName = as.character(match.call()$data)
+    ## assign(x = dataTableName, value = data, envir = parent.frame(1))
+    return(data)
 }

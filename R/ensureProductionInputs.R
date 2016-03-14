@@ -54,8 +54,8 @@ ensureProductionInputs = function(data, processingParameters){
     for(name in c(processingParameters$productionValue,
                   processingParameters$areaHarvestedValue,
                   processingParameters$yieldValue)){ 
-        warning("This coercion is no longer necessary upon resolution of SWS-797")
-        data[, c(name) := as.numeric(get(name))]
+#        warning("This coercion is no longer necessary upon resolution of SWS-797")
+#        data[, c(name) := as.numeric(get(name))]
     }
     for(name in c(processingParameters$productionObservationFlag,
                   processingParameters$areaHarvestedObservationFlag,
@@ -63,8 +63,8 @@ ensureProductionInputs = function(data, processingParameters){
                   processingParameters$productionMethodFlag,
                   processingParameters$areaHarvestedMethodFlag,
                   processingParameters$yieldMethodFlag)){
-        warning("This coercion is no longer necessary upon resolution of SWS-797")
-        data[, c(name) := as.character(get(name))]
+#         warning("This coercion is no longer necessary upon resolution of SWS-797")
+#         data[, c(name) := as.character(get(name))]
     }
     
     ### Globally assign ensuredData so data will not need to be ensured again

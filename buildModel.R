@@ -12,8 +12,8 @@ areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
-years = 1991:2014
 runParallel = FALSE
+yearsModeled = 20
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -44,7 +44,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     if(server == "Prod"){
         GetTestEnvironment(
             baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-            token = "b3c0a795-29dd-45e9-9b96-175a9f19f7f9"
+            token = "ad797167-20aa-4ff4-b679-461c96e0da79"
         )
     } else {
         GetTestEnvironment(
@@ -63,6 +63,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 }
 saveDir = paste0(R_SWS_SHARE_PATH, "/browningj/production/")
 
+lastYear = as.numeric(swsContext.computationParams$lastYear)
+firstYear = lastYear - yearsModeled + 1 # Rolling time range of yearsModeled years
+years = firstYear:lastYear
+
 fullKey = getMainKey(years = years)
 
 subKey = fullKey
@@ -76,7 +80,7 @@ warning("Primary items should be identified with a table in the SWS!!!")
 completed = NULL
 uniqueItem = uniqueItem[!measuredItemCPC %in% completed, ]
 
-runModel = function(iter){
+runModel = function(iter, removePriorImputation, appendName = ""){
     singleItem = uniqueItem[iter, measuredItemCPC]
     isPrimary = uniqueItem[iter, isPrimary]
     subKey@dimensions$measuredItemCPC@keys = singleItem
@@ -113,16 +117,23 @@ runModel = function(iter){
             p = getImputationParameters(datasets, i = i)
             yieldParams = p$yieldParams
             productionParams = p$productionParams
+            
+            ## Original design was to remove old estimated imputation values. 
+            ## Salar then requested to keep them, and then we decided to remove
+            ## them again.  We remove here before imputing and then keep
+            ## imputations.  This allows the production imputation to use the
+            ## newly imputed yield data, otherwise it would all be ignored.     
+            processingParams$removePriorImputation = removePriorImputation
+            processingParams$imputedFlag = c("I", "E")
+            datasets$query = processProductionDomain(data = datasets$query,
+                                    processingParameters = processingParams)
+            processingParams$removePriorImputation = FALSE
 
             if(isPrimary){
-                ## Original design was to remove old estimated imputation
-                ## values.  Salar then requested to keep them, and then we
-                ## decided to remove them again.
-                processingParams$removePriorImputation = TRUE
-                processingParams$imputedFlag = "I"
                 ## Commented because it's done inside buildEnsembleModel
 #                 cat("Computing yield...\n")
-#                 processProductionDomain(datasets$query, processingParams)
+#                 datasets$query = processProductionDomain(datasets$query,
+#                                                          processingParams)
 #                 computeYield(datasets$query, newMethodFlag = "i",
 #                              processingParameters = processingParams,
 #                              unitConversion = datasets$formulaTuples[i, unitConversion])
@@ -140,6 +151,12 @@ runModel = function(iter){
                     processingParameters = processingParams,
                     unitConversion = datasets$formulaTuples[i, unitConversion]))
                 # dev.off()
+                modelYield$fit[, variance := NULL]
+                setnames(modelYield$fit, "fit", "Value")
+                modelYield$fit[, measuredElement :=
+                                   datasets$formulaTuples[i, productivity]]
+                modelYield$fit[, flagObservationStatus := "I"]
+                modelYield$fit[, flagMethod := "e"]
                 
                 # Use original data to figure out which observations were
                 # updated (not imputed, but updated via compute yield)
@@ -148,6 +165,7 @@ runModel = function(iter){
                                       key = c(yieldParams$byKey,
                                               processingParams$yearValue),
                                       wideVarName = "measuredElement")
+                modelYield$fit = rbind(modelYield$fit, diffs)
             } else {
                 ## No yield model if imputing derived, as we just impute on the
                 ## production time series.
@@ -164,7 +182,7 @@ runModel = function(iter){
                 ## In this case, we have the expected behaviour: modelYield is a
                 ## list.
                 yieldVar = paste0("Value_measuredElement_",
-                                  datasets$formulaTuples$productivity)
+                                  datasets$formulaTuples[i, productivity])
                 ## Yield must be zero if production or area harvested are 0.
                 zeroYield = datasets$query[
                     get(processingParams$areaHarvestedValue) == 0 |
@@ -203,12 +221,12 @@ runModel = function(iter){
                                       datasets$formulaTuples[i, unitConversion])
                 # Use original data to figure out which observations were
                 # updated (not imputed, but updated via compute yield)
-                diffs = rbind(diffs,
-                              getUpdatedObs(dataOld = originalData,
-                                            dataNew = datasets$query,
-                                            key = c(yieldParams$byKey,
-                                                    processingParams$yearValue),
-                                            wideVarName = "measuredElement"))
+                diffs = getUpdatedObs(dataOld = originalData,
+                                      dataNew = datasets$query,
+                                      key = c(yieldParams$byKey,
+                                              processingParams$yearValue),
+                                      wideVarName = "measuredElement")
+                modelYield$fit = rbind(modelYield$fit, diffs)
             } else {
                 ## If model building failed, we still want to continue in case
                 ## we can build a production model.
@@ -217,27 +235,28 @@ runModel = function(iter){
             
             ## Impute production
             cat("Imputing production...\n")
-            ## We don't want to remove imputations at this point, as those
-            ## imputations are from the yield imputation!
-            processingParams$removePriorImputation = FALSE
             originalData = copy(datasets$query)
             ## Useful when running locally to examine model results:
             # png(paste0(R_SWS_SHARE_PATH, "/browningj/production/imputationPlots/production_",
             #        singleItem, "_", i, ".png"), width = 2300, height = 2300)
             ## Use try to make sure that we call dev.off() before exiting.
-            modelProduction = try(buildEnsembleModel(
+            modelProduction = buildEnsembleModel(
                 data = datasets$query, imputationParameters = productionParams,
                 processingParameters = processingParams,
-                unitConversion = datasets$formulaTuples[i, unitConversion]))
-            diffs = rbind(diffs, getUpdatedObs(dataOld = originalData,
-                                               dataNew = datasets$query,
-                                               key = c(yieldParams$byKey,
-                                                       processingParams$yearValue),
-                                               wideVarName = "measuredElement"))
+                unitConversion = datasets$formulaTuples[i, unitConversion])
+            modelProduction$fit[, variance := NULL]
+            setnames(modelProduction$fit, "fit", "Value")
+            modelProduction$fit[, measuredElement :=
+                                    datasets$formulaTuples[i, output]]
+            modelProduction$fit[, flagObservationStatus := "I"]
+            modelProduction$fit[, flagMethod := "e"]
+            diffs = getUpdatedObs(dataOld = originalData,
+                                  dataNew = datasets$query,
+                                  key = c(yieldParams$byKey,
+                                          processingParams$yearValue),
+                                  wideVarName = "measuredElement")
+            modelProduction$fit = rbind(modelProduction$fit, diffs)
             # dev.off()
-            if(is(modelProduction, "try-error")){
-                stop(attr(modelProduction, "condition")$message)
-            }
             ## Production must be zero if area harvested is 0.
             zeroProd = datasets$query[get(processingParams$areaHarvestedValue) == 0,
                                       c(processingParams$yearValue, productionParams$byKey),
@@ -245,8 +264,6 @@ runModel = function(iter){
             modelProduction[[1]] =
                 modelProduction[[1]][!zeroProd,
                                      on = c(processingParams$yearValue, productionParams$byKey)]
-            ## Round production values to whole numbers
-            modelProduction[[1]][, fit := round(fit)]
             ## Production should not be imputed on 0Mn observations.  These are 
             ## "missing but assumed negligble."  Additionally, we have not been 
             ## able to identify 0M from the old system as 0Mu or 0Mn and have
@@ -268,14 +285,14 @@ runModel = function(iter){
             ## We have to save the production estimates to the data because we
             ## need to balance.  Also, check if fit is NULL because it throws an
             ## error if no observations are missing and estimated.
-            if(!is.null(modelProduction$fit$fit)){
+            if(!is.null(modelProduction$fit$Value)){
                 productionVar = paste0("Value_measuredElement_",
-                                       datasets$formulaTuples$output)
+                                       datasets$formulaTuples[i, output])
                 datasets$query[modelProduction$fit,
                                c(productionVar,
                                  productionParams$imputationFlagColumn,
                                  productionParams$imputationMethodColumn) :=
-                                   list(fit, "I", "e"),
+                                   list(Value, "I", "e"),
                                on = c("timePointYears", "geographicAreaM49",
                                       "measuredItemCPC"), all = TRUE]
             }
@@ -283,17 +300,17 @@ runModel = function(iter){
             balanceAreaHarvested(data = datasets$query,
                 processingParameters = processingParams,
                 unitConversion = datasets$formulaTuples[i, unitConversion])
-            diffs = rbind(diffs, getUpdatedObs(dataOld = originalData,
-                                               dataNew = datasets$query,
-                                               key = c(yieldParams$byKey,
-                                                       processingParams$yearValue),
-                                               wideVarName = "measuredElement"))
+            diffs = getUpdatedObs(dataOld = originalData,
+                                  dataNew = datasets$query,
+                                  key = c(yieldParams$byKey,
+                                          processingParams$yearValue),
+                                  wideVarName = "measuredElement")
+            modelProduction$fit = rbind(modelProduction$fit, diffs)
             
             ## Save models
-            modelComputeYield = diffs
-            save(modelYield, modelProduction, modelComputeYield, years,
+            save(modelYield, modelProduction, years,
                  file = paste0(saveDir, "prodModel_",
-                               singleItem, "_", i, ".RData"))
+                               singleItem, "_", i, appendName, ".RData"))
         } # close item type for loop
     }) # close try block
     if(inherits(impute, "try-error")){
@@ -308,12 +325,27 @@ runModel = function(iter){
 
 if(runParallel){
     result = foreach(iter = 1:nrow(uniqueItem), .combine = rbind) %dopar% {
-        runModel(iter)
+        runModel(iter, removePriorImputation = TRUE,
+                 appendName = "_est_removed")
     }
+    stop("USE SIMPLER MODEL FOR KEPT ESTIMATES")
+    result2 = foreach(iter = 1:nrow(uniqueItem), .combine = rbind) %dopar% {
+        runModel(iter, removePriorImputation = FALSE,
+                 appendName = "_est_kept")
+    }
+    result = rbind(result, result2)
 } else {
     result = list()
     for(iter in 1:nrow(uniqueItem)){
-        result[[length(result) + 1]] = runModel(iter)
+#    rows = sample(nrow(uniqueItem), size = 5)
+#    for(iter in rows){
+        result[[length(result) + 1]] =
+            runModel(iter, removePriorImputation = TRUE,
+                     appendName = "_est_removed")
+        stop("USE SIMPLER MODEL FOR KEPT ESTIMATES")
+        result[[length(result) + 1]] =
+            runModel(iter, removePriorImputation = FALSE,
+                     appendName = "_est_kept")
     }
     result = do.call("rbind", result)
 }
