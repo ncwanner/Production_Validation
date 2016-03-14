@@ -5,28 +5,31 @@
 \title{This function imputes the whole production domain.}
 \usage{
 imputeProductionDomain(data, processingParameters, yieldImputationParameters,
-  productionImputationParameters)
+  productionImputationParameters, unitConversion)
 }
 \arguments{
 \item{data}{The data}
 
-\item{processingParameters}{A list of the parameters for the production
-processing algorithms.  See defaultProductionParameters() for a starting
+\item{processingParameters}{A list of the parameters for the production 
+processing algorithms.  See defaultProductionParameters() for a starting 
 point.}
 
-\item{yieldImputationParameters}{A list of the parameters for the
-yield imputation.  See defaultImputationParameters() for a starting point.}
+\item{yieldImputationParameters}{A list of the parameters for the yield
+imputation.  See defaultImputationParameters() for a starting point.}
 
-\item{productionImputationParameters}{A list of the parameters for the
-production imputation.  See defaultImputationParameters() for a starting
+\item{productionImputationParameters}{A list of the parameters for the 
+production imputation.  See defaultImputationParameters() for a starting 
 point.}
+
+\item{unitConversion}{The multiplicative factor used for the particular
+commodity in calculating the yield.}
 }
 \description{
-The function will impute production, area harvested and yield at
-the same time.
+The function will impute production, area harvested and yield at the same
+time.
 }
 \details{
-Transformation in the yield formula is not allowed and will not be
-taken into account.
+Transformation in the yield formula is not allowed and will not be taken
+into account.
 }
 

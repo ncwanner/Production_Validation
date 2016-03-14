@@ -2,20 +2,26 @@
 % Please edit documentation in R/processProductionDomain.R
 \name{processProductionDomain}
 \alias{processProductionDomain}
-\title{This is a wrapper for all the data manipulation steps before the
-preparation of the imputation.}
+\title{This is a wrapper for all the data manipulation steps before the preparation
+of the imputation.}
 \usage{
 processProductionDomain(data, processingParameters)
 }
 \arguments{
 \item{data}{The data}
 
-\item{processingParameters}{A list of the parameters for the production
-processing algorithms.  See defaultProductionParameters() for a starting
+\item{processingParameters}{A list of the parameters for the production 
+processing algorithms.  See defaultProductionParameters() for a starting 
 point.}
 }
+\value{
+Currently it returns the passed data.table after performing some
+  checks and clean up of the data.  Eventually, it should modify the
+  data.table in place, but this will require an update to data.table (see
+  comment by the return statement).
+}
 \description{
-This is a wrapper for all the data manipulation steps before the
-preparation of the imputation.
+This is a wrapper for all the data manipulation steps before the preparation
+of the imputation.
 }
 

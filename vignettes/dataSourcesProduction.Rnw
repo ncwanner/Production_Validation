@@ -106,6 +106,7 @@ Note that the flagMethod column is cut off in the above table, and that the last
 <<echo = FALSE, results = tex>>=
 print(xtable(d), include.rownames = FALSE)
 @
+    \item Impute time series for meat commodities, using the animal slaughtered figures from the corresponding animal commodity if they are available.  These animal slaughtered numbers should then be copied back to the animal slaughtered number in the animal commodity.
     \item Animals slaughtered are imported into one field but the same number exists in many fields.  A module should run on the entire database to ensure consistency across these numbers.  The result from this module must be saved to the database.
     \item The compute yield module must be run to ensure any missing area harvested/production/yield values are imputed when the other two are known.  This must also be saved to the database.
 <<echo = FALSE, results = tex>>=
@@ -121,12 +122,6 @@ print(xtable(d), include.rownames = FALSE)
 invisible({
 d[6, Value := 4.230052]
 d[6, c("flagObservationStatus", "flagMethod") := list("I", "e")]
-})
-print(xtable(d), include.rownames = FALSE)
-@
-    \item The compute yield module should be run again to ensure all yields/productions/area harvesteds are computed.
-<<echo = FALSE, results = tex>>=
-invisible({
 d[5, Value := 4.230052*6.921900e4]
 d[5, c("flagObservationStatus", "flagMethod") := list("I", "i")]
 })
