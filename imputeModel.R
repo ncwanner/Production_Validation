@@ -46,7 +46,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     SetClientFiles(dir = "~/R certificate files/Production/")
     GetTestEnvironment(
         baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        token = "3d0eecef-1bd8-4594-a75e-2559d486eb15"
+        token = "e518d5c0-7316-4f21-9f6f-4d2aa666c0c2"
         # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
         # token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
     )
@@ -90,11 +90,9 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         if(is(loadDataRm, "try-error")){
             rmModelYield = NULL
             rmModelProduction = NULL
-            rmModelComputeYield = NULL
         } else {
             rmModelYield = modelYield
             rmModelProduction = modelProduction
-            rmModelComputeYield = modelComputeYield
         }
         loadDataKp = try({
             load(paste0(R_SWS_SHARE_PATH, "/browningj/production/prodModel_",
@@ -103,11 +101,9 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         if(is(loadDataKp, "try-error")){
             kpModelYield = NULL
             kpModelProduction = NULL
-            kpModelComputeYield = NULL
         } else {
             kpModelYield = modelYield
             kpModelProduction = modelProduction
-            kpModelComputeYield = modelComputeYield
         }
         
         ## We have two models: using ("kp" for keep") and not using ("rm" for 
@@ -151,29 +147,17 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
             ## If not NULL, extract needed info.  Otherwise, if NULL (i.e. 
             ## model failed) don't do anything (as saving a dataset with
             ## NULL shouldn't cause problems).
-            modelProduction[, variance := NULL]
             modelProduction = modelProduction[timePointYears <= endYear &
                                               timePointYears >= startYear &
                                               geographicAreaM49 %in% countryM49, ]
-            modelProduction[, measuredElement := formulaTuples[i, output]]
-            modelProduction[, Value := fit]
             modelProduction[, Value := sapply(Value, roundResults)]
-            modelProduction[, fit := NULL]
-            modelProduction[, flagObservationStatus := "I"]
-            modelProduction[, flagMethod := "e"]
         }
             
         if(!is.null(modelYield)){
             ## See comment for modelProduction
-            modelYield[, variance := NULL]
             modelYield = modelYield[timePointYears <= endYear &
                                     timePointYears >= startYear &
                                     geographicAreaM49 %in% countryM49, ]
-            modelYield[, measuredElement := formulaTuples[i, productivity]]
-            modelYield[, Value := fit]
-            modelYield[, fit := NULL]
-            modelYield[, flagObservationStatus := "I"]
-            modelYield[, flagMethod := "e"]
         }
 
         dataToSave = rbind(modelYield, modelProduction)

@@ -80,7 +80,25 @@ warning("Primary items should be identified with a table in the SWS!!!")
 completed = NULL
 uniqueItem = uniqueItem[!measuredItemCPC %in% completed, ]
 
-runModel = function(iter, removePriorImputation, appendName = ""){
+##' Run Model
+##' 
+##' This function provides an additional wrapper that does most of the data 
+##' pre-processing prior to the imputation.
+##' 
+##' @param iter The row number of uniqueItem that should be processed.
+##' @param removePriorImputation Logical.  Should previous imputation estimates 
+##'   be removed?
+##' @param appendName Character.  This text will be appended to the file name, 
+##'   and is useful for distinguishing between runs with different parameters.
+##' @param ensemModels A list of ensemble models (i.e. objects of type 
+##'   faoswsImputation::ensembleModel).  If NULL, the default is used.
+##'   
+##' @return A single row data.frame with: the CPC item code, a logical value
+##'   indicating if the imputation was successful, and an error message (or
+##'   blank if no error occurred).
+##' 
+runModel = function(iter, removePriorImputation, appendName = "",
+                    ensemModels = NULL){
     singleItem = uniqueItem[iter, measuredItemCPC]
     isPrimary = uniqueItem[iter, isPrimary]
     subKey@dimensions$measuredItemCPC@keys = singleItem
@@ -115,6 +133,10 @@ runModel = function(iter, removePriorImputation, appendName = ""){
                 yieldValue = datasets$formulaTuples[, productivity][i],
                 areaHarvestedValue = datasets$formulaTuples[, input][i])
             p = getImputationParameters(datasets, i = i)
+            if(!is.null(ensemModels)){
+                p$yieldParams$ensembleModels = ensemModels
+                p$productionParams$ensembleModels = ensemModels
+            }
             yieldParams = p$yieldParams
             productionParams = p$productionParams
             
@@ -205,12 +227,16 @@ runModel = function(iter, removePriorImputation, appendName = ""){
                 ## to balance and then impute production.  Also, check if fit is
                 ## NULL because it throws an error if no observations are
                 ## missing and estimated.
-                if(!is.null(modelYield$fit$fit)){
-                    datasets$query[modelYield$fit,
+                if(!is.null(modelYield$fit$Value)){
+                    toMerge = copy(modelYield$fit)
+                    setnames(toMerge, c("Value", "flagObservationStatus",
+                                        "flagMethod"),
+                             c("Value_new", "flag_new", "method_new"))
+                    datasets$query[toMerge,
                                    c(yieldVar,
                                      yieldParams$imputationFlagColumn,
                                      yieldParams$imputationMethodColumn) :=
-                                       list(fit, "I", "e"),
+                                       list(Value_new, flag_new, method_new),
                                    on = c("timePointYears", "geographicAreaM49",
                                           "measuredItemCPC"), all = TRUE]
                 }
@@ -288,11 +314,15 @@ runModel = function(iter, removePriorImputation, appendName = ""){
             if(!is.null(modelProduction$fit$Value)){
                 productionVar = paste0("Value_measuredElement_",
                                        datasets$formulaTuples[i, output])
-                datasets$query[modelProduction$fit,
+                toMerge = copy(modelProduction$fit)
+                setnames(toMerge, c("Value", "flagObservationStatus",
+                                    "flagMethod"),
+                         c("Value_new", "flag_new", "method_new"))
+                datasets$query[toMerge,
                                c(productionVar,
                                  productionParams$imputationFlagColumn,
                                  productionParams$imputationMethodColumn) :=
-                                   list(Value, "I", "e"),
+                                   list(Value_new, flag_new, method_new),
                                on = c("timePointYears", "geographicAreaM49",
                                       "measuredItemCPC"), all = TRUE]
             }
@@ -323,15 +353,18 @@ runModel = function(iter, removePriorImputation, appendName = ""){
                errorMessage = message))
 }
 
+simplerModels = allDefaultModels()
+simplerModels = simplerModels[c("defaultMean", "defaultLm",
+                                "defaultExp", "defaultNaive",
+                                "defaultMixedModel")]
 if(runParallel){
     result = foreach(iter = 1:nrow(uniqueItem), .combine = rbind) %dopar% {
         runModel(iter, removePriorImputation = TRUE,
                  appendName = "_est_removed")
     }
-    stop("USE SIMPLER MODEL FOR KEPT ESTIMATES")
     result2 = foreach(iter = 1:nrow(uniqueItem), .combine = rbind) %dopar% {
         runModel(iter, removePriorImputation = FALSE,
-                 appendName = "_est_kept")
+                 appendName = "_est_kept", ensemModels = simplerModels)
     }
     result = rbind(result, result2)
 } else {
@@ -342,10 +375,9 @@ if(runParallel){
         result[[length(result) + 1]] =
             runModel(iter, removePriorImputation = TRUE,
                      appendName = "_est_removed")
-        stop("USE SIMPLER MODEL FOR KEPT ESTIMATES")
         result[[length(result) + 1]] =
             runModel(iter, removePriorImputation = FALSE,
-                     appendName = "_est_kept")
+                     appendName = "_est_kept", ensemModels = simplerModels)
     }
     result = do.call("rbind", result)
 }

@@ -2,7 +2,7 @@
 <RScript xmlns="http://www.fao.org/rScript" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
 	<Name>Impute Production</Name>
-	<Description>Impute missing production data using the ensemble model.</Description>
+	<Description>Impute missing production data using the ensemble model.  This module works on just the commodities/countries open in the current session.</Description>
 	<Category>Imputation</Category>
 	<Authors>
 		<Author>

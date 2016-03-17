@@ -2,7 +2,7 @@
 <RScript xmlns="http://www.fao.org/rScript" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
 	<Name>Synchronize Slaughtered</Name>
-	<Description>Synchronize values for slaughtered animals across various elements.</Description>
+	<Description>Synchronize values for slaughtered animals across various elements.  This function works on the user's session, although the session will be expanded (if necessary) to include all the animal products which should be synchronized together as well as the relevant element codes.</Description>
 	<Category>Imputation</Category>
 	<Authors>
 		<Author>

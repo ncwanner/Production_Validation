@@ -12,16 +12,6 @@
 	</Authors>
 	<Params>
 		<Param xsi:type="Number">
-	        <Code>firstDataYear</Code>
-	            <Label>First Year to pull data for the model (recommended: 1991)</Label>
-		        <Description>
-			    Please specify the first year for which the imputation data should be pulled and thus which will be used for models.
-		        </Description>
-		        <Compulsory>true</Compulsory>
-                <Min>1991</Min>
-                <Max>2050</Max>
-   </Param>
-		<Param xsi:type="Number">
 	        <Code>firstYear</Code>
 	            <Label>First Year to Impute</Label>
 		        <Description>
