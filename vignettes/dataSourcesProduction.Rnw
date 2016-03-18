@@ -1,3 +1,4 @@
+%\VignetteIndexEntry{faoswsProduction: Data sources}
 \documentclass[nojss]{jss}
 \usepackage{url}
 \usepackage[sc]{mathpazo}
@@ -78,7 +79,7 @@ Overview of how the modules are ran:
 \subsection{Examples of tables}
 
 \begin{itemize}
-    \item item\_type\_yield\_elements (`adhoc' table):
+    \item item\_type\_yield\_elements (`Data Table' table):  This table is on the statistical working system, and it describes which element codes are used for each commodity group.  For example, wheat belongs to the CRPR item\_type (this can be determined by calling faosws::GetCodeList on the measuredItemCPC dimension).  Thus, the production (51), area harvested (31) and yield (41) elements for wheat are 5510, 5312, and 5421, respectively.  The factor column represents that a multiplicative factor of 1 is used, i.e. yield * 1 = production / area harvested.  In the case of other commodities, for example LSNP, we have the relationship carcass weight * 1000 = production / animals slaughtered.
 <<echo = FALSE, results=tex>>=
 d = ReadDatatable("item_type_yield_elements", limit = 4)
 print(xtable(d), include.rownames = FALSE)
@@ -90,10 +91,32 @@ d = data.table(geographicAreaM49 = 4, measuredElement = c(5312, 5510, 5421),
                Value = c(2232000, 3388000, NA, 69219, NA, NA),
                flagObservationStatus = c("", "", "M", "", "M", "M"),
                flagMethod = c("-", "-", "u", "-", "u", "u"))
+cat('Column names of d are "', paste0(colnames(d), collapse='", "'), '"', sep = "")
+setnames(d, c("Country", "Element", "Item", "Year", "Value", "Flag", "Method"))
+d2 = copy(d)
 print(xtable(d), include.rownames = FALSE)
 @
-Note that the flagMethod column is cut off in the above table, and that the last visible column name is flagObservationStatus.
-    \item List of yield elements (hardcoded list in R code):\\
+    \item Synchronized Slaughtered: Currently this is a .csv file on the SWS server, but it is (at the time of writing this document) being uploaded to the SWS as a valid datatable.  The file contains information on the commodity codes of animal numbers ("Cattle", for example) and the various commodities that are derived from this animal ("Beef and Veal", "Offals of Cattle, Edible", "Fat of Cattle", "Cattle Hides, Fresh").  Each of these derived commodities have an "animals slaughtered" variable that represents the "input", and this value should match the animals slaughtered quantity from the animal time series.  We show the first 8 rows in the table, although there are 44 rows for 16 different animals/animal types.\\
+<<echo=FALSE, results=tex>>=
+d = fread("/media/hqlprsws1_qa/browningj/production/slaughtered_synchronized.csv")
+cat('Column names of d are "', paste0(colnames(d), collapse='", "'), '"', sep = "")
+setnames(d, c("ParIt", "Item", "ParEl", "ChiIt", "Child", "ChiEl"))
+print(xtable(d[1:8, ]), include.rownames = FALSE)
+@
+    \item Aupus Shares: This dataset was used by the old statistical working system as a means of automatically processing forward parent products into derived products.  For example, if the share between Cattle (02111) and Meat of Cattle (21111.01) was 100 (i.e. 100\%), then data was copied from the parent commodity (Cattle/02111) to the child commodity (Meat of Cattle/21111.01).  Values of 0 in the country or year dimensions indicate that a value applies for all countries or years, respectively.\\
+<<echo=FALSE, results=tex>>=
+d = data.table(geographicAreaM49 = c(4, 8, 56, 56, 56),
+               measuredItemParentCPC = "02111",
+               measuredItemChildCPC = "21111.01",
+               measuredShare = 1,
+               timePointYearsSP = c(0, 0, 0, 2011, 2010),
+               Value = 100,
+               flagObservationStatus = "Y")
+cat('Column names of d are "', paste0(colnames(d), collapse='", "'), '"', sep = "")
+setnames(d, c("Country", "ParIt", "ChiIt", "Share", "Year", "Value", "Flag"))
+print(xtable(d), include.rownames = FALSE)
+@
+    \item List of yield elements (hardcoded list in R code):  This data should be implemented on the SWS, and is (at the time of writing this document) a pending task for Team F.\\
 \texttt{allPrimaryCodes = c("01921.01", "02111", "02112", "02131", "02122", "02123",
                  "02191", "02140", "02132", "02151", "02154", "02153", "02152",
                  "01270", "01253.02", "0142", "01371", "01374", "01376",} $\cdots$
@@ -104,6 +127,7 @@ Note that the flagMethod column is cut off in the above table, and that the last
 \begin{enumerate}
     \item Finalize the production dataset.  This requires all the available questionaires to be imported, all data checked, all manual estimates to be finished, etc.  Once this has been completed, the dataset should be ``frozen'', i.e. no more manual updates or questionaire imports allowed until the process is completed.
 <<echo = FALSE, results = tex>>=
+d = d2
 print(xtable(d), include.rownames = FALSE)
 @
     \item Impute time series for meat commodities, using the animal slaughtered figures from the corresponding animal commodity if they are available.  These animal slaughtered numbers should then be copied back to the animal slaughtered number in the animal commodity.

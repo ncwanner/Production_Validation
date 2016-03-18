@@ -8,9 +8,10 @@
 ##' recent value is zero, the series is assumed to have stopped and is removed 
 ##' from the imputation process.
 ##' 
-##' @param A data.table with columns as described above.
+##' @param d A data.table with columns as described above.
 ##' @param missingObsFlag The observation flag for missing observations.
 ##' @param missingMetFlag The method flag for missing observations.
+##' @param firstImputeYear What is the first year for the imputation?
 ##'   
 ##' @return Nothing is returned, but the passed dataset is filtered to the
 ##'   correct rows.

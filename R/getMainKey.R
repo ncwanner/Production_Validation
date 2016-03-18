@@ -10,6 +10,8 @@
 ##' 
 ##' @export
 ##' 
+##' @import faoswsUtil
+##' 
 
 getMainKey = function(years){
     allCountryCodes = GetCodeList(domain = "agriculture",

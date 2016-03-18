@@ -7,11 +7,11 @@
 getLastValue(d, missingObsFlag = "M", missingMetFlag = "u")
 }
 \arguments{
+\item{d}{A data.table with columns as described above.}
+
 \item{missingObsFlag}{The observation flag for missing observations.}
 
 \item{missingMetFlag}{The method flag for missing observations.}
-
-\item{A}{data.table with columns as described above.}
 }
 \value{
 Nothing is returned, but the passed dataset is filtered to the

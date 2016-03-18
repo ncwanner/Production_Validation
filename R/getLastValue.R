@@ -1,6 +1,6 @@
 ##' Get Last Value
 ##' 
-##' @param A data.table with columns as described above.
+##' @param d A data.table with columns as described above.
 ##' @param missingObsFlag The observation flag for missing observations.
 ##' @param missingMetFlag The method flag for missing observations.
 ##'   

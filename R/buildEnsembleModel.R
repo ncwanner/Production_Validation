@@ -24,6 +24,8 @@
 ##'   
 ##' @return A list containing the model fit, model errors, and model weights.
 ##'   
+##' @import reshape2
+##'   
 
 buildEnsembleModel = function(data, imputationParameters, processingParameters,
                               unitConversion){

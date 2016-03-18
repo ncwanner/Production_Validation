@@ -9,7 +9,7 @@
 ##'   multiple different imputations (biological and indigineous meat is stored 
 ##'   under the code for meat).  This is likely to be changed eventually, and 
 ##'   this argument would then no longer be needed.
-##' @param The final values in a time series can be blank cells, and this 
+##' @param maxYear The final values in a time series can be blank cells, and this 
 ##'   algorithm should provide estimates for such missing values.  As such, this
 ##'   function creates 0Mu values up to the maximum year required.  This maximum
 ##'   year is determined by either the maximum of the year variable in datasets 

@@ -18,6 +18,7 @@
 ##' countries.  Providing this context parameter ensures that only the data
 ##' relevant to the initial session is saved back to the database.
 ##' @param waitMode See faosws::SaveData.
+##' @param normalized See faosws::SaveData.
 ##' 
 ##' @return No R objects are returned, as this functions purpose is solely to
 ##' write to the database.

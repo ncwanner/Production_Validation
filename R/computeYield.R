@@ -15,8 +15,10 @@
 ##' @return The updated data.table.  This is important in the case where the
 ##'   data is normalized, as the data.table must be cast and reshaped (and thus
 ##'   can't be modified by reference).
-##'   
+##' 
 ##' @export
+##' 
+##' @import faoswsFlag
 ##' 
 
 computeYield = function(data, processingParameters, normalized = FALSE,

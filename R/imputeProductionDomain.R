@@ -20,6 +20,9 @@
 ##'   
 ##' @export
 ##' 
+##' @import faoswsImputation
+##' @import data.table
+##' 
 
 imputeProductionDomain = function(data, processingParameters,
                                   yieldImputationParameters,

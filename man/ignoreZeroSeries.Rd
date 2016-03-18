@@ -8,11 +8,13 @@ ignoreZeroSeries(d, missingObsFlag = "M", missingMetFlag = "u",
   firstImputeYear = 2010)
 }
 \arguments{
+\item{d}{A data.table with columns as described above.}
+
 \item{missingObsFlag}{The observation flag for missing observations.}
 
 \item{missingMetFlag}{The method flag for missing observations.}
 
-\item{A}{data.table with columns as described above.}
+\item{firstImputeYear}{What is the first year for the imputation?}
 }
 \value{
 Nothing is returned, but the passed dataset is filtered to the
