@@ -42,11 +42,11 @@
   the essential setups required for the package to operate. This is
   then followed by the step-by-step description of each function which
   consist of the whole entire imputation procedure described in the
-  methodology paper. Arguements and default setting for each function
-  is explained with illustrating example. The final section is for
+  methodology paper. Arguments and default setting for each function
+  are explained with illustrating examples. The final section is for
   technical readers who are interested in building their ensemble
-  model, from how to design sensible component model to how to build
-  the ensemble.
+  model, with information on how to design sensible component models
+  and how to build the ensemble.
   
 }
 
