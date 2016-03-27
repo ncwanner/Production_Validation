@@ -29,5 +29,6 @@ Suggests:
     knitr,
     ggplot2,
     faosws,
-    xtable
+    xtable,
+    testthat
 RoxygenNote: 5.0.1
