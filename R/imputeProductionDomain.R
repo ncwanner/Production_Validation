@@ -44,7 +44,7 @@ imputeProductionDomain = function(data, processingParameters,
     dataCopy = processProductionDomain(data = dataCopy,
                     processingParameters = processingParameters)
     computeYield(dataCopy, newMethodFlag = "i",
-                 processingParameters = processingParams,
+                 processingParameters = processingParameters,
                  unitConversion = unitConversion)
 
     ## Step two: Impute Yield
