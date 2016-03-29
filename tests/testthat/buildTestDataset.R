@@ -13,7 +13,7 @@ nobs = NROW(test_data)
 test_data[, Value_measuredElement_5312 :=
               ifelse(sample(c(0, 1), size = nobs, prob = c(0.8, 0.2),
                             replace = TRUE) == 0,
-                     as.integer(runif(n = nobs, min = 0, max = 1e7)), NA)]
+                     runif(n = nobs, min = 0, max = 1e7), NA)]
 test_data[, flagObservationStatus_measuredElement_5312 :=
               ifelse(is.na(Value_measuredElement_5312),
                      "M", sample(c("T", "E", "I", ""), 1))]
@@ -21,7 +21,7 @@ test_data[, flagObservationStatus_measuredElement_5312 :=
 test_data[, Value_measuredElement_5416 :=
               ifelse(sample(c(0, 1), size = nobs, prob = c(0.8, 0.2),
                             replace = TRUE) == 0,
-                     as.integer(runif(n = nobs, min = 0, max = 1e7)), NA)]
+                     runif(n = nobs, min = 0, max = 1e7), NA)]
 test_data[, flagObservationStatus_measuredElement_5416 :=
               ifelse(is.na(Value_measuredElement_5416),
                      "M", sample(c("T", "E", "I", ""), 1))]
@@ -29,7 +29,7 @@ test_data[, flagObservationStatus_measuredElement_5416 :=
 test_data[, Value_measuredElement_5510 :=
               ifelse(sample(c(0, 1), size = nobs, prob = c(0.8, 0.2),
                             replace = TRUE) == 0,
-                     as.integer(runif(n = nobs, min = 0, max = 1e7)), NA)]
+                     runif(n = nobs, min = 0, max = 1e7), NA)]
 test_data[, flagObservationStatus_measuredElement_5510 :=
               ifelse(is.na(Value_measuredElement_5510),
                      "M", sample(c("T", "E", "I", ""), 1))]
