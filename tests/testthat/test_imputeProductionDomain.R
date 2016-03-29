@@ -23,7 +23,7 @@ imputed = imputeProductionDomain(data = test_data_rep,
 test_that("Function does not modify input", {
     ## Make sure class is the identical
     expect_equal(class(imputed), class(test_data_rep))
-    ## Make sure the original variables are presered
+    ## Make sure the original variables are preserved
     expect_true(all(colnames(test_data_rep) %in% colnames(imputed)))
     ## Make sure the type of the columns remain the same
     expect_equal(sapply(imputed[, colnames(test_data_rep), with = FALSE], typeof),
