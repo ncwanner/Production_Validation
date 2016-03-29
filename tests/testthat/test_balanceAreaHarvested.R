@@ -55,10 +55,8 @@ test_that("Function performs calculation correctly", {
     expect_true(all(modifiedData[[param$areaHarvestedMethodFlag]] ==
                     newMethodFlag))
 
-    reverseFilter = !filter
-
     ## Test that the rows that can not be calculated are identical to
     ## the raw data
-    expect_identical(test_data[reverseFilter, ], test_data_rep[reverseFilter, ])
+    expect_identical(test_data[!filter, ], test_data_rep[!filter, ])
 
 })
