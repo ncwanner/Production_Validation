@@ -28,17 +28,19 @@ imputeProductionDomain = function(data, processingParameters,
                                   yieldImputationParameters,
                                   productionImputationParameters,
                                   unitConversion){
-
-    ### Data Quality Checks
-    ensureImputationInputs(data = data,
-                           imputationParameters = yieldImputationParameters)
-    ensureImputationInputs(data = data,
-                           imputationParameters = productionImputationParameters)
-    ensureProductionInputs(data = data,
-                           processingParameters = processingParameters)
+    originDataType = sapply(data, FUN = typeof)
 
     cat("Initializing ... \n")
     dataCopy = copy(data)
+
+    ### Data Quality Checks
+    ensureImputationInputs(data = dataCopy,
+                           imputationParameters = yieldImputationParameters)
+    ensureImputationInputs(data = dataCopy,
+                           imputationParameters = productionImputationParameters)
+    ensureProductionInputs(data = dataCopy,
+                           processingParameters = processingParameters)
+
     setkeyv(x = dataCopy, cols = c(processingParameters$byKey,
                                    processingParameters$yearValue))
     dataCopy = processProductionDomain(data = dataCopy,
@@ -97,6 +99,18 @@ imputeProductionDomain = function(data, processingParameters,
     cat("Number of values imputed: ",
         n.missAreaHarvested - n.missAreaHarvested2, "\n")
     cat("Number of values still missing: ", n.missAreaHarvested2, "\n")
+
     
+    ## This is to ensure the data type of the output is identical to
+    ## the input data.
+    dataCopy[, `:=`(colnames(dataCopy),
+                    lapply(colnames(dataCopy),
+                           FUN = function(x){
+                               if(x %in% names(originType)){
+                                   as(.SD[[x]], originType[[x]])
+                               } else {
+                                   .SD[[x]]
+                               }
+                           }))]
     dataCopy
 }
