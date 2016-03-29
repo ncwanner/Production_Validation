@@ -106,8 +106,8 @@ imputeProductionDomain = function(data, processingParameters,
     dataCopy[, `:=`(colnames(dataCopy),
                     lapply(colnames(dataCopy),
                            FUN = function(x){
-                               if(x %in% names(originType)){
-                                   as(.SD[[x]], originType[[x]])
+                               if(x %in% names(originDataType)){
+                                   as(.SD[[x]], originDataType[[x]])
                                } else {
                                    .SD[[x]]
                                }
