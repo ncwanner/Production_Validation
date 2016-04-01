@@ -88,8 +88,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_removed.RData"))
         })
         if(is(loadDataRm, "try-error")){
-            rmModelYield = NULL
-            rmModelProduction = NULL
+            warning(sprintf("model for %s:%s doesn't exist", singleItem))
+            next
         } else {
             rmModelYield = modelYield
             rmModelProduction = modelProduction
@@ -99,8 +99,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_kept.RData"))
         })
         if(is(loadDataKp, "try-error")){
-            kpModelYield = NULL
-            kpModelProduction = NULL
+            warning(sprintf("model for %s:%s doesn't exist", singleItem))
+            next
         } else {
             kpModelYield = modelYield
             kpModelProduction = modelProduction
