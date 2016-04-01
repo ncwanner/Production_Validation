@@ -5,3 +5,4 @@ Model
 *.zip
 *.csv
 *.png
+.Rproj.user
