@@ -1,6 +1,6 @@
-##' This module is used to fill in the imputed values from the buildModel.R 
+##' This module is used to fill in the imputed values from the buildModel.R
 ##' script.
-##' 
+##'
 ##' Note: the two objects used to fill in the imputations are the modelYield and
 ##' modelProduction objects.  These objects, however, can also contain other
 ##' observations (i.e. the modelYield object could contain production
@@ -8,7 +8,7 @@
 ##' that these imputations were generated during the yield imputation process,
 ##' and thus production or area harvested values could also appear as the result
 ##' of balancing.
-##' 
+##'
 
 library(faosws)
 library(faoswsUtil)
@@ -31,7 +31,7 @@ DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
 if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Not on server, so setting up environment...\n")
-    
+
     ## Define directories
     if(Sys.info()[7] == "josh"){
         apiDirectory = "~/Documents/Github/faoswsProduction/R/"
@@ -74,13 +74,12 @@ successCount = 0
 
 ## Loop through the items and save production/yield data:
 for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
-    
+
     formulaTuples = try(getYieldFormula(singleItem))
     if(is(formulaTuples, "try-error")){
-        failureCount = failureCount + 1
-        next
+    next
     }
-        
+
     for(i in 1:nrow(formulaTuples)){
         ## Load the imputations from the two models
         loadDataRm = try({
@@ -88,8 +87,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_removed.RData"))
         })
         if(is(loadDataRm, "try-error")){
-            warning(sprintf("model for %s:%s doesn't exist", singleItem))
-            next
+          warning(sprintf("model for %s:%s doesn't exist", singleItem, i))
+          next
         } else {
             rmModelYield = modelYield
             rmModelProduction = modelProduction
@@ -99,19 +98,19 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_kept.RData"))
         })
         if(is(loadDataKp, "try-error")){
-            warning(sprintf("model for %s:%s doesn't exist", singleItem))
-            next
+          warning(sprintf("model for %s_%s doesn't exist", singleItem, i))
+          next
         } else {
             kpModelYield = modelYield
             kpModelProduction = modelProduction
         }
-        
-        ## We have two models: using ("kp" for keep") and not using ("rm" for 
-        ## removed) estimates in model estimation.  We will use the first case 
-        ## only when we don't have much available official/semi-official data. 
-        ## We can use different models for production vs. yield, as data 
+
+        ## We have two models: using ("kp" for keep") and not using ("rm" for
+        ## removed) estimates in model estimation.  We will use the first case
+        ## only when we don't have much available official/semi-official data.
+        ## We can use different models for production vs. yield, as data
         ## availability may differ between the two cases.
-        ## 
+        ##
         ## Exclude cases with flagMethod == "i", as these aren't imputations of
         ## yield but rather production/area harvested imputed via balancing.
         rmModelYield$fit[flagMethod != "i", imputeCnt := .N, geographicAreaM49]
@@ -130,7 +129,7 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         modelProduction = rbind(
             rmModelProduction$fit[!geographicAreaM49 %in% kpCountries, ],
             kpModelProduction$fit[geographicAreaM49 %in% kpCountries, ])
-        
+
         ## Verify that the years requested by the user (in swsContext.params) are
         ## possible based on the constructed model.
         obsStartYear = min(modelProduction$timePointYears)
@@ -141,10 +140,10 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         "update start and end year to fall in this range: ",
                         paste(years, collapse = ", ")))
         }
-            
+
         ## Restructure modelProduction for saving
         if(!is.null(modelProduction)){
-            ## If not NULL, extract needed info.  Otherwise, if NULL (i.e. 
+            ## If not NULL, extract needed info.  Otherwise, if NULL (i.e.
             ## model failed) don't do anything (as saving a dataset with
             ## NULL shouldn't cause problems).
             modelProduction = modelProduction[timePointYears <= endYear &
@@ -152,7 +151,7 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                                               geographicAreaM49 %in% countryM49, ]
             modelProduction[, Value := sapply(Value, roundResults)]
         }
-            
+
         if(!is.null(modelYield)){
             ## See comment for modelProduction
             modelYield = modelYield[timePointYears <= endYear &
