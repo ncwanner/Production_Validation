@@ -19,7 +19,7 @@ Depends:
     faoswsImputation,
     faoswsUtil,
     data.table (>= 1.9.2)
-swsDatasetDepends: agriculture:agriculture,
+swsDatasetDepends: agriculture:aproduction,
     item_type_yield_elements
 swsModuleDepends: 
 LazyData: yes
