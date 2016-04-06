@@ -46,7 +46,7 @@ impFlags = c("I", "E")
 missFlags = "M"
 ## server is only used for debug sessions:
 #server = "Prod"
-server = "QA"
+server = "Prod"
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -67,19 +67,58 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
             R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
             url = "https://hqlqasws1.hq.un.fao.org:8181/sws"
         }
+    } else if(Sys.info()[7] == "mk"){ # Josh work
+        files = dir("R/", full.names = TRUE)
+        if(server == "Prod"){
+            SetClientFiles("~/.R/prod/")
+            R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
+            url = "https://hqlprswsas1.hq.un.fao.org:8181/sws"
+        } else {
+            SetClientFiles("~/.R/qa/")
+            R_SWS_SHARE_PATH = "/media/sws_qa_shared_drive/"
+            url = "https://hqlqasws1.hq.un.fao.org:8181/sws"
+        }
     } else {
         stop("Add your github directory here!")
     }
 
     ## Get SWS Parameters
-    GetTestEnvironment(
-        baseUrl = url,
-        token = "310d1215-017c-4718-b431-973d3f9fc578"
-    )
+    if(server == "Prod"){
+        GetTestEnvironment(
+            baseUrl = url,
+            token = "2620c6fd-05b2-48ef-b348-61097ed539b6"
+        )
+    } else if(server == "QA"){
+        GetTestEnvironment(
+            baseUrl = url,
+            token = "310d1215-017c-4718-b431-973d3f9fc578"
+        )
+    }
     sapply(files, source)
 } else {
     cat("Working on SWS...\n")
 }
+
+## Just testing 1 item
+swsContext.datasets[[1]]@dimensions[[itemVar]]@keys = "21111.01"
+
+
+
+## This is the function to test whether modules perform as expected.
+checkTimeSeriesImputed = function(data, key, valueColumn){
+    ## The number of missing values should be either zero or all
+    ## missing.
+    check = data[, sum(is.na(.SD[[valueColumn]])) == 0 |
+                   sum(is.na(.SD[[valueColumn]])) == .N,
+                 by = c(key)]
+    unimputedTimeSeries = which(!check$V1)
+    if(length(unimputedTimeSeries) > 0){
+        ## unimputedData = merge(check[unimputedTimeSeries, ],
+        ##                       data, by = key, all.x = TRUE)
+        stop("Not all time series are imputed")
+    }
+}
+
 
 startTime = Sys.time()
 
