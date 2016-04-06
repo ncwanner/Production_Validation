@@ -66,7 +66,7 @@ imputeProductionDomain = function(data, processingParameters,
     cat("Number of values still missing: ", n.missYield2, "\n")
 
     ## Balance production now using imputed yield
-    balanceProduction(data = data, processingParameters = processingParameters,
+    balanceProduction(data = dataCopy, processingParameters = processingParameters,
                       unitConversion = unitConversion)
 
     ## step three: Impute production
