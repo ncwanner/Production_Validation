@@ -45,6 +45,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         apiDirectory = "R/"
         R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
         SetClientFiles(dir = "~/.R/prod")
+    } else if(Sys.info()[7] == "kao"){
+        apiDirectory = "R/"
+        R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
+        SetClientFiles(dir = "~/.R/prod")
     }
 
     ## Get SWS Parameters
