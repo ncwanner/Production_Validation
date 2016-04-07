@@ -157,8 +157,8 @@ saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
                       dataset = swsContext.datasets[[1]]@dataset,
                       data = toWrite)
 
-message = paste("Module completed with", saveResult$inserted + saveResult$appended,
+result = paste("Module completed with", saveResult$inserted + saveResult$appended,
       "observations updated and", saveResult$discarded, "problems.")
-cat(message)
+cat(result)
 
-message
+result
