@@ -161,12 +161,12 @@ runModel = function(iter, removePriorImputation, appendName = "",
 
             if(isPrimary){
                 ## Commented because it's done inside buildEnsembleModel
-#                 cat("Computing yield...\n")
-#                 datasets$query = processProductionDomain(datasets$query,
-#                                                          processingParams)
-#                 computeYield(datasets$query, newMethodFlag = "i",
-#                              processingParameters = processingParams,
-#                              unitConversion = datasets$formulaTuples[i, unitConversion])
+                ## cat("Computing yield...\n")
+                ## datasets$query = processProductionDomain(datasets$query,
+                ##                                          processingParams)
+                ## computeYield(datasets$query, newMethodFlag = "i",
+                ##              processingParameters = processingParams,
+                ##              unitConversion = datasets$formulaTuples[i, unitConversion])
 
                 datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
                 datasets$query = datasets$query[countryCnt > 1, ]
@@ -344,7 +344,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
                                           processingParams$yearValue),
                                   wideVarName = "measuredElement")
             modelProduction$fit = rbind(modelProduction$fit, diffs)
-            
+
             ## Save models
             save(modelYield, modelProduction, years,
                  file = paste0(saveDir, "prodModel_",
@@ -378,8 +378,8 @@ if(runParallel){
 } else {
     result = list()
     for(iter in 1:nrow(uniqueItem)){
-#    rows = sample(nrow(uniqueItem), size = 5)
-#    for(iter in rows){
+    ## rows = sample(nrow(uniqueItem), size = 5)
+    ## for(iter in rows){
         result[[length(result) + 1]] =
             runModel(iter, removePriorImputation = TRUE,
                      appendName = "_est_removed")
