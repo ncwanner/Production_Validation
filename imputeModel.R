@@ -122,13 +122,23 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         ##
         ## Exclude cases with flagMethod == "i", as these aren't imputations of
         ## yield but rather production/area harvested imputed via balancing.
-        rmModelYield$fit[flagMethod != "i", imputeCnt := .N, geographicAreaM49]
-        kpCountries = rmModelYield$fit[imputeCnt > yearsModeled - minObsForEst,
-                                       unique(geographicAreaM49)]
-        rmModelYield$fit[, imputeCnt := NULL]
-        modelYield = rbind(
-            rmModelYield$fit[!geographicAreaM49 %in% kpCountries, ],
-            kpModelYield$fit[geographicAreaM49 %in% kpCountries, ])
+        ##
+        ## NOTE (Michael): According to the logic of the build model
+        ##                 module, yield should not be imputed for
+        ##                 derived products and thus the model object
+        ##                 for yield is NULL. This logic should not be
+        ##                 encoded in the module, rather there should
+        ##                 be a control file for consistentcy.
+        if(!is.null(modelYield)){
+            rmModelYield$fit[flagMethod != "i", imputeCnt := .N, geographicAreaM49]
+            kpCountries = rmModelYield$fit[imputeCnt > yearsModeled - minObsForEst,
+                                           unique(geographicAreaM49)]
+            rmModelYield$fit[, imputeCnt := NULL]
+            modelYield = rbind(
+                rmModelYield$fit[!geographicAreaM49 %in% kpCountries, ],
+                kpModelYield$fit[geographicAreaM49 %in% kpCountries, ])
+        }
+        
         ## Select the production observations as well:
         rmModelProduction$fit[flagMethod != "i", imputeCnt := .N,
                               geographicAreaM49]
@@ -138,7 +148,6 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         modelProduction = rbind(
             rmModelProduction$fit[!geographicAreaM49 %in% kpCountries, ],
             kpModelProduction$fit[geographicAreaM49 %in% kpCountries, ])
-
         ## Verify that the years requested by the user (in swsContext.params) are
         ## possible based on the constructed model.
         obsStartYear = min(modelProduction$timePointYears)
