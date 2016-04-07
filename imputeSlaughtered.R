@@ -193,7 +193,10 @@ data = merge(data, childData, all = TRUE, suffixes = c("", ".new"),
 data[!is.na(Value.new), c("Value", "flagObservationStatus", "flagMethod") :=
          list(Value.new, flagObservationStatus.new, flagMethod.new)]
 data[, c("Value.new", "flagObservationStatus.new", "flagMethod.new") := NULL]
-SaveData("agriculture", "aproduction", data = data)
+
+passCheck = checkTimeSeriesImputed(data, "geographicAreaM49", "Value")
+if(!inherits(passCheck, "try-error"))
+    SaveData("agriculture", "aproduction", data = data)
 
 
 
@@ -382,7 +385,12 @@ for(iter in 1:length(uniqueItem)){
     } else {
         message("Imputation Module Executed Successfully!")
         successCount = successCount + 1
-        SaveData("agriculture", "aproduction", data = impute, normalized = FALSE)
+        ## New module test
+        passCheck = checkTimeSeriesImputed(data, c(areaVar, itemVar, elementVar),
+                                           "Value")
+        if(!inherits(passCheck, "try-error"))
+            SaveData("agriculture", "aproduction", data = impute,
+                     normalized = FALSE)
         ## Just need to return the numbers slaughtered code:
         impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
                         "_measuredElement_", datasets$formulaTuples$productivity) := NULL]
@@ -420,9 +428,10 @@ if(!is.null(result)){
     ## 
     ## Note: the first saving has been done, we just need to now save the data under
     ## the animal element.
-    
-    saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
-                          data = data)
+    passCheck = checkTimeSeriesImputed(data, "geographicAreaM49", "Value")
+    if(!inherits(passCheck, "try-error"))
+        saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
+                              data = data)
 }
 
 message = paste("Module completed with", successCount,
