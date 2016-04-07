@@ -34,6 +34,13 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
                     full.names = TRUE)
         SetClientFiles("~/R certificate files/QA/")
         R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
+    } else if(Sys.info()[7] == "mk"){ # Josh work
+        files = dir("R/", full.names = TRUE)
+        SetClientFiles("~/.R/qa/")
+        ## NOTE (Michael): We will use the Production shared drive as
+        ##                 the files are not synced.
+        ## R_SWS_SHARE_PATH = "/media/sws_qa_shared_drive/"
+        R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
     } else {
         stop("Add your github directory here!")
     }
