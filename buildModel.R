@@ -31,16 +31,24 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         apiDirectory = "~/Documents/Github/faoswsProduction/R/"
         R_SWS_SHARE_PATH = ifelse(server == "Prod", "/media/hqlprsws2_prod/",
                                   "/media/hqlprsws1_qa/")
+        SetClientFiles(dir = ifelse(server == "Prod",
+                                    "~/R certificate files/Production/",
+                                    "~/R certificate files/QA/"))
         # runParallel = TRUE
     } else if(Sys.info()[7] == "rockc_000"){
         apiDirectory = "~/Github/faoswsProduction/R/"
         stop("Can't connect to share drives!")
+    } else if(Sys.info()[7] == "mk"){
+        apiDirectory = "R/"
+        R_SWS_SHARE_PATH =
+            ifelse(server == "Prod",
+                   "/media/sws_prod_shared_drive/",
+                   "/media/sws_qa_shared_drive/")
+        SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod", "~/.R/qa"))
     }
 
     ## Get SWS Parameters
-    SetClientFiles(dir = ifelse(server == "Prod",
-                                "~/R certificate files/Production/",
-                                "~/R certificate files/QA/"))
+
     if(server == "Prod"){
         GetTestEnvironment(
             baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
