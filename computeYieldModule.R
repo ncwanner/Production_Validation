@@ -7,6 +7,7 @@ library(data.table)
 library(faosws)
 library(faoswsFlag)
 library(faoswsUtil)
+library(magrittr)
 
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -33,18 +34,75 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     } else {
         stop("Add your github directory here!")
     }
-        
+
     ## Get SWS Parameters
     GetTestEnvironment(
         baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         token = "916b73ad-2ef5-4141-b1c4-769c73247edd"
-        # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        # token = "feed1154-6590-4ea9-9e6e-2c81f960d0dd"
+        ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        ## token = "feed1154-6590-4ea9-9e6e-2c81f960d0dd"
     )
     sapply(files, source)
 } else {
     cat("Working on SWS...\n")
 }
+
+
+
+
+
+
+checkProductionBalanced = function(data, areaVar, yieldVar, prodVar, conversion){
+    productionDifference =
+        abs(data[[areaVar]] * data[[yieldVar]] - data[[prodVar]] * conversion)
+    ## NOTE (Michael): Test whether the difference is below 1, this is
+    ##                 accounting for rounding error.
+    if(!all(na.omit(productionDifference < 1))){
+        stop("Production is not balanced, the A * Y = P identity is not satisfied")
+    }
+}
+
+constructFormulaTable = function(formulaTuples, formulaPrefix,
+                                 whichPrefix = c("valuePrefix", "flagObsPrefix",
+                                                 "flagMethodPrefix")){
+    whichPrefix = match.arg(whichPrefix)
+    formulaTable = copy(formulaTuples)
+    formulaTable[, `:=`(c("input", "productivity", "output"),
+                        lapply(.SD[, c("input", "productivity", "output"),
+                                   with = FALSE],
+                               FUN = function(x){
+                                   paste0(formulaPrefix[[whichPrefix]], x)
+                               }))]
+    formulaTable
+}
+
+
+
+convert0MtoNA = function(data, valueVars, flagVars, missingFlag = "M"){
+    dataCopy = copy(data)
+    mapply(FUN = function(value, flag){
+        dataCopy[which(dataCopy[[flag]] == missingFlag), `:=`(c(value), NA_real_)]
+    }, value = valueVars, flag = flagVars)
+    dataCopy
+}
+
+checkAllProductionBalanced = function(testData, formulaTable){
+    lapply(unique(testData$measuredItemCPC),
+           FUN = function(x){
+               cat("Checking formula for commodity: ", x, "\n")
+               commodityFormula = formulaTable[which(measuredItemCPC == x), ]
+               commodityData = testData[measuredItemCPC == x, ]
+               with(commodityFormula,
+                    checkProductionBalanced(data = commodityData,
+                                            areaVar = input,
+                                            yieldVar = productivity,
+                                            prodVar = output,
+                                            conversion = unitConversion)
+                    )
+           })
+}
+
+
 
 startTime = Sys.time()
 
@@ -66,13 +124,13 @@ getYieldData = function(dataContext){
             valuePrefix = "Value_measuredElement_",
             flagObsPrefix = "flagObservationStatus_measuredElement_",
             flagMethodPrefix = "flagMethod_measuredElement_"
-            )
+        )
 
     key = dataContext
     if (exists("swsContext.modifiedCells")){
         print("Checking only modified data.")
         nmodded = nrow(swsContext.modifiedCells)
-    
+
         if (nmodded > 0){
             data2process = TRUE
             for(cname in colnames(swsContext.modifiedCells)){
@@ -84,25 +142,25 @@ getYieldData = function(dataContext){
         print("Reading all data.")
         data2process = TRUE
     }
-     
+
     ## Pivot to vectorize yield computation
     newPivot = c(
         Pivoting(code = areaVar, ascending = TRUE),
         Pivoting(code = itemVar, ascending = TRUE),
         Pivoting(code = yearVar, ascending = FALSE),
         Pivoting(code = elementVar, ascending = TRUE)
-        )
+    )
 
     if (data2process == TRUE){
-        # Execute the get data call. 
+        ## Execute the get data call.
         query = GetData(
             key = key,
             flags = TRUE,
             normalized = FALSE,
             pivoting = newPivot
-            )
+        )
     }
-   ## Query the data
+    ## Query the data
     
     list(query = query,
          formulaTuples = formulaTuples,
@@ -137,6 +195,7 @@ if(allData){
 } else {
     yearList = list(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
 }
+
 queryResult = c()
 ## FOR LOOP!  This isn't going to cause much of a performance issue since we're 
 ## not looping through a ton of items (only at most 50 or 60) and we're not 
@@ -178,13 +237,39 @@ for(years in yearList){
             computeYield(data = data$query, processingParameters = processingParams,
                          unitConversion = filter$unitConversion)
             balanceProduction(data = data$query, processingParameters = processingParams,
-                         unitConversion = filter$unitConversion)
+                              unitConversion = filter$unitConversion)
             balanceAreaHarvested(data = data$query, processingParameters = processingParams,
-                         unitConversion = filter$unitConversion)
-            if(nrow(data$query) >= 1){
+                                 unitConversion = filter$unitConversion)
+            ## Module testing
+            moduleTest = try({
+                productionFormula =
+                    getYieldFormula(slot(slot(swsContext.datasets[[1]],
+                                              "dimensions")$measuredItemCPC,
+                                         "keys"))
+                formulaPrefix =
+                    data.table(
+                        valuePrefix = "Value_measuredElement_",
+                        flagObsPrefix = "flagObservationStatus_measuredElement_",
+                        flagMethodPrefix = "flagMethod_measuredElement_"
+                    )
+
+                formulaTable =
+                    constructFormulaTable(productionFormula, formulaPrefix)
+
+                checkData  = data$query
+                valueVars = grep(formulaPrefix$valuePrefix,
+                                 colnames(checkData), value = TRUE)
+                flagObsVars = grep(formulaPrefix$flagObsPrefix,
+                                   colnames(checkData), value = TRUE)
+                naData = convert0MtoNA(checkData, valueVars, flagObsVars)
+                naData %>% checkAllProductionBalanced(testData = .,
+                                                      formulaTable = formulaTable)
+            })
+            if(nrow(data$query) >= 1 & !inherits(moduleTest, "try-error")){
                 saveProductionData(data$query, areaHarvestedCode = filter$input,
                                    yieldCode = filter$productivity,
-                                   productionCode = filter$output, normalized = FALSE)
+                                   productionCode = filter$output,
+                                   normalized = FALSE)
             }
         })
         queryResult = c(queryResult, is(test, "try-error"))
