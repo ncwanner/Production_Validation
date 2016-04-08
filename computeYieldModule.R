@@ -27,6 +27,9 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         SetClientFiles("~/R certificate files/Production/")
     } else if(Sys.info()[7] == "rockc_000"){ # Josh personal
         files = dir("~/Github/faoswsProduction/R/", full.names = TRUE)
+    } else if(Sys.info()[7] == "mk"){
+        files = dir("R/", full.names = TRUE)
+        SetClientFiles("~/.R/prod")
     } else {
         stop("Add your github directory here!")
     }
