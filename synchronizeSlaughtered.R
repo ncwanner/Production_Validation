@@ -18,6 +18,7 @@ cat("Beginning slaughtered synchronization script...")
 library(data.table)
 library(faosws)
 library(faoswsUtil)
+library(magrittr)
 
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -58,6 +59,93 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 } else {
     cat("Working on SWS...\n")
 }
+
+
+## Function to test the modules
+getMeatReferenceFile = function(){
+    fread(paste0(R_SWS_SHARE_PATH,
+                 "/browningj/production/slaughtered_synchronized.csv"),
+          colClasses = "character")
+}
+
+
+subsetMeatReferenceData = function(meatReferenceData, context){
+    selectedItems = context@dimensions$measuredItemCPC@keys
+    meatReferenceData[measuredItemParentCPC %in% selectedItems |
+                      measuredItemChildCPC %in% selectedItems, ]
+}
+
+
+getAllAnimalNumber = function(referenceData){
+    mainKey = getMainKey(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
+    mainKey@dimensions$measuredItemCPC@keys =
+        referenceData$measuredItemParentCPC
+    mainKey@dimensions$measuredElement@keys =
+        referenceData$measuredElementParent
+    animalNumbers = GetData(mainKey)
+    setnames(animalNumbers,
+             old = c("measuredItemCPC", "measuredElement"),
+             new = c("measuredItemParentCPC", "measuredElementParent"))
+    animalNumbers
+}
+
+getAllSlaughteredNumber = function(referenceData){
+    mainKey = getMainKey(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
+    mainKey@dimensions$measuredItemCPC@keys =
+        referenceData$measuredItemChildCPC
+    mainKey@dimensions$measuredElement@keys =
+        referenceData$measuredElementChild
+    slaughteredNumbers = GetData(mainKey)
+    setnames(slaughteredNumbers,
+             old = c("measuredItemCPC", "measuredElement"),
+             new = c("measuredItemChildCPC", "measuredElementChild"))
+    slaughteredNumbers
+}
+
+checkSlaughteredSynced = function(referenceData, animalNumbers,
+                                slaughteredNumbers){
+    ## Function to check whether the slaughtered animal and animal
+    ## number are in sync.
+    ##
+    ##
+    ## NOTE (Michael): Even 0M- values should be synced!
+
+    referenceWithAnimalData =
+        merge(animalNumbers, referenceData,
+              by = intersect(colnames(animalNumbers),
+                             colnames(referenceData)),
+              allow.cartesian = TRUE, all = TRUE)
+
+    setnames(referenceWithAnimalData,
+             old = c("Value", "flagObservationStatus", "flagMethod"),
+             new = paste0("animal_",
+                          c("Value", "flagObservationStatus", "flagMethod")))
+
+    referenceWithSlaughteredData =
+        merge(slaughteredNumbers, referenceData,
+              by = intersect(colnames(slaughteredNumbers),
+                             colnames(referenceData)),
+              allow.cartesian = TRUE, all = TRUE)
+
+    setnames(referenceWithSlaughteredData,
+             old = c("Value", "flagObservationStatus", "flagMethod"),
+             new = paste0("slaughtered_",
+                          c("Value", "flagObservationStatus", "flagMethod")))
+
+    referenceWithAllData <<-
+        merge(referenceWithAnimalData, referenceWithSlaughteredData,
+              intersect(colnames(referenceWithAnimalData),
+                        colnames(referenceWithSlaughteredData)))
+
+    with(referenceWithAllData,
+         if(!all(na.omit(animal_Value == slaughtered_Value)))
+             stop("Not all values were synced")
+         )
+}
+
+
+
+
 
 startTime = Sys.time()
 
@@ -155,9 +243,23 @@ for(cname in c(areaVar, itemVar, elementVar, yearVar,
 
 cat("Attempting to save to the database...")
 
-saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
-                      dataset = swsContext.datasets[[1]]@dataset,
-                      data = toWrite)
+
+moduleTest <- try({
+    getMeatReferenceFile() %>%
+        subsetMeatReferenceData(context = swsContext.datasets[[1]]) %>%
+        {
+            ## Get the data based on the referenced file
+            list(referenceData = .,
+                 animalNumbers = getAllAnimalNumber(referenceData = .),
+                 slaughteredNumbers = getAllSlaughteredNumber(referenceData = .))
+        } %$%
+    checkSlaughteredSynced(referenceData, animalNumbers, slaughteredNumbers)
+})
+
+if(!inherits(moduleTest, "try-error"))
+    saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
+                          dataset = swsContext.datasets[[1]]@dataset,
+                          data = toWrite)
 
 result = paste("Module completed with", saveResult$inserted + saveResult$appended,
       "observations updated and", saveResult$discarded, "problems.")
@@ -167,120 +269,3 @@ result
 
 
 
-
-getMeatReferenceFile = function(){
-    fread(paste0(R_SWS_SHARE_PATH,
-                 "/browningj/production/slaughtered_synchronized.csv"),
-          colClasses = "character")
-}
-
-meatReferenceData = getMeatReferenceFile()
-
-subsetMeatReferenceData = function(meatReferenceData, context){
-    selectedItems = context@dimensions$measuredItemCPC@keys
-    meatReferenceData[measuredItemParentCPC %in% selectedItems |
-                      measuredItemChildCPC %in% selectedItems, ]
-}
-sessionMeatReferenceData =
-    subsetMeatReferenceData(meatReferenceData, swsContext.datasets[[1]])
-
-
-getAllAnimalNumber = function(referenceData){
-    mainKey = getMainKey(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
-    mainKey@dimensions$measuredItemCPC@keys =
-        referenceData$measuredItemParentCPC
-    mainKey@dimensions$measuredElement@keys =
-        referenceData$measuredElementParent
-    animalNumbers = GetData(mainKey)
-    setnames(animalNumbers,
-             old = c("measuredItemCPC", "measuredElement"),
-             new = c("measuredItemParentCPC", "measuredElementParent"))
-    animalNumbers
-}
-allAnimalNumbers = getAllAnimalNumber(sessionMeatReferenceData)
-
-getAllSlaughteredNumber = function(referenceData){
-    mainKey = getMainKey(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
-    mainKey@dimensions$measuredItemCPC@keys =
-        referenceData$measuredItemChildCPC
-    mainKey@dimensions$measuredElement@keys =
-        referenceData$measuredElementChild
-    slaughteredNumbers = GetData(mainKey)
-    setnames(slaughteredNumbers,
-             old = c("measuredItemCPC", "measuredElement"),
-             new = c("measuredItemChildCPC", "measuredElementChild"))
-    slaughteredNumbers
-}
-allSlaughteredNumbers = getAllSlaughteredNumber(sessionMeatReferenceData)
-
-checkSlaughteredSynced = function(referenceData, animalNumbers,
-                                slaughteredNumbers){
-    ## Function to check whether the slaughtered animal and animal
-    ## number are in sync.
-    ##
-    ## NOTE (Michael): Need to subset for session, this function
-    ##                 should be the data requirement of the module.
-    ##
-    ## NOTE (Michael): Should we check for missing values? I think
-    ##                 missing values should be synced, unless both
-    ##                 are missing.
-
-    referenceWithAnimalData =
-        merge(animalNumbers, referenceData,
-              by = intersect(colnames(animalNumbers),
-                             colnames(referenceData)),
-              allow.cartesian = TRUE, all = TRUE)
-
-    setnames(referenceWithAnimalData,
-             old = c("Value", "flagObservationStatus", "flagMethod"),
-             new = paste0("animal_",
-                          c("Value", "flagObservationStatus", "flagMethod")))
-
-    referenceWithSlaughteredData =
-        merge(slaughteredNumbers, referenceData,
-              by = intersect(colnames(slaughteredNumbers),
-                             colnames(referenceData)),
-              allow.cartesian = TRUE, all = TRUE)
-
-    setnames(referenceWithSlaughteredData,
-             old = c("Value", "flagObservationStatus", "flagMethod"),
-             new = paste0("slaughtered_",
-                          c("Value", "flagObservationStatus", "flagMethod")))
-
-    referenceWithAllData <<-
-        merge(referenceWithAnimalData, referenceWithSlaughteredData,
-              intersect(colnames(referenceWithAnimalData),
-                        colnames(referenceWithSlaughteredData)))
-
-
-    ## referenceWithAllData =
-    ##     merge(referenceWithParentData, slaughteredNumbers,
-    ##           by = intersect(colnames(slaughteredNumbers),
-    ##                          colnames(referenceWithParentData)),
-    ##           all = TRUE)
-    ## setnames(referenceWithAllData,
-    ##          old = c("Value", "flagObservationStatus", "flagMethod"),
-    ##          new = paste0("slaughtered_",
-    ##                       c("Value", "flagObservationStatus", "flagMethod")))
-    ## referenceWithAllData <<- referenceWithAllData
-    with(referenceWithAllData,
-         if(!all(animal_Value == slaughtered_Value))
-             stop("Not all values were synced")
-         )
-}
-
-checkSlaughteredSynced(sessionMeatReferenceData, allAnimalNumbers,
-                       allSlaughteredNumbers)
-
-
-
-
-getMeatReferenceFile() %>%
-    subsetMeatReferenceData(context = swsContext.datasets[[1]]) %>%
-    {
-        ## Get the data based on the referenced file
-        list(referenceData = .,
-             animalNumbers = getAllAnimalNumber(referenceData = .),
-             slaughteredNumbers = getAllSlaughteredNumber(referenceData = .))
-    } %$%
-    checkSlaughteredSynced(referenceData, animalNumbers, slaughteredNumbers)
