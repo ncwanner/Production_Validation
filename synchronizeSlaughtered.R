@@ -241,9 +241,9 @@ for(cname in c(areaVar, itemVar, elementVar, yearVar,
     toWrite[, c(cname) := as.character(get(cname))]
 }
 
-cat("Attempting to save to the database...")
 
 
+cat("Testing module ...\n")
 moduleTest <- try({
     getMeatReferenceFile() %>%
         subsetMeatReferenceData(context = swsContext.datasets[[1]]) %>%
@@ -256,16 +256,15 @@ moduleTest <- try({
     checkSlaughteredSynced(referenceData, animalNumbers, slaughteredNumbers)
 })
 
-if(!inherits(moduleTest, "try-error"))
+if(!inherits(moduleTest, "try-error")){
+    cat("Attempting to save to the database...")
     saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
                           dataset = swsContext.datasets[[1]]@dataset,
                           data = toWrite)
+}
 
 result = paste("Module completed with", saveResult$inserted + saveResult$appended,
       "observations updated and", saveResult$discarded, "problems.")
 cat(result)
 
 result
-
-
-
