@@ -56,8 +56,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     GetTestEnvironment(
         baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         token = "e518d5c0-7316-4f21-9f6f-4d2aa666c0c2"
-        # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        # token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
+        ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        ## token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
     )
 
     ## Source local scripts for this local test
@@ -86,7 +86,7 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
 
     formulaTuples = try(getYieldFormula(singleItem))
     if(is(formulaTuples, "try-error")){
-    next
+        next
     }
 
     for(i in 1:nrow(formulaTuples)){
@@ -96,8 +96,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_removed.RData"))
         })
         if(is(loadDataRm, "try-error")){
-          warning(sprintf("model for %s:%s doesn't exist", singleItem, i))
-          next
+            warning(sprintf("model for %s:%s doesn't exist", singleItem, i))
+            next
         } else {
             rmModelYield = modelYield
             rmModelProduction = modelProduction
@@ -107,8 +107,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_kept.RData"))
         })
         if(is(loadDataKp, "try-error")){
-          warning(sprintf("model for %s_%s doesn't exist", singleItem, i))
-          next
+            warning(sprintf("model for %s_%s doesn't exist", singleItem, i))
+            next
         } else {
             kpModelYield = modelYield
             kpModelProduction = modelProduction
@@ -172,22 +172,22 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         ## This approach of saving the computed yield results doesn't work when
         ## we are required to choose between two different models (with and
         ## without estimates).
-#         if(exists("modelComputeYield")){
-#             modelComputeYield = modelComputeYield[
-#                 timePointYears <= endYear & timePointYears >= startYear &
-#                 geographicAreaM49 %in% countryM49, ]
-#             dataToSave = rbind(dataToSave, modelComputeYield)
-#         }
+        ## if(exists("modelComputeYield")){
+        ##     modelComputeYield = modelComputeYield[
+        ##         timePointYears <= endYear & timePointYears >= startYear &
+        ##         geographicAreaM49 %in% countryM49, ]
+        ##     dataToSave = rbind(dataToSave, modelComputeYield)
+        ## }
         ## HACK: Update China and Pacific
         warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
         dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156", "582"), ]
         dataToSave = dataToSave[!is.na(Value), ]
         if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
             saveProductionData(data = dataToSave,
-                    areaHarvestedCode = formulaTuples[i, input],
-                    yieldCode = formulaTuples[i, productivity],
-                    productionCode = formulaTuples[i, output],
-                    normalized = TRUE)
+                               areaHarvestedCode = formulaTuples[i, input],
+                               yieldCode = formulaTuples[i, productivity],
+                               productionCode = formulaTuples[i, output],
+                               normalized = TRUE)
         }
         successCount = successCount + 1
     }
