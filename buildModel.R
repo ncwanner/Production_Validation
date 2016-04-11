@@ -45,6 +45,12 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
                                   "/media/sws_prod_shared_drive/",
                                   "/media/sws_qa_shared_drive/")
         SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod/", "~/.R/qa/"))
+    } else if(Sys.info()[7] == "kao"){
+        apiDirectory = "R/"
+        R_SWS_SHARE_PATH = ifelse(server == "Prod",
+                                  "/media/sws_prod_shared_drive/",
+                                  "/media/sws_qa_shared_drive/")
+        SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod/", "~/.R/qa/"))
     }
 
 
