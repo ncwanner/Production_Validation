@@ -1,8 +1,14 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <RScript xmlns="http://www.fao.org/rScript" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
 	<Name>Impute Slaughtered</Name>
-	<Description>Impute values for animals slaughtered in the animal commodity, using information from the corresponding meat.  Note: this module runs on all countries!</Description>
+	<Description>
+	Impute values for animals slaughtered in the animal commodity, using information from the corresponding meat.  Note: this module runs on all countries!
+
+	Tests:
+	    - When transfering animal numbers to the slaughtered animal in meat, no missing values are transfered.
+	    - The slaughtered animal, carcass weight and meat production should be either all missing, or all imputed for each time series.
+	</Description>
 	<Category>Computation</Category>
 	<Authors>
 		<Author>
