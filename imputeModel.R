@@ -81,8 +81,7 @@ checkFlags = function(data, flagObservationStatusColumn,
     if(!all(data[[flagObservationStatusColumn]] %in%
             flagObservationStatusExpected))
         stop("Incorrect Observation Flag")
-    if(!all(data[[flagMethodStatusColumn]] %in%
-            flagMethodStatusExpected))
+    if(!all(data[[flagMethodColumn]] %in% flagMethodExpected))
         stop("Incorrect Method Flag")
 }
 
