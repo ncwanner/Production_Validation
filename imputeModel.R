@@ -8,16 +8,14 @@
 ##' that these imputations were generated during the yield imputation process,
 ##' and thus production or area harvested values could also appear as the result
 ##' of balancing.
-##'
-##' Test (Michael): Just testing whether the imputed values have the
-##'                 correct flag.
-
+##' 
 
 
 ## NOTE (Michael): The values imputed should be based on the selected
 ##                 session. The selection below does not correspond to
 ##                 the set of keys in the selected session, the scope
-##                 of the selection below is greater.
+##                 of the selection below is greater. It does not
+##                 match the Description tag in the xml file.
 
 
 library(faosws)
