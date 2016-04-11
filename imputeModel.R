@@ -9,6 +9,16 @@
 ##' and thus production or area harvested values could also appear as the result
 ##' of balancing.
 ##'
+##' Test (Michael): Just testing whether the imputed values have the
+##'                 correct flag.
+
+
+
+## NOTE (Michael): The values imputed should be based on the selected
+##                 session. The selection below does not correspond to
+##                 the set of keys in the selected session, the scope
+##                 of the selection below is greater.
+
 
 library(faosws)
 library(faoswsUtil)
@@ -63,6 +73,17 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Source local scripts for this local test
     for(file in dir(apiDirectory, full.names = T))
         source(file)
+}
+
+checkFlags = function(data, flagObservationStatusColumn,
+                      flagObservationStatusExpected, flagMethodColumn,
+                      flagMethodExpected){
+    if(!all(data[[flagObservationStatusColumn]] %in%
+            flagObservationStatusExpected))
+        stop("Incorrect Observation Flag")
+    if(!all(data[[flagMethodStatusColumn]] %in%
+            flagMethodStatusExpected))
+        stop("Incorrect Method Flag")
 }
 
 if(is.null(swsContext.computationParams$startYear)){
@@ -182,12 +203,23 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
         dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156", "582"), ]
         dataToSave = dataToSave[!is.na(Value), ]
-        if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
-            saveProductionData(data = dataToSave,
-                               areaHarvestedCode = formulaTuples[i, input],
-                               yieldCode = formulaTuples[i, productivity],
-                               productionCode = formulaTuples[i, output],
-                               normalized = TRUE)
+
+        moduleTest = try({
+            checkFlags(data = dataToSave,
+                       flagObservationStatusColumn = "flagObservationStatus",
+                       flagObservationStatusExpected = "I",
+                       flagMethodColumn = "flagMethod",
+                       flagMethodExpected = c("i", "e"))
+        })
+
+        if(!inherits(moduleTest, "try-error")){
+            if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
+                saveProductionData(data = dataToSave,
+                                   areaHarvestedCode = formulaTuples[i, input],
+                                   yieldCode = formulaTuples[i, productivity],
+                                   productionCode = formulaTuples[i, output],
+                                   normalized = TRUE)
+            }
         }
         successCount = successCount + 1
     }
