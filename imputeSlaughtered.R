@@ -194,8 +194,8 @@ data[!is.na(Value.new), c("Value", "flagObservationStatus", "flagMethod") :=
          list(Value.new, flagObservationStatus.new, flagMethod.new)]
 data[, c("Value.new", "flagObservationStatus.new", "flagMethod.new") := NULL]
 
-passCheck = checkTimeSeriesImputed(data, "geographicAreaM49", "Value")
-if(!inherits(passCheck, "try-error"))
+moduleTest1 = checkTimeSeriesImputed(data, "geographicAreaM49", "Value")
+if(!inherits(moduleTest1, "try-error"))
     SaveData("agriculture", "aproduction", data = data)
 
 
@@ -383,14 +383,15 @@ for(iter in 1:length(uniqueItem)){
         message("Imputation Module Failed!")
         failCount = failCount + 1
     } else {
-        message("Imputation Module Executed Successfully!")
         successCount = successCount + 1
         ## New module test
-        passCheck = checkTimeSeriesImputed(data, c(areaVar, itemVar, elementVar),
-                                           "Value")
-        if(!inherits(passCheck, "try-error"))
+        moduleTest2 = 
+            checkTimeSeriesImputed(data, c(areaVar, itemVar, elementVar), "Value")
+
+        if(!inherits(moduleTest2, "try-error"))
             SaveData("agriculture", "aproduction", data = impute,
                      normalized = FALSE)
+        message("Imputation Module Executed Successfully!")
         ## Just need to return the numbers slaughtered code:
         impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
                         "_measuredElement_", datasets$formulaTuples$productivity) := NULL]
@@ -428,8 +429,8 @@ if(!is.null(result)){
     ## 
     ## Note: the first saving has been done, we just need to now save the data under
     ## the animal element.
-    passCheck = checkTimeSeriesImputed(data, "geographicAreaM49", "Value")
-    if(!inherits(passCheck, "try-error"))
+    moduleTest3 = checkTimeSeriesImputed(data, "geographicAreaM49", "Value")
+    if(!inherits(moduleTest3, "try-error"))
         saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
                               data = data)
 }

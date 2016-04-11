@@ -241,7 +241,7 @@ for(years in yearList){
             balanceAreaHarvested(data = data$query, processingParameters = processingParams,
                                  unitConversion = filter$unitConversion)
             ## Module testing
-            moduleTest = try({
+            moduleTest = {
                 productionFormula =
                     getYieldFormula(slot(slot(swsContext.datasets[[1]],
                                               "dimensions")$measuredItemCPC,
@@ -264,7 +264,7 @@ for(years in yearList){
                 naData = convert0MtoNA(checkData, valueVars, flagObsVars)
                 naData %>% checkAllProductionBalanced(testData = .,
                                                       formulaTable = formulaTable)
-            })
+            }
             if(nrow(data$query) >= 1 & !inherits(moduleTest, "try-error")){
                 saveProductionData(data$query, areaHarvestedCode = filter$input,
                                    yieldCode = filter$productivity,

@@ -429,7 +429,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
                      finalImputedData = copy(datasets$query))
 
 
-            checkAllValuesImputed = try({
+            moduleTest = 
                 lapply(grep("Value", colnames(checkData$finalImputedData),
                             value = TRUE),
                        FUN = function(valueColumn){
@@ -437,7 +437,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
                                                   key = areaVar,
                                                   valueColumn = valueColumn)
                        })
-            })
+
             if(inherits(checkAllValuesImputed, "try-error")){
                 save(modelYield, modelProduction, years,
                      file = paste0("checkProductionImputation/notImputed/prodModel_",

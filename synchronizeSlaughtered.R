@@ -244,7 +244,7 @@ for(cname in c(areaVar, itemVar, elementVar, yearVar,
 
 
 cat("Testing module ...\n")
-moduleTest <- try({
+moduleTest <- 
     getMeatReferenceFile() %>%
         subsetMeatReferenceData(context = swsContext.datasets[[1]]) %>%
         {
@@ -254,7 +254,7 @@ moduleTest <- try({
                  slaughteredNumbers = getAllSlaughteredNumber(referenceData = .))
         } %$%
     checkSlaughteredSynced(referenceData, animalNumbers, slaughteredNumbers)
-})
+
 
 if(!inherits(moduleTest, "try-error")){
     cat("Attempting to save to the database...")
