@@ -6,6 +6,7 @@ library(faoswsImputation)
 library(data.table)
 library(splines)
 library(lme4)
+library(magrittr)
 
 ## Setting up variables
 areaVar = "geographicAreaM49"
@@ -73,95 +74,6 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     suppressPackageStartupMessages(library(doParallel))
     library(foreach)
     registerDoParallel(cores=detectCores(all.tests=TRUE))
-}
-
-checkTimeSeriesImputed = function(data, key, valueColumn){
-    ## The number of missing values should be either zero or all
-    ## missing.
-    check = data[, sum(is.na(.SD[[valueColumn]])) == 0 |
-                   sum(is.na(.SD[[valueColumn]])) == .N,
-                 by = c(key)]
-    unimputedTimeSeries = which(!check$V1)
-    if(length(unimputedTimeSeries) > 0){
-        ## unimputedData = merge(check[unimputedTimeSeries, ],
-        ##                       data, by = key, all.x = TRUE)
-        stop("Not all time series are imputed")
-    }
-}
-
-
-checkProtectedData = function(dataToBeSaved,
-                              domain = "agriculture",
-                              dataset = "aproduction",
-                              areaVar = "geographicAreaM49",
-                              yearVar = "timePointYears",
-                              itemVar = "measuredItemCPC",
-                              elementVar = "measuredElement",
-                              flagObsVar = "flagObservationStatus",
-                              flagMethodVar = "flagMethod",
-                              protectedFlag = c("", "*"),
-                              p = defaultProcessingParameters()){
-    if(NROW(dataToBeSaved) > 0){
-        newKey = DatasetKey(
-            domain = domain,
-            dataset = dataset,
-            dimensions = list(
-                Dimension(name = areaVar,
-                          keys = unique(dataToBeSaved[[areaVar]])),
-                Dimension(name = itemVar,
-                          keys = unique(dataToBeSaved[[itemVar]])),
-                Dimension(name = elementVar,
-                          keys = unique(dataToBeSaved[[elementVar]])),
-                Dimension(name = yearVar,
-                          keys = unique(dataToBeSaved[[yearVar]]))
-            )
-        )
-
-        dbData = GetData(newKey)
-
-        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
-        if(NROW(protectedData) > 0)
-            stop("Protected Data being over written!")
-    }
-}
-
-
-normalise = function(denormalisedData,
-                     areaVar = "geographicAreaM49",
-                     yearVar = "timePointYears",
-                     itemVar = "measuredItemCPC",
-                     elementVar = "measuredElement",
-                     flagObsVar = "flagObservationStatus",
-                     flagMethodVar = "flagMethod",
-                     valueVar = "Value"){
-
-    measuredTriplet = c(valueVar, flagObsVar, flagMethodVar)
-    allKey = c(areaVar, itemVar, elementVar, yearVar)
-    ## denormalisedData = copy(step2Data)
-    normalisedKey = intersect(allKey, colnames(denormalisedData))
-    denormalisedKey = setdiff(allKey, normalisedKey)
-    normalisedList =
-        lapply(measuredTriplet,
-               FUN = function(x){
-                   splitDenormalised =
-                       denormalisedData[, c(normalisedKey,
-                                            grep(x, colnames(denormalisedData),
-                                                 value = TRUE)),
-                                        with = FALSE]
-                   splitNormalised =
-                       melt(splitDenormalised, id.vars = normalisedKey,
-                            variable.name = denormalisedKey, value.name = x)
-                   substitutePattern = paste0("(", x, "|", denormalisedKey, "|_)")
-                   splitNormalised[, `:=`(c(denormalisedKey),
-                                          gsub(substitutePattern, "",
-                                               .SD[[denormalisedKey]]))]
-                   setkeyv(splitNormalised,
-                           col = c(normalisedKey, denormalisedKey))
-               })
-
-    normalisedData =
-        Reduce(merge, x = normalisedList)
-
 }
 
 saveDir = paste0(R_SWS_SHARE_PATH, "/browningj/production/")
@@ -515,35 +427,23 @@ runModel = function(iter, removePriorImputation, appendName = "",
             ## NOTE (Michael): We check the datasets$query which is
             ##                 the final dataset after running through
             ##                 the whole imputation process
-            checkData <<-
-                list(modelYield = modelYield,
-                     modelProduction = modelProduction,
-                     years = years,
-                     finalImputedData = copy(datasets$query))
+            ##
+            ## NOTE (Michael): Check protected data is probably not
+            ##                 needed, as no data is being saved back.
+            ##
+            ## NOTE (Michael): This check won't actually fail the
+            ##                 module, as it is wrapped in a try-block.
+            cat("Module Testing ... \n")
+            checkData <<- copy(datasets$query)
+            checkData %>%
+                normalise(.) %>%
+                checkTimeSeriesImputed(dataToBeSaved = .,
+                                       key = c("geographicAreaM49",
+                                               "measuredItemCPC",
+                                               "measuredElement"),
+                                       valueColumn = "Value") %>%
+                checkProtectedData(dataToBeSaved = .)
 
-
-            moduleTest = try({
-                lapply(grep("Value", colnames(checkData$finalImputedData),
-                            value = TRUE),
-                       FUN = function(valueColumn){
-                           checkTimeSeriesImputed(checkData$finalImputedData,
-                                                  key = areaVar,
-                                                  valueColumn = valueColumn)
-                       })
-
-
-                normalisedData = normalise(checkData$finalImputedData)
-                checkProtectedData(dataToBeSaved = normalisedData)
-            })
-
-
-            if(!inherits(moduleTest, "try-error")){
-                save(modelYield, modelProduction, years,
-                     file =
-                         paste0("checkProductionImputation/notImputed/prodModel_",
-                                singleItem, "_", i, appendName, ".RData"))
-                stop("Not all values were imputed")
-            }
             ## NOTE (Michael): Need to add in checks for the objects
             ##                 saved.
             save(modelYield, modelProduction, years,
