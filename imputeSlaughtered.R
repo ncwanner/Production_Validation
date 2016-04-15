@@ -35,6 +35,7 @@ library(faoswsFlag)
 library(faoswsUtil)
 library(faoswsImputation)
 library(splines)
+library(magrittr)
 
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -102,98 +103,6 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 ## Just testing 1 item
 ## swsContext.datasets[[1]]@dimensions[[itemVar]]@keys = "21111.01" ## meat of cattle
 ## swsContext.datasets[[1]]@dimensions[[itemVar]]@keys = "21113.01" ## meat of pig
-
-
-
-
-## This is the function to test whether modules perform as expected.
-checkTimeSeriesImputed = function(data, key, valueColumn){
-    ## The number of missing values should be either zero or all
-    ## missing.
-    check = data[, sum(is.na(.SD[[valueColumn]])) == 0 |
-                   sum(is.na(.SD[[valueColumn]])) == .N,
-                 by = c(key)]
-    unimputedTimeSeries = which(!check$V1)
-    if(length(unimputedTimeSeries) > 0){
-        ## unimputedData = merge(check[unimputedTimeSeries, ],
-        ##                       data, by = key, all.x = TRUE)
-        stop("Not all time series are imputed")
-    }
-}
-
-checkProtectedData = function(dataToBeSaved,
-                              domain = "agriculture",
-                              dataset = "aproduction",
-                              areaVar = "geographicAreaM49",
-                              yearVar = "timePointYears",
-                              itemVar = "measuredItemCPC",
-                              elementVar = "measuredElement",
-                              flagObsVar = "flagObservationStatus",
-                              flagMethodVar = "flagMethod",
-                              protectedFlag = c("", "*"),
-                              p = defaultProcessingParameters()){
-    if(NROW(dataToBeSaved) > 0){
-        newKey = DatasetKey(
-            domain = domain,
-            dataset = dataset,
-            dimensions = list(
-                Dimension(name = areaVar,
-                          keys = unique(dataToBeSaved[[areaVar]])),
-                Dimension(name = itemVar,
-                          keys = unique(dataToBeSaved[[itemVar]])),
-                Dimension(name = elementVar,
-                          keys = unique(dataToBeSaved[[elementVar]])),
-                Dimension(name = yearVar,
-                          keys = unique(dataToBeSaved[[yearVar]]))
-            )
-        )
-
-        dbData = GetData(newKey)
-
-        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
-        if(NROW(protectedData) > 0)
-            stop("Protected Data being over written!")
-    }
-}
-
-
-normalise = function(denormalisedData,
-                     areaVar = "geographicAreaM49",
-                     yearVar = "timePointYears",
-                     itemVar = "measuredItemCPC",
-                     elementVar = "measuredElement",
-                     flagObsVar = "flagObservationStatus",
-                     flagMethodVar = "flagMethod",
-                     valueVar = "Value"){
-
-    measuredTriplet = c(valueVar, flagObsVar, flagMethodVar)
-    allKey = c(areaVar, itemVar, elementVar, yearVar)
-    ## denormalisedData = copy(step2Data)
-    normalisedKey = intersect(allKey, colnames(denormalisedData))
-    denormalisedKey = setdiff(allKey, normalisedKey)
-    normalisedList =
-        lapply(measuredTriplet,
-               FUN = function(x){
-                   splitDenormalised =
-                       denormalisedData[, c(normalisedKey,
-                                            grep(x, colnames(denormalisedData),
-                                                 value = TRUE)),
-                                        with = FALSE]
-                   splitNormalised =
-                       melt(splitDenormalised, id.vars = normalisedKey,
-                            variable.name = denormalisedKey, value.name = x)
-                   substitutePattern = paste0("(", x, "|", denormalisedKey, "|_)")
-                   splitNormalised[, `:=`(c(denormalisedKey),
-                                          gsub(substitutePattern, "",
-                                               .SD[[denormalisedKey]]))]
-                   setkeyv(splitNormalised,
-                           col = c(normalisedKey, denormalisedKey))
-               })
-
-    normalisedData =
-        Reduce(merge, x = normalisedList)
-
-}
 
 startTime = Sys.time()
 
@@ -286,14 +195,12 @@ data[!is.na(Value.new), c("Value", "flagObservationStatus", "flagMethod") :=
 data[, c("Value.new", "flagObservationStatus.new", "flagMethod.new") := NULL]
 
 
-## QUESTION (Michael): How is it transfering to the meat (child)
-##                     commodity when the item code is 02111 which
-##                     correspond to cattle (parent) commodity?
-moduleTest1 = try({
-    checkProtectedData(dataToBeSaved = data)
-})
-if(!inherits(moduleTest1, "try-error"))
-    SaveData("agriculture", "aproduction", data = data)
+## Module test
+data %>%
+    checkProtectedData(dataToBeSaved = .) %>%
+    SaveData("agriculture", "aproduction", data = .)
+## if(!inherits(moduleTest1, "try-error"))
+##     SaveData("agriculture", "aproduction", data = data)
 
 
 step1Data = copy(data)
@@ -502,17 +409,20 @@ for(iter in 1:length(uniqueItem)){
         step2Data = copy(impute)
         successCount = successCount + 1
         ## New module test
-        moduleTest2 = try({
-            checkTimeSeriesImputed(impute, "geographicAreaM49", "Value")
-            normalisedImpute = normalise(impute)
-            normalisedImpute[, `:=`(c(yearVar),
-                                    as.character(.SD[[yearVar]]))]
-            checkProtectedData(dataToBeSaved = normalisedImpute)
-        })
+        impute %>%
+            normalise(.) %>%
+            ## Change time point year back to character
+            postProcessing(data = .) %>%
+            checkTimeSeriesImputed(dataToBeSaved = .,
+                                   key = c("geographicAreaM49",
+                                              "measuredItemCPC"),
+                                   valueColumn = "Value") %>%
+            checkProtectedData(dataToBeSaved = .) %>%
+            SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 
-        if(!inherits(moduleTest2, "try-error"))
-            SaveData("agriculture", "aproduction", data = impute,
-                     normalized = FALSE)
+        ## if(!inherits(moduleTest2, "try-error"))
+        ##     SaveData("agriculture", "aproduction", data = impute,
+        ##              normalized = FALSE)
         message("Imputation Module Executed Successfully!")
         ## Just need to return the numbers slaughtered code:
         impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
@@ -555,14 +465,18 @@ if(!is.null(result)){
     ## 
     ## Note: the first saving has been done, we just need to now save
     ## the data under the animal element.
-    moduleTest3 = try({
-        checkTimeSeriesImputed(impute, "geographicAreaM49", "Value")
-        ## NOTE (Michael): Need to normalise the impute data.
-        checkProtectedData(dataToBeSaved = impute)
-    })
-    if(!inherits(moduleTest3, "try-error"))
-        saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
-                              data = data)
+
+    ## Module Testing before saving the data back to the database
+    saveResult =
+        data %>%
+        checkTimeSeriesImputed(dataToBeSaved = ., "geographicAreaM49", "Value") %>%
+        checkProtectedData(dataToBeSaved = .) %>%
+        SaveData(domain = "agriculture", dataset = "aproduction",
+                 data = .)
+
+    ## if(!inherits(moduleTest3, "try-error"))
+    ##     saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
+    ##                           data = data)
 }
 
 message = paste("Module completed with", successCount,
