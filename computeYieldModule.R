@@ -211,8 +211,8 @@ for(years in yearList){
             flagObsVars = grep(formulaPrefix$flagObsPrefix,
                                colnames(data$query), value = TRUE)
 
-            checkData = 
-            remove0M(data$query, valueVars, flagObsVars) %>%
+            saveResult =
+                remove0M(data$query, valueVars, flagObsVars) %>%
                 checkAllProductionBalanced(dataToBeSaved = .,
                                            formulaTable = formulaTable) %>%
                 normalise(.) %>%
