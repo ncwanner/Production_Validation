@@ -114,7 +114,7 @@ getUnimputedTimeSeries = function(data, key, valueColumn){
     unimputedData
 }
 
-## Test whether the data requirement is met
+## Test whether the all the data are imputed
 years = 1991:year(Sys.Date())
 unimputedTimeSeries =
     years %>%
@@ -127,6 +127,14 @@ unimputedTimeSeries =
                                    "measuredItemCPC",
                                    "measuredElement"),
                            valueColumn = "Value")
+
+## Check whether all the animal numbers in animals (parent) and animal
+## slaughtered in meat (child) are synchronised.
+##
+## NOTE (Michael): This function doesn't work at the moment as it is
+##                 sitting on the "module_test" branch.
+##
+## checkSlaughteredSynced()
 
 if(NROW(unimputedTimeSeries) > 0){
     stop("Not all time series are imputed")
