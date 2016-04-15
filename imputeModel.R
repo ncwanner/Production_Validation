@@ -83,6 +83,41 @@ checkFlags = function(data, flagObservationStatusColumn,
         stop("Incorrect Method Flag")
 }
 
+checkProtectedData = function(dataToBeSaved,
+                              domain = "agriculture",
+                              dataset = "aproduction",
+                              areaVar = "geographicAreaM49",
+                              yearVar = "timePointYears",
+                              itemVar = "measuredItemCPC",
+                              elementVar = "measuredElement",
+                              flagObsVar = "flagObservationStatus",
+                              flagMethodVar = "flagMethod",
+                              protectedFlag = c("", "*"),
+                              p = defaultProcessingParameters()){
+    if(NROW(dataToBeSaved) > 0){
+        newKey = DatasetKey(
+            domain = domain,
+            dataset = dataset,
+            dimensions = list(
+                Dimension(name = areaVar,
+                          keys = unique(dataToBeSaved[[areaVar]])),
+                Dimension(name = itemVar,
+                          keys = unique(dataToBeSaved[[itemVar]])),
+                Dimension(name = elementVar,
+                          keys = unique(dataToBeSaved[[elementVar]])),
+                Dimension(name = yearVar,
+                          keys = unique(dataToBeSaved[[yearVar]]))
+            )
+        )
+
+        dbData = GetData(newKey)
+
+        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
+        if(NROW(protectedData) > 0)
+            stop("Protected Data being over written!")
+    }
+}
+
 if(is.null(swsContext.computationParams$startYear)){
     startYear = defaultStartYear
 } else {
@@ -207,6 +242,10 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                        flagObservationStatusExpected = "I",
                        flagMethodColumn = "flagMethod",
                        flagMethodExpected = c("i", "e"))
+
+            dataToSave[, `:=`(c("timePointYears"),
+                              as.character(.SD[["timePointYears"]]))]
+            checkProtectedData(dataToBeSaved = dataToSave)
         })
 
         if(!inherits(moduleTest, "try-error")){
