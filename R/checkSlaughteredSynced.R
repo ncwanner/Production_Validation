@@ -1,3 +1,25 @@
+##' This function checks whether the animal number in the animal
+##' commodity (parent) is in sync with the slaughtered animal in the
+##' meat commodity (child).
+##'
+##' @param animalMeatMapping The mapping table which contains the
+##'     relationship between the animal commodity and the meat
+##'     commodity. Can be retrieved from \code{getAnimalMeatMapping}
+##'     function.
+##' @param animalNumbers The data.table object which contains the
+##'     animal number of the animal commodity.
+##' @param slaughteredNumbers The data.table object which contains the
+##'     slaughtered animal number of the meat commodity.
+##'
+##' @return All three input dataset will be returned as a list if all
+##'     the the animal number matches the slaughtered
+##'     number. Otherwise an error will be raised.
+##'
+##' @export
+##'
+
+
+
 checkSlaughteredSynced = function(animalMeatMapping = getAnimalMeatMapping(),
                                   animalNumbers = getAllAnimalNumber(),
                                   slaughteredNumbers = getAllSlaughteredNumber()){
