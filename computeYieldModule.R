@@ -52,129 +52,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 
 
 
-checkProductionBalanced = function(data, areaVar, yieldVar, prodVar, conversion){
-    productionDifference =
-        abs(data[[areaVar]] * data[[yieldVar]] - data[[prodVar]] * conversion)
-    ## NOTE (Michael): Test whether the difference is below 1, this is
-    ##                 accounting for rounding error.
-    if(!all(na.omit(productionDifference < 1))){
-        stop("Production is not balanced, the A * Y = P identity is not satisfied")
-    }
-}
 
-constructFormulaTable = function(formulaTuples, formulaPrefix,
-                                 whichPrefix = c("valuePrefix", "flagObsPrefix",
-                                                 "flagMethodPrefix")){
-    whichPrefix = match.arg(whichPrefix)
-    formulaTable = copy(formulaTuples)
-    formulaTable[, `:=`(c("input", "productivity", "output"),
-                        lapply(.SD[, c("input", "productivity", "output"),
-                                   with = FALSE],
-                               FUN = function(x){
-                                   paste0(formulaPrefix[[whichPrefix]], x)
-                               }))]
-    formulaTable
-}
-
-
-
-convert0MtoNA = function(data, valueVars, flagVars, missingFlag = "M"){
-    dataCopy = copy(data)
-    mapply(FUN = function(value, flag){
-        dataCopy[which(dataCopy[[flag]] == missingFlag), `:=`(c(value), NA_real_)]
-    }, value = valueVars, flag = flagVars)
-    dataCopy
-}
-
-checkAllProductionBalanced = function(testData, formulaTable){
-    lapply(unique(testData$measuredItemCPC),
-           FUN = function(x){
-               cat("Checking formula for commodity: ", x, "\n")
-               commodityFormula = formulaTable[which(measuredItemCPC == x), ]
-               commodityData = testData[measuredItemCPC == x, ]
-               with(commodityFormula,
-                    checkProductionBalanced(data = commodityData,
-                                            areaVar = input,
-                                            yieldVar = productivity,
-                                            prodVar = output,
-                                            conversion = unitConversion)
-                    )
-           })
-}
-
-checkProtectedData = function(dataToBeSaved,
-                              domain = "agriculture",
-                              dataset = "aproduction",
-                              areaVar = "geographicAreaM49",
-                              yearVar = "timePointYears",
-                              itemVar = "measuredItemCPC",
-                              elementVar = "measuredElement",
-                              flagObsVar = "flagObservationStatus",
-                              flagMethodVar = "flagMethod",
-                              protectedFlag = c("", "*"),
-                              p = defaultProcessingParameters()){
-    if(NROW(dataToBeSaved) > 0){
-        newKey = DatasetKey(
-            domain = domain,
-            dataset = dataset,
-            dimensions = list(
-                Dimension(name = areaVar,
-                          keys = unique(dataToBeSaved[[areaVar]])),
-                Dimension(name = itemVar,
-                          keys = unique(dataToBeSaved[[itemVar]])),
-                Dimension(name = elementVar,
-                          keys = unique(dataToBeSaved[[elementVar]])),
-                Dimension(name = yearVar,
-                          keys = unique(dataToBeSaved[[yearVar]]))
-            )
-        )
-
-        dbData = GetData(newKey)
-
-        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
-        if(NROW(protectedData) > 0)
-            stop("Protected Data being over written!")
-    }
-}
-
-
-normalise = function(denormalisedData,
-                     areaVar = "geographicAreaM49",
-                     yearVar = "timePointYears",
-                     itemVar = "measuredItemCPC",
-                     elementVar = "measuredElement",
-                     flagObsVar = "flagObservationStatus",
-                     flagMethodVar = "flagMethod",
-                     valueVar = "Value"){
-
-    measuredTriplet = c(valueVar, flagObsVar, flagMethodVar)
-    allKey = c(areaVar, itemVar, elementVar, yearVar)
-    ## denormalisedData = copy(step2Data)
-    normalisedKey = intersect(allKey, colnames(denormalisedData))
-    denormalisedKey = setdiff(allKey, normalisedKey)
-    normalisedList =
-        lapply(measuredTriplet,
-               FUN = function(x){
-                   splitDenormalised =
-                       denormalisedData[, c(normalisedKey,
-                                            grep(x, colnames(denormalisedData),
-                                                 value = TRUE)),
-                                        with = FALSE]
-                   splitNormalised =
-                       melt(splitDenormalised, id.vars = normalisedKey,
-                            variable.name = denormalisedKey, value.name = x)
-                   substitutePattern = paste0("(", x, "|", denormalisedKey, "|_)")
-                   splitNormalised[, `:=`(c(denormalisedKey),
-                                          gsub(substitutePattern, "",
-                                               .SD[[denormalisedKey]]))]
-                   setkeyv(splitNormalised,
-                           col = c(normalisedKey, denormalisedKey))
-               })
-
-    normalisedData =
-        Reduce(merge, x = normalisedList)
-
-}
 
 startTime = Sys.time()
 
@@ -316,40 +194,40 @@ for(years in yearList){
                                  processingParameters = processingParams,
                                  unitConversion = filter$unitConversion)
             ## Module testing
-            moduleTest = {
-                productionFormula =
-                    getYieldFormula(slot(slot(swsContext.datasets[[1]],
-                                              "dimensions")$measuredItemCPC,
-                                         "keys"))
-                formulaPrefix =
-                    data.table(
-                        valuePrefix = "Value_measuredElement_",
-                        flagObsPrefix = "flagObservationStatus_measuredElement_",
-                        flagMethodPrefix = "flagMethod_measuredElement_"
-                    )
+            ##
+            ## NOTE (Michael): Need to write this in a cleaner way.
+            cat("Module Testing ... \n")
+            productionFormula =
+                getYieldFormula(slot(slot(swsContext.datasets[[1]],
+                                          "dimensions")$measuredItemCPC,
+                                     "keys"))
+            formulaPrefix = getFormulaPrefix()
+            
+            formulaTable =
+                constructFormulaTable(productionFormula, formulaPrefix)
 
-                formulaTable =
-                    constructFormulaTable(productionFormula, formulaPrefix)
+            valueVars = grep(formulaPrefix$valuePrefix,
+                             colnames(data$query), value = TRUE)
+            flagObsVars = grep(formulaPrefix$flagObsPrefix,
+                               colnames(data$query), value = TRUE)
 
-                checkData  = data$query
-                valueVars = grep(formulaPrefix$valuePrefix,
-                                 colnames(checkData), value = TRUE)
-                flagObsVars = grep(formulaPrefix$flagObsPrefix,
-                                   colnames(checkData), value = TRUE)
-                naData = convert0MtoNA(checkData, valueVars, flagObsVars)
-                naData %>% checkAllProductionBalanced(testData = .,
-                                                      formulaTable = formulaTable)
+            checkData = 
+            remove0M(data$query, valueVars, flagObsVars) %>%
+                checkAllProductionBalanced(dataToBeSaved = .,
+                                           formulaTable = formulaTable) %>%
+                normalise(.) %>%
+                checkProtectedData(dataToBeSaved = .) %>%
+                SaveData(domain = "agriculture",
+                         dataset = "aproduction",
+                         data = .)
 
-                ## Check if any protected ata are being overwritten
-                normalisedData = normalise(data$query)
-                checkProtectedData(dataToBeSaved = normalisedData)
-            }
-            if(nrow(data$query) >= 1 & !inherits(moduleTest, "try-error")){
-                saveProductionData(data$query, areaHarvestedCode = filter$input,
-                                   yieldCode = filter$productivity,
-                                   productionCode = filter$output,
-                                   normalized = FALSE)
-            }
+
+            ## if(nrow(data$query) >= 1){
+            ##     saveProductionData(data$query, areaHarvestedCode = filter$input,
+            ##                        yieldCode = filter$productivity,
+            ##                        productionCode = filter$output,
+            ##                        normalized = FALSE)
+            ## }
         })
         queryResult = c(queryResult, is(test, "try-error"))
     }
