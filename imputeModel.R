@@ -21,7 +21,7 @@
 library(faosws)
 library(faoswsUtil)
 library(data.table)
-
+library(magrittr)
 ## Setting up variables
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -71,51 +71,6 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     ## Source local scripts for this local test
     for(file in dir(apiDirectory, full.names = T))
         source(file)
-}
-
-checkFlags = function(data, flagObservationStatusColumn,
-                      flagObservationStatusExpected, flagMethodColumn,
-                      flagMethodExpected){
-    if(!all(data[[flagObservationStatusColumn]] %in%
-            flagObservationStatusExpected))
-        stop("Incorrect Observation Flag")
-    if(!all(data[[flagMethodColumn]] %in% flagMethodExpected))
-        stop("Incorrect Method Flag")
-}
-
-checkProtectedData = function(dataToBeSaved,
-                              domain = "agriculture",
-                              dataset = "aproduction",
-                              areaVar = "geographicAreaM49",
-                              yearVar = "timePointYears",
-                              itemVar = "measuredItemCPC",
-                              elementVar = "measuredElement",
-                              flagObsVar = "flagObservationStatus",
-                              flagMethodVar = "flagMethod",
-                              protectedFlag = c("", "*"),
-                              p = defaultProcessingParameters()){
-    if(NROW(dataToBeSaved) > 0){
-        newKey = DatasetKey(
-            domain = domain,
-            dataset = dataset,
-            dimensions = list(
-                Dimension(name = areaVar,
-                          keys = unique(dataToBeSaved[[areaVar]])),
-                Dimension(name = itemVar,
-                          keys = unique(dataToBeSaved[[itemVar]])),
-                Dimension(name = elementVar,
-                          keys = unique(dataToBeSaved[[elementVar]])),
-                Dimension(name = yearVar,
-                          keys = unique(dataToBeSaved[[yearVar]]))
-            )
-        )
-
-        dbData = GetData(newKey)
-
-        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
-        if(NROW(protectedData) > 0)
-            stop("Protected Data being over written!")
-    }
 }
 
 if(is.null(swsContext.computationParams$startYear)){
@@ -185,15 +140,17 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         ## Select the production observations as well:
         rmModelProduction$fit[flagMethod != "i", imputeCnt := .N,
                               geographicAreaM49]
-        kpCountries = rmModelProduction$fit[imputeCnt > yearsModeled - minObsForEst,
-                                            unique(geographicAreaM49)]
+        kpCountries =
+            rmModelProduction$fit[imputeCnt > yearsModeled - minObsForEst,
+                                  unique(geographicAreaM49)]
         rmModelProduction$fit[, imputeCnt := NULL]
         modelProduction = rbind(
             rmModelProduction$fit[!geographicAreaM49 %in% kpCountries, ],
             kpModelProduction$fit[geographicAreaM49 %in% kpCountries, ])
 
-        ## Verify that the years requested by the user (in swsContext.params) are
-        ## possible based on the constructed model.
+        ## Verify that the years requested by the user (in
+        ## swsContext.params) are possible based on the constructed
+        ## model.
         obsStartYear = min(modelProduction$timePointYears)
         obsEndYear = max(modelProduction$timePointYears)
         if(any(!startYear:endYear %in% years)){
@@ -236,27 +193,32 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156", "582"), ]
         dataToSave = dataToSave[!is.na(Value), ]
 
-        moduleTest = try({
-            checkFlags(data = dataToSave,
-                       flagObservationStatusColumn = "flagObservationStatus",
-                       flagObservationStatusExpected = "I",
-                       flagMethodColumn = "flagMethod",
-                       flagMethodExpected = c("i", "e"))
+        checkData <<- copy(dataToSave)
+        dataToSave %>%
+            checkOutputFlags(data = .,
+                             flagObservationStatusColumn = "flagObservationStatus",
+                             flagObservationStatusExpected = "I",
+                             flagMethodColumn = "flagMethod",
+                             flagMethodExpected = c("i", "e")) %>%
+            postProcessing(.) %>%
+            checkProtectedData(dataToBeSaved = .) %>%
+            ## NOTE (Michael): Manually sorting the column for saving,
+            ##                 this should be included either in
+            ##                 postprocessing and a function to ensure
+            ##                 the input meet the requirement of
+            ##                 SaveData.
+            .[, c("geographicAreaM49", "measuredItemCPC", "measuredElement",
+                  "timePointYears", "Value", "flagObservationStatus",
+                  "flagMethod"), with = FALSE] %>%
+            SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 
-            dataToSave[, `:=`(c("timePointYears"),
-                              as.character(.SD[["timePointYears"]]))]
-            checkProtectedData(dataToBeSaved = dataToSave)
-        })
-
-        if(!inherits(moduleTest, "try-error")){
-            if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
-                saveProductionData(data = dataToSave,
-                                   areaHarvestedCode = formulaTuples[i, input],
-                                   yieldCode = formulaTuples[i, productivity],
-                                   productionCode = formulaTuples[i, output],
-                                   normalized = TRUE)
-            }
-        }
+        ## if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
+        ##     saveProductionData(data = dataToSave,
+        ##                        areaHarvestedCode = formulaTuples[i, input],
+        ##                        yieldCode = formulaTuples[i, productivity],
+        ##                        productionCode = formulaTuples[i, output],
+        ##                        normalized = TRUE)
+        ## }
         successCount = successCount + 1
     }
 }

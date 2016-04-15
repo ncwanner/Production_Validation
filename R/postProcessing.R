@@ -1,5 +1,6 @@
+## The data is assumed to be normalised
 postProcessing = function(data, params = defaultProcessingParameters()){
-        ## Converting year back to database
+    ## Converting year back to database
     data[, `:=`(c(params$yearValue), as.character(.SD[[params$yearValue]]))]
 }
 
