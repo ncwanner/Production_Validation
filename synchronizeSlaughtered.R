@@ -60,127 +60,6 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     cat("Working on SWS...\n")
 }
 
-
-## Function to test the modules
-getMeatReferenceFile = function(){
-    fread(paste0(R_SWS_SHARE_PATH,
-                 "/browningj/production/slaughtered_synchronized.csv"),
-          colClasses = "character")
-}
-
-
-subsetMeatReferenceData = function(meatReferenceData, context){
-    selectedItems = context@dimensions$measuredItemCPC@keys
-    meatReferenceData[measuredItemParentCPC %in% selectedItems |
-                      measuredItemChildCPC %in% selectedItems, ]
-}
-
-
-getAllAnimalNumber = function(referenceData){
-    mainKey = getMainKey(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
-    mainKey@dimensions$measuredItemCPC@keys =
-        referenceData$measuredItemParentCPC
-    mainKey@dimensions$measuredElement@keys =
-        referenceData$measuredElementParent
-    animalNumbers = GetData(mainKey)
-    setnames(animalNumbers,
-             old = c("measuredItemCPC", "measuredElement"),
-             new = c("measuredItemParentCPC", "measuredElementParent"))
-    animalNumbers
-}
-
-getAllSlaughteredNumber = function(referenceData){
-    mainKey = getMainKey(swsContext.datasets[[1]]@dimensions$timePointYears@keys)
-    mainKey@dimensions$measuredItemCPC@keys =
-        referenceData$measuredItemChildCPC
-    mainKey@dimensions$measuredElement@keys =
-        referenceData$measuredElementChild
-    slaughteredNumbers = GetData(mainKey)
-    setnames(slaughteredNumbers,
-             old = c("measuredItemCPC", "measuredElement"),
-             new = c("measuredItemChildCPC", "measuredElementChild"))
-    slaughteredNumbers
-}
-
-checkSlaughteredSynced = function(referenceData, animalNumbers,
-                                slaughteredNumbers){
-    ## Function to check whether the slaughtered animal and animal
-    ## number are in sync.
-    ##
-    ##
-    ## NOTE (Michael): Even 0M- values should be synced!
-
-    referenceWithAnimalData =
-        merge(animalNumbers, referenceData,
-              by = intersect(colnames(animalNumbers),
-                             colnames(referenceData)),
-              allow.cartesian = TRUE, all = TRUE)
-
-    setnames(referenceWithAnimalData,
-             old = c("Value", "flagObservationStatus", "flagMethod"),
-             new = paste0("animal_",
-                          c("Value", "flagObservationStatus", "flagMethod")))
-
-    referenceWithSlaughteredData =
-        merge(slaughteredNumbers, referenceData,
-              by = intersect(colnames(slaughteredNumbers),
-                             colnames(referenceData)),
-              allow.cartesian = TRUE, all = TRUE)
-
-    setnames(referenceWithSlaughteredData,
-             old = c("Value", "flagObservationStatus", "flagMethod"),
-             new = paste0("slaughtered_",
-                          c("Value", "flagObservationStatus", "flagMethod")))
-
-    referenceWithAllData <<-
-        merge(referenceWithAnimalData, referenceWithSlaughteredData,
-              intersect(colnames(referenceWithAnimalData),
-                        colnames(referenceWithSlaughteredData)))
-
-    with(referenceWithAllData,
-         if(!all(na.omit(animal_Value == slaughtered_Value)))
-             stop("Not all values were synced")
-         )
-}
-
-checkProtectedData = function(dataToBeSaved,
-                              domain = "agriculture",
-                              dataset = "aproduction",
-                              areaVar = "geographicAreaM49",
-                              yearVar = "timePointYears",
-                              itemVar = "measuredItemCPC",
-                              elementVar = "measuredElement",
-                              flagObsVar = "flagObservationStatus",
-                              flagMethodVar = "flagMethod",
-                              protectedFlag = c("", "*"),
-                              p = defaultProcessingParameters()){
-    if(NROW(dataToBeSaved) > 0){
-        newKey = DatasetKey(
-            domain = domain,
-            dataset = dataset,
-            dimensions = list(
-                Dimension(name = areaVar,
-                          keys = unique(dataToBeSaved[[areaVar]])),
-                Dimension(name = itemVar,
-                          keys = unique(dataToBeSaved[[itemVar]])),
-                Dimension(name = elementVar,
-                          keys = unique(dataToBeSaved[[elementVar]])),
-                Dimension(name = yearVar,
-                          keys = unique(dataToBeSaved[[yearVar]]))
-            )
-        )
-
-        dbData = GetData(newKey)
-
-        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
-        if(NROW(protectedData) > 0)
-            stop("Protected Data being over written!")
-    }
-}
-
-
-
-
 startTime = Sys.time()
 
 cat("Loading preliminary data...\n")
@@ -278,31 +157,34 @@ for(cname in c(areaVar, itemVar, elementVar, yearVar,
 
 
 cat("Testing module ...\n")
-moduleTest = try({
-    getMeatReferenceFile() %>%
-        subsetMeatReferenceData(context = swsContext.datasets[[1]]) %>%
-        {
-            ## Get the data based on the referenced file
-            list(referenceData = .,
-                 animalNumbers = getAllAnimalNumber(referenceData = .),
-                 slaughteredNumbers = getAllSlaughteredNumber(referenceData = .))
-        } %$%
-    checkSlaughteredSynced(referenceData, animalNumbers, slaughteredNumbers)
 
-    checkProtectedData(dataToBeSaved = toWrite)
-})
+sessionAnimalMeatMapping =
+    getAnimalMeatMapping() %>%
+    subsetAnimalMeatMapping(animalMeatMapping = .,
+                            context = swsContext.datasets[[1]])
 
 
+animalNumberDB =
+    getAllAnimalNumber(sessionAnimalMeatMapping)
 
-if(!inherits(moduleTest, "try-error")){
-    cat("Attempting to save to the database...\n")
-    saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
-                          dataset = swsContext.datasets[[1]]@dataset,
-                          data = toWrite)
-} else {
-    saveResult = list(inserted = 0, appended = 0, ignored = 0,
-                      discarded = NROW(toWrite), warnings = NULL)
-}
+saveResult =
+    toWrite %>%
+    checkSlaughteredSynced(animalMeatMapping = sessionAnimalMeatMapping,
+                           animalNumbers = animalNumberDB,
+                           slaughteredNumbers = .) %>%
+    .$slaughteredNumbers %>%
+    checkProtectedData(dataToBeSaved = .) %>%
+    SaveData(domain = swsContext.datasets[[1]]@domain,
+             dataset = swsContext.datasets[[1]]@dataset,
+             data = .)
+
+
+## if(!inherits(moduleTest, "try-error")){
+##     cat("Attempting to save to the database...\n")
+##     saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
+##                           dataset = swsContext.datasets[[1]]@dataset,
+##                           data = toWrite)
+## }
 
 result = paste("Module completed with", saveResult$inserted + saveResult$appended,
       "observations updated and", saveResult$discarded, "problems.\n")
