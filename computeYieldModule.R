@@ -102,7 +102,79 @@ checkAllProductionBalanced = function(testData, formulaTable){
            })
 }
 
+checkProtectedData = function(dataToBeSaved,
+                              domain = "agriculture",
+                              dataset = "aproduction",
+                              areaVar = "geographicAreaM49",
+                              yearVar = "timePointYears",
+                              itemVar = "measuredItemCPC",
+                              elementVar = "measuredElement",
+                              flagObsVar = "flagObservationStatus",
+                              flagMethodVar = "flagMethod",
+                              protectedFlag = c("", "*"),
+                              p = defaultProcessingParameters()){
+    if(NROW(dataToBeSaved) > 0){
+        newKey = DatasetKey(
+            domain = domain,
+            dataset = dataset,
+            dimensions = list(
+                Dimension(name = areaVar,
+                          keys = unique(dataToBeSaved[[areaVar]])),
+                Dimension(name = itemVar,
+                          keys = unique(dataToBeSaved[[itemVar]])),
+                Dimension(name = elementVar,
+                          keys = unique(dataToBeSaved[[elementVar]])),
+                Dimension(name = yearVar,
+                          keys = unique(dataToBeSaved[[yearVar]]))
+            )
+        )
 
+        dbData = GetData(newKey)
+
+        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
+        if(NROW(protectedData) > 0)
+            stop("Protected Data being over written!")
+    }
+}
+
+
+normalise = function(denormalisedData,
+                     areaVar = "geographicAreaM49",
+                     yearVar = "timePointYears",
+                     itemVar = "measuredItemCPC",
+                     elementVar = "measuredElement",
+                     flagObsVar = "flagObservationStatus",
+                     flagMethodVar = "flagMethod",
+                     valueVar = "Value"){
+
+    measuredTriplet = c(valueVar, flagObsVar, flagMethodVar)
+    allKey = c(areaVar, itemVar, elementVar, yearVar)
+    ## denormalisedData = copy(step2Data)
+    normalisedKey = intersect(allKey, colnames(denormalisedData))
+    denormalisedKey = setdiff(allKey, normalisedKey)
+    normalisedList =
+        lapply(measuredTriplet,
+               FUN = function(x){
+                   splitDenormalised =
+                       denormalisedData[, c(normalisedKey,
+                                            grep(x, colnames(denormalisedData),
+                                                 value = TRUE)),
+                                        with = FALSE]
+                   splitNormalised =
+                       melt(splitDenormalised, id.vars = normalisedKey,
+                            variable.name = denormalisedKey, value.name = x)
+                   substitutePattern = paste0("(", x, "|", denormalisedKey, "|_)")
+                   splitNormalised[, `:=`(c(denormalisedKey),
+                                          gsub(substitutePattern, "",
+                                               .SD[[denormalisedKey]]))]
+                   setkeyv(splitNormalised,
+                           col = c(normalisedKey, denormalisedKey))
+               })
+
+    normalisedData =
+        Reduce(merge, x = normalisedList)
+
+}
 
 startTime = Sys.time()
 
@@ -234,11 +306,14 @@ for(years in yearList){
                 yieldValue = filter[, productivity],
                 areaHarvestedValue = filter[, input])
             
-            computeYield(data = data$query, processingParameters = processingParams,
+            computeYield(data = data$query,
+                         processingParameters = processingParams,
                          unitConversion = filter$unitConversion)
-            balanceProduction(data = data$query, processingParameters = processingParams,
+            balanceProduction(data = data$query,
+                              processingParameters = processingParams,
                               unitConversion = filter$unitConversion)
-            balanceAreaHarvested(data = data$query, processingParameters = processingParams,
+            balanceAreaHarvested(data = data$query,
+                                 processingParameters = processingParams,
                                  unitConversion = filter$unitConversion)
             ## Module testing
             moduleTest = {
@@ -264,6 +339,10 @@ for(years in yearList){
                 naData = convert0MtoNA(checkData, valueVars, flagObsVars)
                 naData %>% checkAllProductionBalanced(testData = .,
                                                       formulaTable = formulaTable)
+
+                ## Check if any protected ata are being overwritten
+                normalisedData = normalise(data$query)
+                checkProtectedData(dataToBeSaved = normalisedData)
             }
             if(nrow(data$query) >= 1 & !inherits(moduleTest, "try-error")){
                 saveProductionData(data$query, areaHarvestedCode = filter$input,
