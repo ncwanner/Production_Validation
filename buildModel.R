@@ -89,6 +89,81 @@ checkTimeSeriesImputed = function(data, key, valueColumn){
     }
 }
 
+
+checkProtectedData = function(dataToBeSaved,
+                              domain = "agriculture",
+                              dataset = "aproduction",
+                              areaVar = "geographicAreaM49",
+                              yearVar = "timePointYears",
+                              itemVar = "measuredItemCPC",
+                              elementVar = "measuredElement",
+                              flagObsVar = "flagObservationStatus",
+                              flagMethodVar = "flagMethod",
+                              protectedFlag = c("", "*"),
+                              p = defaultProcessingParameters()){
+    if(NROW(dataToBeSaved) > 0){
+        newKey = DatasetKey(
+            domain = domain,
+            dataset = dataset,
+            dimensions = list(
+                Dimension(name = areaVar,
+                          keys = unique(dataToBeSaved[[areaVar]])),
+                Dimension(name = itemVar,
+                          keys = unique(dataToBeSaved[[itemVar]])),
+                Dimension(name = elementVar,
+                          keys = unique(dataToBeSaved[[elementVar]])),
+                Dimension(name = yearVar,
+                          keys = unique(dataToBeSaved[[yearVar]]))
+            )
+        )
+
+        dbData = GetData(newKey)
+
+        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
+        if(NROW(protectedData) > 0)
+            stop("Protected Data being over written!")
+    }
+}
+
+
+normalise = function(denormalisedData,
+                     areaVar = "geographicAreaM49",
+                     yearVar = "timePointYears",
+                     itemVar = "measuredItemCPC",
+                     elementVar = "measuredElement",
+                     flagObsVar = "flagObservationStatus",
+                     flagMethodVar = "flagMethod",
+                     valueVar = "Value"){
+
+    measuredTriplet = c(valueVar, flagObsVar, flagMethodVar)
+    allKey = c(areaVar, itemVar, elementVar, yearVar)
+    ## denormalisedData = copy(step2Data)
+    normalisedKey = intersect(allKey, colnames(denormalisedData))
+    denormalisedKey = setdiff(allKey, normalisedKey)
+    normalisedList =
+        lapply(measuredTriplet,
+               FUN = function(x){
+                   splitDenormalised =
+                       denormalisedData[, c(normalisedKey,
+                                            grep(x, colnames(denormalisedData),
+                                                 value = TRUE)),
+                                        with = FALSE]
+                   splitNormalised =
+                       melt(splitDenormalised, id.vars = normalisedKey,
+                            variable.name = denormalisedKey, value.name = x)
+                   substitutePattern = paste0("(", x, "|", denormalisedKey, "|_)")
+                   splitNormalised[, `:=`(c(denormalisedKey),
+                                          gsub(substitutePattern, "",
+                                               .SD[[denormalisedKey]]))]
+                   setkeyv(splitNormalised,
+                           col = c(normalisedKey, denormalisedKey))
+               })
+
+    normalisedData =
+        Reduce(merge, x = normalisedList)
+
+}
+
 saveDir = paste0(R_SWS_SHARE_PATH, "/browningj/production/")
 
 lastYear = as.numeric(swsContext.computationParams$lastYear)
@@ -96,6 +171,10 @@ firstYear = lastYear - yearsModeled + 1 # Rolling time range of yearsModeled yea
 years = firstYear:lastYear
 
 fullKey = getMainKey(years = years)
+
+## Just testing 1 commodity
+fullKey@dimensions[[itemVar]]@keys = "0111" # Wheat
+
 
 subKey = fullKey
 uniqueItem = fullKey@dimensions$measuredItemCPC@keys
@@ -367,26 +446,34 @@ runModel = function(iter, removePriorImputation, appendName = "",
             modelProduction$fit = rbind(modelProduction$fit, diffs)
             ## dev.off()
             ## Production must be zero if area harvested is 0.
-            zeroProd = datasets$query[get(processingParams$areaHarvestedValue) == 0,
-                                      c(processingParams$yearValue, productionParams$byKey),
-                                      with = FALSE]
+            zeroProd =
+                datasets$query[get(processingParams$areaHarvestedValue) == 0,
+                               c(processingParams$yearValue,
+                                 productionParams$byKey),
+                               with = FALSE]
             modelProduction[[1]] =
                 modelProduction[[1]][!zeroProd,
-                                     on = c(processingParams$yearValue, productionParams$byKey)]
+                                     on = c(processingParams$yearValue,
+                                            productionParams$byKey)]
             ## Production should not be imputed on 0Mn observations.  These are 
             ## "missing but assumed negligble."  Additionally, we have not been 
             ## able to identify 0M from the old system as 0Mu or 0Mn and have
             ## thus assigned them the flags 0M-.  These should be treated as
             ## 0Mn in this case.
-            assumedZero = datasets$query[(get(processingParams$productionValue) == 0 |
-                                          is.na(get(processingParams$productionValue))) &
-                                         get(processingParams$productionMethodFlag) %in% c("-", "n") &
-                                         get(processingParams$productionObservationFlag) == "M",
-                                         c(processingParams$yearValue, productionParams$byKey),
-                                         with = FALSE]
+            assumedZero =
+                datasets$query[(get(processingParams$productionValue) == 0 |
+                                is.na(get(processingParams$productionValue))) &
+                               get(processingParams$productionMethodFlag) %in%
+                               c("-", "n") &
+                               get(processingParams$productionObservationFlag) ==
+                               "M",
+                               c(processingParams$yearValue,
+                                 productionParams$byKey),
+                               with = FALSE]
             modelProduction[[1]] =
                 modelProduction[[1]][!assumedZero,
-                                     on = c(processingParams$yearValue, productionParams$byKey)]
+                                     on = c(processingParams$yearValue,
+                                            productionParams$byKey)]
 
             ## Update the differences that would occur when running the compute
             ## yield module at the end.
@@ -422,6 +509,12 @@ runModel = function(iter, removePriorImputation, appendName = "",
             modelProduction$fit = rbind(modelProduction$fit, diffs)
             cat("Trying to save data\n")
             ## Save models
+
+            ## Module Check
+            ##
+            ## NOTE (Michael): We check the datasets$query which is
+            ##                 the final dataset after running through
+            ##                 the whole imputation process
             checkData <<-
                 list(modelYield = modelYield,
                      modelProduction = modelProduction,
@@ -429,7 +522,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
                      finalImputedData = copy(datasets$query))
 
 
-            moduleTest = 
+            moduleTest = try({
                 lapply(grep("Value", colnames(checkData$finalImputedData),
                             value = TRUE),
                        FUN = function(valueColumn){
@@ -438,10 +531,17 @@ runModel = function(iter, removePriorImputation, appendName = "",
                                                   valueColumn = valueColumn)
                        })
 
-            if(inherits(checkAllValuesImputed, "try-error")){
+
+                normalisedData = normalise(checkData$finalImputedData)
+                checkProtectedData(dataToBeSaved = normalisedData)
+            })
+
+
+            if(!inherits(moduleTest, "try-error")){
                 save(modelYield, modelProduction, years,
-                     file = paste0("checkProductionImputation/notImputed/prodModel_",
-                                   singleItem, "_", i, appendName, ".RData"))
+                     file =
+                         paste0("checkProductionImputation/notImputed/prodModel_",
+                                singleItem, "_", i, appendName, ".RData"))
                 stop("Not all values were imputed")
             }
             ## NOTE (Michael): Need to add in checks for the objects
@@ -451,12 +551,15 @@ runModel = function(iter, removePriorImputation, appendName = "",
                                singleItem, "_", i, appendName, ".RData"))
         } ## close item type for loop
     }) ## close try block
+
+    
     if(inherits(impute, "try-error")){
         print("Imputation Module Failed")
     } else {
         print("Imputation Module Executed Successfully")
     }
-    message = ifelse(inherits(impute, "try-error"), attr(impute, "condition")$message, "")
+    message = ifelse(inherits(impute, "try-error"),
+                     attr(impute, "condition")$message, "")
     return(data.frame(cpc = singleItem, success = !inherits(impute, "try-error"),
                errorMessage = message))
 }
