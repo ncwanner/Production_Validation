@@ -13,7 +13,7 @@
 ## NOTE (Michael): Sync from parents to children.
 ###############################################################################
 
-cat("Beginning slaughtered synchronization script...")
+cat("Beginning slaughtered synchronization script...\n")
 
 library(data.table)
 library(faosws)
@@ -143,13 +143,47 @@ checkSlaughteredSynced = function(referenceData, animalNumbers,
          )
 }
 
+checkProtectedData = function(dataToBeSaved,
+                              domain = "agriculture",
+                              dataset = "aproduction",
+                              areaVar = "geographicAreaM49",
+                              yearVar = "timePointYears",
+                              itemVar = "measuredItemCPC",
+                              elementVar = "measuredElement",
+                              flagObsVar = "flagObservationStatus",
+                              flagMethodVar = "flagMethod",
+                              protectedFlag = c("", "*"),
+                              p = defaultProcessingParameters()){
+    if(NROW(dataToBeSaved) > 0){
+        newKey = DatasetKey(
+            domain = domain,
+            dataset = dataset,
+            dimensions = list(
+                Dimension(name = areaVar,
+                          keys = unique(dataToBeSaved[[areaVar]])),
+                Dimension(name = itemVar,
+                          keys = unique(dataToBeSaved[[itemVar]])),
+                Dimension(name = elementVar,
+                          keys = unique(dataToBeSaved[[elementVar]])),
+                Dimension(name = yearVar,
+                          keys = unique(dataToBeSaved[[yearVar]]))
+            )
+        )
+
+        dbData = GetData(newKey)
+
+        protectedData = dbData[.SD[[flagObsVar]] %in% protectedFlag, ]
+        if(NROW(protectedData) > 0)
+            stop("Protected Data being over written!")
+    }
+}
 
 
 
 
 startTime = Sys.time()
 
-cat("Loading preliminary data...")
+cat("Loading preliminary data...\n")
 
 toSynch = fread(paste0(R_SWS_SHARE_PATH,
         "/browningj/production/slaughtered_synchronized.csv"),
@@ -186,7 +220,7 @@ key@dimensions[[elementVar]]@keys = unique(c(toSynch$measuredElementParent,
                                              toSynch$measuredElementChild))
 
 # Execute the get data call.
-cat("Pulling the data")
+cat("Pulling the data\n")
 data = GetData(key = key)
 # Remove missing values, as we don't want to copy those.
 data = data[!flagObservationStatus == "M", ]
@@ -201,7 +235,7 @@ allowedParents = unique(toSynch[, c("measuredItemParentCPC",
 setnames(allowedParents, c(itemVar, elementVar))
 data = merge(data, allowedParents, by = colnames(allowedParents))
 
-cat("Pulling the commodity trees...")
+cat("Pulling the commodity trees...\n")
 
 # Get the commodity tree (using faoswsUtil):
 tree = getCommodityTree(geographicAreaM49 = as.character(unique(data$geographicAreaM49)),
@@ -244,7 +278,7 @@ for(cname in c(areaVar, itemVar, elementVar, yearVar,
 
 
 cat("Testing module ...\n")
-moduleTest <- 
+moduleTest = try({
     getMeatReferenceFile() %>%
         subsetMeatReferenceData(context = swsContext.datasets[[1]]) %>%
         {
@@ -255,16 +289,23 @@ moduleTest <-
         } %$%
     checkSlaughteredSynced(referenceData, animalNumbers, slaughteredNumbers)
 
+    checkProtectedData(dataToBeSaved = toWrite)
+})
+
+
 
 if(!inherits(moduleTest, "try-error")){
-    cat("Attempting to save to the database...")
+    cat("Attempting to save to the database...\n")
     saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
                           dataset = swsContext.datasets[[1]]@dataset,
                           data = toWrite)
+} else {
+    saveResult = list(inserted = 0, appended = 0, ignored = 0,
+                      discarded = NROW(toWrite), warnings = NULL)
 }
 
 result = paste("Module completed with", saveResult$inserted + saveResult$appended,
-      "observations updated and", saveResult$discarded, "problems.")
+      "observations updated and", saveResult$discarded, "problems.\n")
 cat(result)
 
 result
