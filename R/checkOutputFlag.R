@@ -21,7 +21,7 @@ checkOutputFlags = function(data,
                             flagObservationStatusColumn = "flagObservationStatus",
                             flagObservationStatusExpected,
                             flagMethodColumn = "flagMethod",
-                            flagMethodExpected{
+                            flagMethodExpected){
     if(!all(data[[flagObservationStatusColumn]] %in%
             flagObservationStatusExpected))
         stop("Incorrect Observation Flag")
