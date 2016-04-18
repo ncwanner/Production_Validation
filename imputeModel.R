@@ -8,12 +8,20 @@
 ##' that these imputations were generated during the yield imputation process,
 ##' and thus production or area harvested values could also appear as the result
 ##' of balancing.
-##'
+##' 
+
+
+## NOTE (Michael): The values imputed should be based on the selected
+##                 session. The selection below does not correspond to
+##                 the set of keys in the selected session, the scope
+##                 of the selection below is greater. It does not
+##                 match the Description tag in the xml file.
+
 
 library(faosws)
 library(faoswsUtil)
 library(data.table)
-
+library(magrittr)
 ## Setting up variables
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -56,8 +64,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     GetTestEnvironment(
         baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         token = "e518d5c0-7316-4f21-9f6f-4d2aa666c0c2"
-        # baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        # token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
+        ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
+        ## token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
     )
 
     ## Source local scripts for this local test
@@ -86,7 +94,7 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
 
     formulaTuples = try(getYieldFormula(singleItem))
     if(is(formulaTuples, "try-error")){
-    next
+        next
     }
 
     for(i in 1:nrow(formulaTuples)){
@@ -96,8 +104,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_removed.RData"))
         })
         if(is(loadDataRm, "try-error")){
-          warning(sprintf("model for %s:%s doesn't exist", singleItem, i))
-          next
+            warning(sprintf("model for %s:%s doesn't exist", singleItem, i))
+            next
         } else {
             rmModelYield = modelYield
             rmModelProduction = modelProduction
@@ -107,8 +115,8 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                         singleItem, "_", i, "_est_kept.RData"))
         })
         if(is(loadDataKp, "try-error")){
-          warning(sprintf("model for %s_%s doesn't exist", singleItem, i))
-          next
+            warning(sprintf("model for %s_%s doesn't exist", singleItem, i))
+            next
         } else {
             kpModelYield = modelYield
             kpModelProduction = modelProduction
@@ -142,14 +150,17 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         ## Select the production observations as well:
         rmModelProduction$fit[flagMethod != "i", imputeCnt := .N,
                               geographicAreaM49]
-        kpCountries = rmModelProduction$fit[imputeCnt > yearsModeled - minObsForEst,
-                                            unique(geographicAreaM49)]
+        kpCountries =
+            rmModelProduction$fit[imputeCnt > yearsModeled - minObsForEst,
+                                  unique(geographicAreaM49)]
         rmModelProduction$fit[, imputeCnt := NULL]
         modelProduction = rbind(
             rmModelProduction$fit[!geographicAreaM49 %in% kpCountries, ],
             kpModelProduction$fit[geographicAreaM49 %in% kpCountries, ])
-        ## Verify that the years requested by the user (in swsContext.params) are
-        ## possible based on the constructed model.
+
+        ## Verify that the years requested by the user (in
+        ## swsContext.params) are possible based on the constructed
+        ## model.
         obsStartYear = min(modelProduction$timePointYears)
         obsEndYear = max(modelProduction$timePointYears)
         if(any(!startYear:endYear %in% years)){
@@ -181,23 +192,43 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         ## This approach of saving the computed yield results doesn't work when
         ## we are required to choose between two different models (with and
         ## without estimates).
-#         if(exists("modelComputeYield")){
-#             modelComputeYield = modelComputeYield[
-#                 timePointYears <= endYear & timePointYears >= startYear &
-#                 geographicAreaM49 %in% countryM49, ]
-#             dataToSave = rbind(dataToSave, modelComputeYield)
-#         }
+        ## if(exists("modelComputeYield")){
+        ##     modelComputeYield = modelComputeYield[
+        ##         timePointYears <= endYear & timePointYears >= startYear &
+        ##         geographicAreaM49 %in% countryM49, ]
+        ##     dataToSave = rbind(dataToSave, modelComputeYield)
+        ## }
         ## HACK: Update China and Pacific
         warning("Hack below!  Remove once the geographicAreaM49 dimension is fixed!")
         dataToSave = dataToSave[!geographicAreaM49 %in% c("1249", "156", "582"), ]
         dataToSave = dataToSave[!is.na(Value), ]
-        if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
-            saveProductionData(data = dataToSave,
-                    areaHarvestedCode = formulaTuples[i, input],
-                    yieldCode = formulaTuples[i, productivity],
-                    productionCode = formulaTuples[i, output],
-                    normalized = TRUE)
-        }
+
+        checkData <<- copy(dataToSave)
+        dataToSave %>%
+            checkOutputFlags(data = .,
+                             flagObservationStatusColumn = "flagObservationStatus",
+                             flagObservationStatusExpected = "I",
+                             flagMethodColumn = "flagMethod",
+                             flagMethodExpected = c("i", "e")) %>%
+            postProcessing(.) %>%
+            checkProtectedData(dataToBeSaved = .) %>%
+            ## NOTE (Michael): Manually sorting the column for saving,
+            ##                 this should be included either in
+            ##                 postprocessing and a function to ensure
+            ##                 the input meet the requirement of
+            ##                 SaveData.
+            .[, c("geographicAreaM49", "measuredItemCPC", "measuredElement",
+                  "timePointYears", "Value", "flagObservationStatus",
+                  "flagMethod"), with = FALSE] %>%
+            SaveData(domain = "agriculture", dataset = "aproduction", data = .)
+
+        ## if((!is.null(dataToSave)) && nrow(dataToSave) > 0){
+        ##     saveProductionData(data = dataToSave,
+        ##                        areaHarvestedCode = formulaTuples[i, input],
+        ##                        yieldCode = formulaTuples[i, productivity],
+        ##                        productionCode = formulaTuples[i, output],
+        ##                        normalized = TRUE)
+        ## }
         successCount = successCount + 1
     }
 }

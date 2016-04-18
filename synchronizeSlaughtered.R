@@ -9,13 +9,16 @@
 ## (meat of cattle, fresh or chilled), 21151 (edible offal of cattle, fresh,
 ## chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01 (raw hides
 ## and skins of cattle).
+##
+## NOTE (Michael): Sync from parents to children.
 ###############################################################################
 
-cat("Beginning slaughtered synchronization script...")
+cat("Beginning slaughtered synchronization script...\n")
 
 library(data.table)
 library(faosws)
 library(faoswsUtil)
+library(magrittr)
 
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -34,6 +37,13 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
                     full.names = TRUE)
         SetClientFiles("~/R certificate files/QA/")
         R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
+    } else if(Sys.info()[7] == "mk"){ # Josh work
+        files = dir("R/", full.names = TRUE)
+        SetClientFiles("~/.R/qa/")
+        ## NOTE (Michael): We will use the Production shared drive as
+        ##                 the files are not synced.
+        ## R_SWS_SHARE_PATH = "/media/sws_qa_shared_drive/"
+        R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
     } else {
         stop("Add your github directory here!")
     }
@@ -52,7 +62,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 
 startTime = Sys.time()
 
-cat("Loading preliminary data...")
+cat("Loading preliminary data...\n")
 
 toSynch = fread(paste0(R_SWS_SHARE_PATH,
         "/browningj/production/slaughtered_synchronized.csv"),
@@ -89,7 +99,7 @@ key@dimensions[[elementVar]]@keys = unique(c(toSynch$measuredElementParent,
                                              toSynch$measuredElementChild))
 
 # Execute the get data call.
-cat("Pulling the data")
+cat("Pulling the data\n")
 data = GetData(key = key)
 # Remove missing values, as we don't want to copy those.
 data = data[!flagObservationStatus == "M", ]
@@ -104,7 +114,7 @@ allowedParents = unique(toSynch[, c("measuredItemParentCPC",
 setnames(allowedParents, c(itemVar, elementVar))
 data = merge(data, allowedParents, by = colnames(allowedParents))
 
-cat("Pulling the commodity trees...")
+cat("Pulling the commodity trees...\n")
 
 # Get the commodity tree (using faoswsUtil):
 tree = getCommodityTree(geographicAreaM49 = as.character(unique(data$geographicAreaM49)),
@@ -144,14 +154,40 @@ for(cname in c(areaVar, itemVar, elementVar, yearVar,
     toWrite[, c(cname) := as.character(get(cname))]
 }
 
-cat("Attempting to save to the database...")
 
-saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
-                      dataset = swsContext.datasets[[1]]@dataset,
-                      data = toWrite)
 
-message = paste("Module completed with", saveResult$inserted + saveResult$appended,
-      "observations updated and", saveResult$discarded, "problems.")
-cat(message)
+cat("Testing module ...\n")
 
-message
+sessionAnimalMeatMapping =
+    getAnimalMeatMapping() %>%
+    subsetAnimalMeatMapping(animalMeatMapping = .,
+                            context = swsContext.datasets[[1]])
+
+
+animalNumberDB =
+    getAllAnimalNumber(sessionAnimalMeatMapping)
+
+saveResult =
+    toWrite %>%
+    checkSlaughteredSynced(animalMeatMapping = sessionAnimalMeatMapping,
+                           animalNumbers = animalNumberDB,
+                           slaughteredNumbers = .) %>%
+    .$slaughteredNumbers %>%
+    checkProtectedData(dataToBeSaved = .) %>%
+    SaveData(domain = swsContext.datasets[[1]]@domain,
+             dataset = swsContext.datasets[[1]]@dataset,
+             data = .)
+
+
+## if(!inherits(moduleTest, "try-error")){
+##     cat("Attempting to save to the database...\n")
+##     saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
+##                           dataset = swsContext.datasets[[1]]@dataset,
+##                           data = toWrite)
+## }
+
+result = paste("Module completed with", saveResult$inserted + saveResult$appended,
+      "observations updated and", saveResult$discarded, "problems.\n")
+cat(result)
+
+result
