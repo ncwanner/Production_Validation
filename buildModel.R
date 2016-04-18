@@ -32,6 +32,9 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         apiDirectory = "~/Documents/Github/faoswsProduction/R/"
         R_SWS_SHARE_PATH = ifelse(server == "Prod", "/media/hqlprsws2_prod/",
                                   "/media/hqlprsws1_qa/")
+        SetClientFiles(dir = ifelse(server == "Prod",
+                                    "~/R certificate files/Production/",
+                                    "~/R certificate files/QA/"))
         # runParallel = TRUE
         ## Get SWS Parameters
         SetClientFiles(dir = ifelse(server == "Prod",
@@ -54,6 +57,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod/", "~/.R/qa/"))
     }
 
+
+    ## Get SWS Parameters
 
     if(server == "Prod"){
         GetTestEnvironment(
@@ -419,6 +424,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
                                   wideVarName = "measuredElement")
             areaDiff <<- diffs
             modelProduction$fit = rbind(modelProduction$fit, diffs)
+
             cat("Trying to save data\n")
             ## Save models
 
@@ -483,8 +489,6 @@ if(runParallel){
 } else {
     result = list()
     for(iter in 1:nrow(uniqueItem)){
-        ## rows = sample(nrow(uniqueItem), size = 5)
-        ## for(iter in rows){
         result[[length(result) + 1]] =
             runModel(iter, removePriorImputation = TRUE,
                      appendName = "_est_removed")
@@ -505,5 +509,3 @@ paste0("Successfully built ", sum(result$success), " models out of ",
 # builtModels = stringr::str_extract(builtModels, "[0-9.]+")
 # builtModels = unique(builtModels)
 # missingModels = allItemCodes[!allItemCodes %in% builtModels]
-
-                              

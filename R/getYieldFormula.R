@@ -13,7 +13,8 @@
 ##' @return A data.table object providing the relevant element codes.  In some 
 ##'   cases, there may be multiple rows, as it is possible to have multiple 
 ##'   elements which hold production, yield, and output data.
-##'   
+##'
+##' @export
 
 getYieldFormula = function(itemCode, itemVar = "measuredItemCPC", warn = FALSE){
     itemData = GetCodeList(domain = "agriculture", dataset = "aproduction",

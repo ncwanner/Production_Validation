@@ -21,7 +21,8 @@
 ##' \item prefixTuples: This element contains the prefixes for the flags and
 ##' values.
 ##' }
-##'   
+##'
+##' @export
 
 getProductionData = function(dataContext, itemVar = "measuredItemCPC",
                              areaVar = "geographicAreaM49",
