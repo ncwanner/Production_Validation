@@ -214,16 +214,12 @@ for(iter in 1:length(uniqueItem)){
             ## minObsForEst.
             flags = paste0(cleanedData$prefixTuples$flagObsPrefix,
                            filter[, c("productivity", "output"), with = FALSE])
-            validObsCnt =
-                cleanedData$query[, list(yield = sum(!get(flags[1]) %in% c(impFlags, missFlags)),
-                                         prod = sum(!get(flags[2]) %in% c(impFlags, missFlags))),
-                                  by = geographicAreaM49]
-            validObsCnt = melt(validObsCnt, id.vars = "geographicAreaM49")
-            validObsCnt[, useEstimates := value < minObsForEst]
-            validObsCnt[, measuredElement :=
-                              ifelse(variable == "yield", filter[, productivity],
-                                     filter[, output])]
-            validObsCnt[, c("variable", "value") := NULL]
+
+            validObsCnt = 
+                useEstimateForTimeSeriesImputation(data = cleanedData$query,
+                                                   yieldObsFlagVar = flags[1],
+                                                   prodObsFlagVar = flags[2])
+
             
             ## For the actual imputation, we must pass all the data (as the 
             ## global models should use all the information available). 
