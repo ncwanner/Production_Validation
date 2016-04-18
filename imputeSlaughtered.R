@@ -160,14 +160,9 @@ expandMeatSessionSelection = function(oldKey, selectedMeat){
     newKey
 }
 
-## Execute the get data call.
-cat("Pulling the data...\n")
-data = 
-    expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
-                               selectedMeat = selectedMeat) %>%
-    GetData(key = .)
-step0Data = copy(data)
-
+## Create the new expanded key
+newKey = expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
+                                    selectedMeat = selectedMeat)
 
 
 transferAnimalNumber = function(data, selectedMeat){
@@ -209,17 +204,18 @@ transferAnimalNumber = function(data, selectedMeat){
     dataMerged
 }
 
-data = transferAnimalNumber(step0Data, selectedMeat)
+## Execute the get data call.
+cat("Pulling the data...\n")
 
-## Module test
-data %>%
+step1Data = 
+    newKey %>%
+    GetData(key = .) %>%
+    transferAnimalNumber(data = ., selectedMeat)
+
+## Module test and save the transfered data back
+step1Data %>%
     checkProtectedData(dataToBeSaved = .) %>%
     SaveData("agriculture", "aproduction", data = .)
-## if(!inherits(moduleTest1, "try-error"))
-##     SaveData("agriculture", "aproduction", data = data)
-
-
-step1Data = copy(data)
 
 
 
@@ -230,7 +226,7 @@ step1Data = copy(data)
 ## NOTE (Michael): The imputed data for meat triplet is also saved
 ##                 back in this step.
 
-uniqueItem = key@dimensions$measuredItemCPC@keys
+uniqueItem = newKey@dimensions$measuredItemCPC@keys
                                         # Just impute the meat elements
 uniqueItem = uniqueItem[uniqueItem %in% toProcess$measuredItemChildCPC]
 uniqueItem = as.character(uniqueItem)
@@ -240,7 +236,7 @@ successCount = 0
 failCount = 0
 for(iter in 1:length(uniqueItem)){
     singleItem = uniqueItem[iter]
-    subKey = key
+    subKey = newKey
     subKey@dimensions$measuredItemCPC@keys = singleItem
     print(paste0("Imputation for item: ", singleItem))
     
@@ -475,12 +471,14 @@ if(!is.null(result)){
              c(itemVar, elementVar))
     parentData[, timePointYears := as.character(timePointYears)]
     ## Only need to keep the updated data
-    data = merge(data, parentData, all.y = TRUE, suffixes = c("", ".new"),
-                 by = c(areaVar, itemVar, elementVar, yearVar))
-    data = data[is.na(Value) & !is.na(Value.new), ]
-    data[, c("Value", "flagObservationStatus", "flagMethod") :=
+    step3Data = merge(step1Data, parentData, all.y = TRUE,
+                      suffixes = c("", ".new"),
+                      by = c(areaVar, itemVar, elementVar, yearVar))
+    step4Data = step3Data[is.na(Value) & !is.na(Value.new), ]
+    step4Data[, c("Value", "flagObservationStatus", "flagMethod") :=
          list(Value.new, flagObservationStatus.new, flagMethod.new)]
-    data[, c("Value.new", "flagObservationStatus.new", "flagMethod.new") := NULL]
+    step4Data[, c("Value.new", "flagObservationStatus.new",
+                  "flagMethod.new") := NULL]
     
     ## Step 4. Save all three variables for meat (production/animals
     ##         slaughterd/carcass weight) and the animals slaughtered
@@ -491,7 +489,7 @@ if(!is.null(result)){
 
     ## Module Testing before saving the data back to the database
     saveResult =
-        data %>%
+        step4Data %>%
         checkTimeSeriesImputed(dataToBeSaved = .,
                                key = c("geographicAreaM49",
                                        "measuredItemCPC", "measuredElement"),
