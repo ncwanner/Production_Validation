@@ -47,7 +47,7 @@ impFlags = c("I", "E")
 missFlags = "M"
 ## server is only used for debug sessions:
 ##server = "Prod"
-server = "Prod"
+server = "QA"
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -92,7 +92,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     } else if(server == "QA"){
         GetTestEnvironment(
             baseUrl = url,
-            token = "310d1215-017c-4718-b431-973d3f9fc578"
+            token = "f8646896-2ed2-4e88-9cd2-9db6d735991f"
         )
     }
     sapply(files, source)
@@ -248,6 +248,9 @@ for(iter in 1:length(uniqueItem)){
                 areaHarvestedValue = filter[, input])
             processingParams$imputedFlag = c("I", "E")
             p = getImputationParameters(datasets, i = i)
+            ## NOTE (Michael): Stop the plotting.
+            p$yieldParams$plotImputation = ""
+            p$productionParams$plotImputation = ""
             yieldParams = p$yieldParams
             productionParams = p$productionParams
 
@@ -399,7 +402,7 @@ for(iter in 1:length(uniqueItem)){
                                     key = "timePointYears")
             setkeyv(finalData, "timePointYears")
             finalData = finalData[timeFilter, ]
-                                        #finalData[, ensembleVariance := NULL]
+            ##finalData[, ensembleVariance := NULL]
         } ## close item type for loop
         finalData
     }) ## close try block
@@ -418,7 +421,8 @@ for(iter in 1:length(uniqueItem)){
             postProcessing(data = .) %>%
             checkTimeSeriesImputed(dataToBeSaved = .,
                                    key = c("geographicAreaM49",
-                                              "measuredItemCPC"),
+                                           "measuredItemCPC",
+                                           "measuredElement"),
                                    valueColumn = "Value") %>%
             checkProtectedData(dataToBeSaved = .) %>%
             SaveData(domain = "agriculture", dataset = "aproduction", data = .)
@@ -472,7 +476,10 @@ if(!is.null(result)){
     ## Module Testing before saving the data back to the database
     saveResult =
         data %>%
-        checkTimeSeriesImputed(dataToBeSaved = ., "geographicAreaM49", "Value") %>%
+        checkTimeSeriesImputed(dataToBeSaved = .,
+                               key = c("geographicAreaM49",
+                                       "measuredItemCPC", "measuredElement"),
+                               valueColumn = "Value") %>%
         checkProtectedData(dataToBeSaved = .) %>%
         SaveData(domain = "agriculture", dataset = "aproduction",
                  data = .)
