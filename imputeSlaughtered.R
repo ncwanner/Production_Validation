@@ -16,8 +16,9 @@
 ## figures.
 ##
 ## The steps are as follows:
-## 1. Transfer down the slaughtered animal numbers from the animal (parent)
+## 0. Transfer down the slaughtered animal numbers from the animal (parent)
 ## commodity to the meat (child) commodity.
+## 1. Save the transfered data back to the database
 ## 2. Impute the meat data (production/animals slaughtered/carcass weight)
 ## following the logic from the production imputation module.
 ## 3. Copy the slaughtered animal numbers in meat back to the animal commodity.
@@ -114,7 +115,6 @@ stopifnot(firstDataYear <= firstYear)
 stopifnot(firstYear <= lastYear)
 
 toProcess = getAnimalMeatMapping()
-
 toProcess[, c("Item Name", "Child Item Name") := NULL]
 ## Filter to just meats => CPC code like 2111* or 2112* (21111.01, 21112, ...)
 selectedMeat = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
@@ -461,24 +461,28 @@ for(iter in 1:length(uniqueItem)){
 if(!is.null(result)){
     ## Step 3. Copy the slaughtered animal numbers in meat back to the
     ##         animal commodity.
-    childData = copy(result)
-    setnames(childData, c(itemVar, elementVar),
-             c("measuredItemChildCPC", "measuredElementChild"))
-    parentData = merge(childData, toProcess,
-                       by = c("measuredItemChildCPC", "measuredElementChild"))
-    parentData[, c("measuredItemChildCPC", "measuredElementChild") := NULL]
-    setnames(parentData, c("measuredItemParentCPC", "measuredElementParent"),
-             c(itemVar, elementVar))
-    parentData[, timePointYears := as.character(timePointYears)]
-    ## Only need to keep the updated data
-    step3Data = merge(step1Data, parentData, all.y = TRUE,
-                      suffixes = c("", ".new"),
-                      by = c(areaVar, itemVar, elementVar, yearVar))
-    step4Data = step3Data[is.na(Value) & !is.na(Value.new), ]
-    step4Data[, c("Value", "flagObservationStatus", "flagMethod") :=
-         list(Value.new, flagObservationStatus.new, flagMethod.new)]
-    step4Data[, c("Value.new", "flagObservationStatus.new",
-                  "flagMethod.new") := NULL]
+    transferSlaughteredNumber = function(preUpdatedData, imputationResult){
+        childData = copy(imputationResult)
+        setnames(childData, c(itemVar, elementVar),
+                 c("measuredItemChildCPC", "measuredElementChild"))
+        parentData = merge(childData, toProcess,
+                           by = c("measuredItemChildCPC", "measuredElementChild"))
+        parentData[, c("measuredItemChildCPC", "measuredElementChild") := NULL]
+        setnames(parentData, c("measuredItemParentCPC", "measuredElementParent"),
+                 c(itemVar, elementVar))
+        parentData[, timePointYears := as.character(timePointYears)]
+
+        ## Only need to keep the updated data
+        updatedData = merge(preUpdatedData, parentData, all.y = TRUE,
+                          suffixes = c("", ".new"),
+                          by = c(areaVar, itemVar, elementVar, yearVar))
+        updatedData = updatedData[is.na(Value) & !is.na(Value.new), ]
+        updatedData[, c("Value", "flagObservationStatus", "flagMethod") :=
+                  list(Value.new, flagObservationStatus.new, flagMethod.new)]
+        updatedData[, c("Value.new", "flagObservationStatus.new",
+                      "flagMethod.new") := NULL]
+        updatedData
+    }
     
     ## Step 4. Save all three variables for meat (production/animals
     ##         slaughterd/carcass weight) and the animals slaughtered
@@ -489,7 +493,7 @@ if(!is.null(result)){
 
     ## Module Testing before saving the data back to the database
     saveResult =
-        step4Data %>%
+        transferSlaughteredNumber(step1Data, result) %>%
         checkTimeSeriesImputed(dataToBeSaved = .,
                                key = c("geographicAreaM49",
                                        "measuredItemCPC", "measuredElement"),
