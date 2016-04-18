@@ -210,6 +210,7 @@ cat("Pulling the data...\n")
 step1Data = 
     newKey %>%
     GetData(key = .) %>%
+    ## NOTE (Michael): Should add preProcessing here
     transferAnimalNumber(data = ., selectedMeat)
 
 ## Module test and save the transfered data back
@@ -231,6 +232,7 @@ uniqueItem = newKey@dimensions$measuredItemCPC@keys
 uniqueItem = uniqueItem[uniqueItem %in% toProcess$measuredItemChildCPC]
 uniqueItem = as.character(uniqueItem)
 
+
 result = NULL
 successCount = 0
 failCount = 0
@@ -251,7 +253,7 @@ for(iter in 1:length(uniqueItem)){
             filter = datasets$formulaTuples[i, ]
             message("Processing pair ", i, " of ", nrow(datasets$formulaTuples),
                     " element triples.")
-            datasets = cleanData(datasets, i = i, maxYear = 2014)
+            cleanedData = cleanData(datasets, i = i, maxYear = 2014)
             
             ## Setup for the imputation
             processingParams = defaultProcessingParameters(
@@ -259,16 +261,30 @@ for(iter in 1:length(uniqueItem)){
                 yieldValue = filter[, productivity],
                 areaHarvestedValue = filter[, input])
             processingParams$imputedFlag = c("I", "E")
-            p = getImputationParameters(datasets, i = i)
+            p = getImputationParameters(cleanedData, i = i)
             ## NOTE (Michael): Stop the plotting.
             p$yieldParams$plotImputation = ""
             p$productionParams$plotImputation = ""
             yieldParams = p$yieldParams
             productionParams = p$productionParams
 
-            datasets$query[, countryCnt := .N, by = c(processingParams$byKey)]
-            datasets$query = datasets$query[countryCnt > 1, ]
-            datasets$query[, countryCnt := NULL]
+            removeSingleEntryCountry = function(data,
+                                            params =
+                                                defaultProcessingParameters()){
+                ## NOTE(Michael): This function makes imputation of
+                ##                all data not possible, as country
+                ##                with only one observation will not
+                ##                be imputed.
+                dataCopy = copy(data)
+                dataCopy[, countryCnt := .N, by = c(params$byKey)]
+                dataCopy = dataCopy[countryCnt > 1, ]
+                dataCopy[, countryCnt := NULL]
+                dataCopy
+            }
+            cleanedData$query =
+                removeSingleEntryCountry(cleanedData$query,
+                                         params = processingParams)
+
             
             ## Determine which observations shouldn't be imputed:
             ## Production should not be imputed on 0Mn observations.  These are 
@@ -276,37 +292,54 @@ for(iter in 1:length(uniqueItem)){
             ## able to identify 0M from the old system as 0Mu or 0Mn and have
             ## thus assigned them the flags 0M-.  These should be treated as
             ## 0Mn in this case.
-            assumedZero =
-                datasets$query[(get(processingParams$productionValue) == 0 |
-                                is.na(get(processingParams$productionValue))) &
-                               get(processingParams$productionMethodFlag) %in% c("-", "n") &
-                               get(processingParams$productionObservationFlag) == "M",
-                               c(processingParams$yearValue, productionParams$byKey),
-                               with = FALSE]
-            ## Production must be zero if area harvested is 0.
-            zeroProd =
-                datasets$query[get(processingParams$productionValue) == 0 &
-                               get(processingParams$productionObservationFlag) != "M",
-                               c(processingParams$yearValue, productionParams$byKey),
-                               with = FALSE]
-            zeroArea =
-                datasets$query[get(processingParams$areaHarvestedValue) == 0 &
-                               get(processingParams$areaHarvestedObservationFlag) != "M",
-                               c(processingParams$yearValue, productionParams$byKey),
-                               with = FALSE]
-            forcedZero = unique(rbind(assumedZero, zeroProd, zeroArea))
+
+            getForcedZeroKey = function(data,
+                                        processingParams =
+                                            defaultProcessingParameters(),
+                                        productionParams =
+                                            getImputationParameters()$productionParams
+                                        ){
+
+                assumedZero =
+                    data[(get(processingParams$productionValue) == 0 |
+                          is.na(get(processingParams$productionValue))) &
+                         get(processingParams$productionMethodFlag) %in%
+                         c("-", "n") &
+                         get(processingParams$productionObservationFlag) == "M",
+                         c(processingParams$yearValue, productionParams$byKey),
+                         with = FALSE]
+                ## Production must be zero if area harvested is 0.
+                zeroProd =
+                    data[get(processingParams$productionValue) == 0 &
+                         get(processingParams$productionObservationFlag) != "M",
+                         c(processingParams$yearValue, productionParams$byKey),
+                         with = FALSE]
+                zeroArea =
+                    data[get(processingParams$areaHarvestedValue) == 0 &
+                         get(processingParams$areaHarvestedObservationFlag) != "M",
+                         c(processingParams$yearValue, productionParams$byKey),
+                         with = FALSE]
+                forcedZero = unique(rbind(assumedZero, zeroProd, zeroArea))
+                forcedZero
+            }
+
+            forcedZero =
+                getForcedZeroKey(cleanedData$query,
+                                 processingParam = processingParams,
+                                 productionParams = productionParams)
+
             
             ## Imputation is a bit tricky, as we want to exclude previously 
             ## estimated data if we have "enough" official/semi-official data in
             ## a time series but we want to use estimates if we don't have 
             ## enough official/semi-official data.  "Enough" is specified by
             ## minObsForEst.
-            flags = paste0(datasets$prefixTuples$flagObsPrefix,
+            flags = paste0(cleanedData$prefixTuples$flagObsPrefix,
                            filter[, c("productivity", "output"), with = FALSE])
             validObsCnt =
-                datasets$query[, list(yield = sum(!get(flags[1]) %in% c(impFlags, missFlags)),
+                cleanedData$query[, list(yield = sum(!get(flags[1]) %in% c(impFlags, missFlags)),
                                       prod = sum(!get(flags[2]) %in% c(impFlags, missFlags))),
-                                         by = geographicAreaM49]
+                               by = geographicAreaM49]
             validObsCnt = melt(validObsCnt, id.vars = "geographicAreaM49")
             validObsCnt[, useEstimates := value < minObsForEst]
             validObsCnt[, measuredElement :=
@@ -319,7 +352,7 @@ for(iter in 1:length(uniqueItem)){
             ## However, we'll have to delete some of the imputations
             ## (corresponding to series without enough official data) and then
             ## rerun the imputation.
-            origData = copy(datasets$query)
+            origData = copy(cleanedData$query)
             processingParams$removePriorImputation = TRUE
             cat("Imputation without Manual Estimates\n")
             imputation1 =
@@ -446,11 +479,11 @@ for(iter in 1:length(uniqueItem)){
         ## Just need to return the numbers slaughtered code:
         impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
                         "_measuredElement_",
-                        datasets$formulaTuples$productivity) := NULL]
+                        cleanedData$formulaTuples$productivity) := NULL]
         impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
                         "_measuredElement_",
-                        datasets$formulaTuples$output) := NULL]
-        impute[, measuredElement := datasets$formulaTuples$input]
+                        cleanedData$formulaTuples$output) := NULL]
+        impute[, measuredElement := cleanedData$formulaTuples$input]
         setnames(impute, colnames(impute),
                  gsub("_measuredElement_.*", "", colnames(impute)))
         result = rbind(result, impute)
@@ -474,13 +507,13 @@ if(!is.null(result)){
 
         ## Only need to keep the updated data
         updatedData = merge(preUpdatedData, parentData, all.y = TRUE,
-                          suffixes = c("", ".new"),
-                          by = c(areaVar, itemVar, elementVar, yearVar))
+                            suffixes = c("", ".new"),
+                            by = c(areaVar, itemVar, elementVar, yearVar))
         updatedData = updatedData[is.na(Value) & !is.na(Value.new), ]
         updatedData[, c("Value", "flagObservationStatus", "flagMethod") :=
-                  list(Value.new, flagObservationStatus.new, flagMethod.new)]
+                    list(Value.new, flagObservationStatus.new, flagMethod.new)]
         updatedData[, c("Value.new", "flagObservationStatus.new",
-                      "flagMethod.new") := NULL]
+                        "flagMethod.new") := NULL]
         updatedData
     }
     
