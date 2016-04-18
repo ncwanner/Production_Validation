@@ -210,6 +210,9 @@ step1Data = copy(data)
 ## Step 2. Impute the meat data (production/animals
 ##         slaughtered/carcass weight) following the logic from the
 ##         production imputation module.
+##
+## NOTE (Michael): The imputed data for meat triplet is also saved
+##                 back in this step.
 
 uniqueItem = key@dimensions$measuredItemCPC@keys
                                         # Just impute the meat elements
@@ -463,8 +466,8 @@ if(!is.null(result)){
     ##         slaughterd/carcass weight) and the animals slaughtered
     ##         for the animal.
     ## 
-    ## Note: the first saving has been done, we just need to now save
-    ## the data under the animal element.
+    ## Note (Michael): The above comment is incorrect, only the animal
+    ##                 number is saved back to the animal commdotiy.
 
     ## Module Testing before saving the data back to the database
     saveResult =
