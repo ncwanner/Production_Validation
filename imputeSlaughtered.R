@@ -129,80 +129,8 @@ selectedMeat = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
 ## the session is simply ignored.
 
 ## Expand the session to include missing meats
-expandMeatSessionSelection = function(oldKey, selectedMeat){
-    rowsIncluded =
-        selectedMeat[, measuredItemParentCPC %in%
-                       oldKey@dimensions$measuredItemCPC@keys |
-                       measuredItemChildCPC %in%
-                       oldKey@dimensions$measuredItemCPC@keys]
-    requiredMeats =
-        selectedMeat[rowsIncluded, c(measuredItemParentCPC, measuredItemChildCPC)]
-    oldKey@dimensions[[itemVar]]@keys = requiredMeats
-    if(length(oldKey@dimensions$measuredItemCPC@keys) == 0){
-        stop("No meat/animal commodities are in the session, and thus this ",
-             "module has nothing to do.")
-    }
-
-    ## Create a copy to update the key
-    newKey = oldKey
-    ## Update the measuredElements
-    newKey@dimensions[[elementVar]]@keys =
-        unique(selectedMeat[rowsIncluded,
-                            c(measuredElementParent, measuredElementChild)])
-    
-    ## Adjust the years based on the passed information:
-    newKey@dimensions[[yearVar]]@keys =
-        as.character(firstDataYear:lastYear)
-
-    ## Include all countries, since all data is required for the imputation
-    countryCodes = GetCodeList("agriculture", "aproduction", "geographicAreaM49")
-    newKey@dimensions[[areaVar]]@keys = countryCodes[type == "country", code]
-    newKey
-}
-
-## Create the new expanded key
 newKey = expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
                                     selectedMeat = selectedMeat)
-
-
-transferAnimalNumber = function(data, selectedMeat){
-    dataCopy = copy(data)
-    ## Step 1. Transfer down the slaughtered animal numbers from the
-    ##         animal (parent) commodity to the meat (child) commodity.
-
-    ## Remove missing values, as we don't want to copy those.
-    parentData = dataCopy[!flagObservationStatus == "M" &
-                          measuredItemCPC %in% selectedMeat$measuredItemParentCPC &
-                          timePointYears <= lastYear &
-                          timePointYears >= firstDataYear, ]
-    setnames(parentData, c(itemVar, elementVar),
-             c("measuredItemParentCPC", "measuredElementParent"))
-    ## NOTE (Michael): This should not be called child data, since there
-    ##                 is no child data, it is parent data but with the
-    ##                 mapping table and variable names changed.
-    childData = merge(parentData, selectedMeat,
-                      by = c("measuredItemParentCPC", "measuredElementParent"))
-    childData[, c("measuredItemParentCPC", "measuredElementParent") := NULL]
-    setnames(childData, c("measuredItemChildCPC", "measuredElementChild"),
-             c(itemVar, elementVar))
-
-
-    ## The (childData) data frame contains the value of the parent
-    ## commodity, while the (data) dataframe contains all the data. After
-    ## the merge, we over write the values in (data) from the values in
-    ## (childData).
-    ##
-    ## NOTE (Michael): The merge should be set to all.y = TRUE and only
-    ##                 restrict to the set that should be over-written.
-    dataMerged = merge(dataCopy, childData, all = TRUE, suffixes = c("", ".new"),
-                       by = c(areaVar, itemVar, elementVar, yearVar))
-    dataMerged[!is.na(Value.new),
-               c("Value", "flagObservationStatus", "flagMethod") :=
-               list(Value.new, flagObservationStatus.new, flagMethod.new)]
-    dataMerged[, c("Value.new", "flagObservationStatus.new",
-                   "flagMethod.new") := NULL]
-    dataMerged
-}
 
 ## Execute the get data call.
 cat("Pulling the data...\n")
@@ -268,60 +196,10 @@ for(iter in 1:length(uniqueItem)){
             yieldParams = p$yieldParams
             productionParams = p$productionParams
 
-            removeSingleEntryCountry = function(data,
-                                            params =
-                                                defaultProcessingParameters()){
-                ## NOTE(Michael): This function makes imputation of
-                ##                all data not possible, as country
-                ##                with only one observation will not
-                ##                be imputed.
-                dataCopy = copy(data)
-                dataCopy[, countryCnt := .N, by = c(params$byKey)]
-                dataCopy = dataCopy[countryCnt > 1, ]
-                dataCopy[, countryCnt := NULL]
-                dataCopy
-            }
+            
             cleanedData$query =
                 removeSingleEntryCountry(cleanedData$query,
                                          params = processingParams)
-
-            
-            ## Determine which observations shouldn't be imputed:
-            ## Production should not be imputed on 0Mn observations.  These are 
-            ## "missing but assumed negligble."  Additionally, we have not been 
-            ## able to identify 0M from the old system as 0Mu or 0Mn and have
-            ## thus assigned them the flags 0M-.  These should be treated as
-            ## 0Mn in this case.
-
-            getForcedZeroKey = function(data,
-                                        processingParams =
-                                            defaultProcessingParameters(),
-                                        productionParams =
-                                            getImputationParameters()$productionParams
-                                        ){
-
-                assumedZero =
-                    data[(get(processingParams$productionValue) == 0 |
-                          is.na(get(processingParams$productionValue))) &
-                         get(processingParams$productionMethodFlag) %in%
-                         c("-", "n") &
-                         get(processingParams$productionObservationFlag) == "M",
-                         c(processingParams$yearValue, productionParams$byKey),
-                         with = FALSE]
-                ## Production must be zero if area harvested is 0.
-                zeroProd =
-                    data[get(processingParams$productionValue) == 0 &
-                         get(processingParams$productionObservationFlag) != "M",
-                         c(processingParams$yearValue, productionParams$byKey),
-                         with = FALSE]
-                zeroArea =
-                    data[get(processingParams$areaHarvestedValue) == 0 &
-                         get(processingParams$areaHarvestedObservationFlag) != "M",
-                         c(processingParams$yearValue, productionParams$byKey),
-                         with = FALSE]
-                forcedZero = unique(rbind(assumedZero, zeroProd, zeroArea))
-                forcedZero
-            }
 
             forcedZero =
                 getForcedZeroKey(cleanedData$query,
@@ -338,8 +216,8 @@ for(iter in 1:length(uniqueItem)){
                            filter[, c("productivity", "output"), with = FALSE])
             validObsCnt =
                 cleanedData$query[, list(yield = sum(!get(flags[1]) %in% c(impFlags, missFlags)),
-                                      prod = sum(!get(flags[2]) %in% c(impFlags, missFlags))),
-                               by = geographicAreaM49]
+                                         prod = sum(!get(flags[2]) %in% c(impFlags, missFlags))),
+                                  by = geographicAreaM49]
             validObsCnt = melt(validObsCnt, id.vars = "geographicAreaM49")
             validObsCnt[, useEstimates := value < minObsForEst]
             validObsCnt[, measuredElement :=
@@ -492,46 +370,22 @@ for(iter in 1:length(uniqueItem)){
 
 
 if(!is.null(result)){
-    ## Step 3. Copy the slaughtered animal numbers in meat back to the
-    ##         animal commodity.
-    transferSlaughteredNumber = function(preUpdatedData, imputationResult){
-        childData = copy(imputationResult)
-        setnames(childData, c(itemVar, elementVar),
-                 c("measuredItemChildCPC", "measuredElementChild"))
-        parentData = merge(childData, toProcess,
-                           by = c("measuredItemChildCPC", "measuredElementChild"))
-        parentData[, c("measuredItemChildCPC", "measuredElementChild") := NULL]
-        setnames(parentData, c("measuredItemParentCPC", "measuredElementParent"),
-                 c(itemVar, elementVar))
-        parentData[, timePointYears := as.character(timePointYears)]
-
-        ## Only need to keep the updated data
-        updatedData = merge(preUpdatedData, parentData, all.y = TRUE,
-                            suffixes = c("", ".new"),
-                            by = c(areaVar, itemVar, elementVar, yearVar))
-        updatedData = updatedData[is.na(Value) & !is.na(Value.new), ]
-        updatedData[, c("Value", "flagObservationStatus", "flagMethod") :=
-                    list(Value.new, flagObservationStatus.new, flagMethod.new)]
-        updatedData[, c("Value.new", "flagObservationStatus.new",
-                        "flagMethod.new") := NULL]
-        updatedData
-    }
-    
-    ## Step 4. Save all three variables for meat (production/animals
-    ##         slaughterd/carcass weight) and the animals slaughtered
-    ##         for the animal.
-    ## 
-    ## Note (Michael): The above comment is incorrect, only the animal
-    ##                 number is saved back to the animal commdotiy.
-
-    ## Module Testing before saving the data back to the database
     saveResult =
+        ## Step 3. Copy the slaughtered animal numbers in meat back to the
+        ##         animal commodity.
         transferSlaughteredNumber(step1Data, result) %>%
+        ## Module Testing before saving the data back to the database
         checkTimeSeriesImputed(dataToBeSaved = .,
                                key = c("geographicAreaM49",
                                        "measuredItemCPC", "measuredElement"),
                                valueColumn = "Value") %>%
         checkProtectedData(dataToBeSaved = .) %>%
+        ## Step 4. Save all three variables for meat (production/animals
+        ##         slaughterd/carcass weight) and the animals slaughtered
+        ##         for the animal.
+        ## 
+        ## Note (Michael): The above comment is incorrect, only the animal
+        ##                 number is saved back to the animal commdotiy.
         SaveData(domain = "agriculture", dataset = "aproduction",
                  data = .)
 
