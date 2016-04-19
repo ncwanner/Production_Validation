@@ -93,7 +93,9 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     } else if(server == "QA"){
         GetTestEnvironment(
             baseUrl = url,
-            token = "f8646896-2ed2-4e88-9cd2-9db6d735991f"
+            ## token = "f8646896-2ed2-4e88-9cd2-9db6d735991f"
+            ## New Token for all the meats
+            token = "2c588cf7-30ef-4fae-8239-34d16a0f9583"
         )
     }
     sapply(files, source)
