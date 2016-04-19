@@ -11,7 +11,7 @@
 ##' 
 
 
-## NOTE (Michael): The values imputed should be based on the selected
+## TODO (Michael): The values imputed should be based on the selected
 ##                 session. The selection below does not correspond to
 ##                 the set of keys in the selected session, the scope
 ##                 of the selection below is greater. It does not
@@ -131,7 +131,7 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
         ## Exclude cases with flagMethod == "i", as these aren't imputations of
         ## yield but rather production/area harvested imputed via balancing.
         ##
-        ## NOTE (Michael): According to the logic of the build model
+        ## TODO (Michael): According to the logic of the build model
         ##                 module, yield should not be imputed for
         ##                 derived products and thus the model object
         ##                 for yield is NULL. This logic should not be
@@ -212,7 +212,7 @@ for(singleItem in swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys){
                              flagMethodExpected = c("i", "e")) %>%
             postProcessing(.) %>%
             checkProtectedData(dataToBeSaved = .) %>%
-            ## NOTE (Michael): Manually sorting the column for saving,
+            ## TODO (Michael): Manually sorting the column for saving,
             ##                 this should be included either in
             ##                 postprocessing and a function to ensure
             ##                 the input meet the requirement of

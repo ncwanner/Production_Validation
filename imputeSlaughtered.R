@@ -140,7 +140,7 @@ cat("Pulling the data...\n")
 step1Data = 
     newKey %>%
     GetData(key = .) %>%
-    ## NOTE (Michael): Should add preProcessing here
+    ## TODO (Michael): Should add preProcessing here
     transferAnimalNumber(data = ., selectedMeatTable)
 
 ## Module test and save the transfered data back
@@ -196,7 +196,7 @@ for(iter in 1:length(selectedMeatCode)){
         message("Imputation Module Executed Successfully!")
         ## Just need to return the numbers slaughtered code:
         ##
-        ## NOTE (Michael): Need to restructure the get formula
+        ## TODO (Michael): Need to restructure the get formula
         formulaTuples =
             getYieldFormula(slot(slot(subKey,
                                       "dimensions")$measuredItemCPC, "keys"))

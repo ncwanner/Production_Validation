@@ -1,6 +1,6 @@
 ##' This function removes countries that has only one observation
 ##'
-##' NOTE (Michael): The by key (param$byKey) should be extended, the
+##' TODO (Michael): The by key (param$byKey) should be extended, the
 ##'                 criteria should be 1 observation per
 ##'                 country/item/element combination.
 ##'

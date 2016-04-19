@@ -28,7 +28,7 @@ transferAnimalNumber = function(data, selectedMeat){
                           timePointYears >= firstDataYear, ]
     setnames(parentData, c(itemVar, elementVar),
              c("measuredItemParentCPC", "measuredElementParent"))
-    ## NOTE (Michael): This should not be called child data, since there
+    ## TODO (Michael): This should not be called child data, since there
     ##                 is no child data, it is parent data but with the
     ##                 mapping table and variable names changed.
     childData = merge(parentData, selectedMeat,

@@ -2,7 +2,7 @@
 ##' element combinated time series should use include estimates in the
 ##' iputation process.
 ##'
-##' NOTE(Michael): This function should be expanded to include item as well.
+##' TODO (Michael): This function should be expanded to include item as well.
 ##'
 ##' @param data A data.table object containing the data to be imputed.
 ##' @param yieldObsFlagVar The column corresponding to the observation

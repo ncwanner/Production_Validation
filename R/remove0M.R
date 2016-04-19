@@ -1,7 +1,7 @@
 ##' This function replaces value which are zero and has flag
 ##' representing missing values with NA.
 ##'
-##' NOTE (Michael): This function is similar to the function in the
+##' TODO (Michael): This function is similar to the function in the
 ##'                 \pkg{faoswsUtil} package, but enables multiple
 ##'                 value and flag pairs and also returning the data
 ##'                 object. This function should replace the original
