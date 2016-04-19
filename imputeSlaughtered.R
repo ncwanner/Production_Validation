@@ -117,7 +117,7 @@ stopifnot(firstYear <= lastYear)
 toProcess = getAnimalMeatMapping()
 toProcess[, c("Item Name", "Child Item Name") := NULL]
 ## Filter to just meats => CPC code like 2111* or 2112* (21111.01, 21112, ...)
-selectedMeat = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
+selectedMeatTable = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
 
 ## Read the data.  The years and countries provided in the session are
 ## used, and the commodities in the session are somewhat
@@ -130,7 +130,7 @@ selectedMeat = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
 
 ## Expand the session to include missing meats
 newKey = expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
-                                    selectedMeat = selectedMeat)
+                                    selectedMeatTable = selectedMeatTable)
 
 ## Execute the get data call.
 cat("Pulling the data...\n")
@@ -139,7 +139,7 @@ step1Data =
     newKey %>%
     GetData(key = .) %>%
     ## NOTE (Michael): Should add preProcessing here
-    transferAnimalNumber(data = ., selectedMeat)
+    transferAnimalNumber(data = ., selectedMeatTable)
 
 ## Module test and save the transfered data back
 step1Data %>%
@@ -155,186 +155,30 @@ step1Data %>%
 ## NOTE (Michael): The imputed data for meat triplet is also saved
 ##                 back in this step.
 
-uniqueItem = newKey@dimensions$measuredItemCPC@keys
-                                        # Just impute the meat elements
-uniqueItem = uniqueItem[uniqueItem %in% toProcess$measuredItemChildCPC]
-uniqueItem = as.character(uniqueItem)
+selectedMeatCode =
+    getSessionMeatSelection(key = newKey,
+                            selectedMeatTable = selectedMeatTable)
 
 
 result = NULL
 successCount = 0
 failCount = 0
-for(iter in 1:length(uniqueItem)){
-    singleItem = uniqueItem[iter]
+for(iter in 1:length(selectedMeatCode)){
+    currentMeat = selectedMeatCode[iter]
     subKey = newKey
-    subKey@dimensions$measuredItemCPC@keys = singleItem
-    print(paste0("Imputation for item: ", singleItem))
-    
-    impute = try({
-        cat("Reading in the data...\n")
-        datasets = getProductionData(subKey)
-        ## Ignore indigenous/biological:
-        datasets$formulaTuples = datasets$formulaTuples[nchar(input) == 4, ]
-        
-        for(i in 1:nrow(datasets$formulaTuples)){
-            ## For convenience, let's save the formula tuple to "filter"
-            filter = datasets$formulaTuples[i, ]
-            message("Processing pair ", i, " of ", nrow(datasets$formulaTuples),
-                    " element triples.")
-            cleanedData = cleanData(datasets, i = i, maxYear = 2014)
-            
-            ## Setup for the imputation
-            processingParams = defaultProcessingParameters(
-                productionValue = filter[, output],
-                yieldValue = filter[, productivity],
-                areaHarvestedValue = filter[, input])
-            processingParams$imputedFlag = c("I", "E")
-            p = getImputationParameters(cleanedData, i = i)
-            ## NOTE (Michael): Stop the plotting.
-            p$yieldParams$plotImputation = ""
-            p$productionParams$plotImputation = ""
-            yieldParams = p$yieldParams
-            productionParams = p$productionParams
+    subKey@dimensions$measuredItemCPC@keys = currentMeat
+    print(paste0("Imputation for item: ", currentMeat))
 
-            
-            cleanedData$query =
-                removeSingleEntryCountry(cleanedData$query,
-                                         params = processingParams)
-
-            forcedZero =
-                getForcedZeroKey(cleanedData$query,
-                                 processingParam = processingParams,
-                                 productionParams = productionParams)
-
-            
-            ## Imputation is a bit tricky, as we want to exclude previously 
-            ## estimated data if we have "enough" official/semi-official data in
-            ## a time series but we want to use estimates if we don't have 
-            ## enough official/semi-official data.  "Enough" is specified by
-            ## minObsForEst.
-            flags = paste0(cleanedData$prefixTuples$flagObsPrefix,
-                           filter[, c("productivity", "output"), with = FALSE])
-
-            validObsCnt = 
-                useEstimateForTimeSeriesImputation(data = cleanedData$query,
-                                                   yieldObsFlagVar = flags[1],
-                                                   prodObsFlagVar = flags[2])
-
-            
-            ## For the actual imputation, we must pass all the data (as the 
-            ## global models should use all the information available). 
-            ## However, we'll have to delete some of the imputations
-            ## (corresponding to series without enough official data) and then
-            ## rerun the imputation.
-            origData = copy(cleanedData$query)
-            processingParams$removePriorImputation = TRUE
-            cat("Imputation without Manual Estimates\n")
-            imputation1 =
-                imputeProductionDomain(copy(origData),
-                                       processingParameters = processingParams,
-                                       yieldImputationParameters = yieldParams,
-                                       productionImputationParameters = productionParams,
-                                       unitConversion = filter[, unitConversion])
-            ## Now impute while leaving estimates in
-            processingParams$removePriorImputation = FALSE
-            simplerModels = allDefaultModels()
-            simplerModels = simplerModels[c("defaultMean", "defaultLm",
-                                            "defaultExp", "defaultNaive",
-                                            "defaultMixedModel")]
-            yieldParams$ensembleModels = simplerModels
-            productionParams$ensembleModels = simplerModels
-            cat("Imputation with Manual Estimates\n")
-            imputation2 =
-                imputeProductionDomain(copy(origData),
-                                       processingParameters = processingParams,
-                                       yieldImputationParameters = yieldParams,
-                                       productionImputationParameters = productionParams,
-                                       unitConversion = filter[, unitConversion])
-            
-            ## Take all the I/e values that have just been estimated, but don't
-            ## include I/i (as balanced observations may not be correct, because
-            ## we could use estimates for yield imputation and not for
-            ## production, for example).
-            valuesImputed1 = getUpdatedObs(
-                dataOld = origData, dataNew = imputation1,
-                key = c("geographicAreaM49", "timePointYears"),
-                wideVarName = "measuredElement")
-            valuesImputed1 = valuesImputed1[!flagMethod == "i", ]
-            ## Filter to only include series with enough data:
-            valuesImputed1 = merge(valuesImputed1, validObsCnt[!(useEstimates), ],
-                                   by = c("geographicAreaM49", "measuredElement"))
-            ## Now add in the values imputed in the second round
-            valuesImputed2 = getUpdatedObs(
-                dataOld = origData, dataNew = imputation2,
-                key = c("geographicAreaM49", "timePointYears"),
-                wideVarName = "measuredElement")
-            valuesImputed2 = valuesImputed2[!flagMethod == "i", ]
-            valuesImputed2 = merge(valuesImputed2, validObsCnt[(useEstimates), ],
-                                   by = c("geographicAreaM49", "measuredElement"))
-            
-            ## Bring together the estimates and reshape them:
-            valuesImputed = rbind(valuesImputed1, valuesImputed2)
-            valuesImputed[, useEstimates := NULL]
-            ## Add in yield estimates back to original data
-            toMerge = valuesImputed[measuredElement == filter[, productivity], ]
-            cols = c("Value", "flagObservationStatus", "flagMethod")
-            newCols = paste0(cols, "_measuredElement_",
-                             filter[, productivity])
-            setnames(toMerge, cols, newCols)
-            finalData = merge(origData, toMerge, all = TRUE,
-                              suffixes = c("", ".new"),
-                              by = c("geographicAreaM49", "timePointYears"))
-            for(column in newCols){
-                finalData[!is.na(get(paste0(column, ".new"))), c(column) := 
-                          get(paste0(column, ".new"))]
-            }
-            finalData[, c(paste0(newCols, ".new"), "measuredElement") := NULL]
-            ## Add in production estimates back to original data
-            toMerge = valuesImputed[measuredElement == filter[, output], ]
-            newCols = paste0(cols, "_measuredElement_", filter[, output])
-            setnames(toMerge, cols, newCols)
-            finalData = merge(finalData, toMerge, all = TRUE,
-                              suffixes = c("", ".new"),
-                              by = c("geographicAreaM49", "timePointYears"))
-            for(column in newCols){
-                finalData[!is.na(get(paste0(column, ".new"))), c(column) := 
-                          get(paste0(column, ".new"))]
-            }
-            finalData[, c(paste0(newCols, ".new"), "measuredElement") := NULL]
-            ## Now, use the identity Yield = Production / Area to add in missing
-            ## values.
-            computeYield(data = finalData, processingParameters = processingParams,
-                         unitConversion = filter[, unitConversion])
-            balanceProduction(data = finalData,
-                              processingParameters = processingParams,
-                              unitConversion = filter[, unitConversion])
-            balanceAreaHarvested(data = finalData,
-                                 processingParameters = processingParams,
-                                 unitConversion = filter[, unitConversion])
-            
-            ## Remove the observations we don't want to impute on
-            ## Use keys so we can do an anti-join
-            setkeyv(forcedZero, colnames(forcedZero))
-            setkeyv(finalData, colnames(forcedZero))
-            finalData = finalData[!forcedZero, ]
-            timeFilter = data.table(timePointYears = firstYear:lastYear,
-                                    key = "timePointYears")
-            setkeyv(finalData, "timePointYears")
-            finalData = finalData[timeFilter, ]
-            ##finalData[, ensembleVariance := NULL]
-        } ## close item type for loop
-        finalData
-    }) ## close try block
+    imputed = try({imputeMeatTriplet(meatKey = subKey)})
 
 
-    if(inherits(impute, "try-error")){
+    if(inherits(imputed, "try-error")){
         message("Imputation Module Failed!")
         failCount = failCount + 1
     } else {
-        step2Data = copy(impute)
         successCount = successCount + 1
         ## New module test
-        impute %>%
+        imputed %>%
             normalise(.) %>%
             ## Change time point year back to character
             postProcessing(data = .) %>%
@@ -346,21 +190,19 @@ for(iter in 1:length(uniqueItem)){
             checkProtectedData(dataToBeSaved = .) %>%
             SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 
-        ## if(!inherits(moduleTest2, "try-error"))
-        ##     SaveData("agriculture", "aproduction", data = impute,
-        ##              normalized = FALSE)
+
         message("Imputation Module Executed Successfully!")
         ## Just need to return the numbers slaughtered code:
-        impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
-                        "_measuredElement_",
-                        cleanedData$formulaTuples$productivity) := NULL]
-        impute[, paste0(c("Value", "flagObservationStatus", "flagMethod"),
-                        "_measuredElement_",
-                        cleanedData$formulaTuples$output) := NULL]
-        impute[, measuredElement := cleanedData$formulaTuples$input]
-        setnames(impute, colnames(impute),
-                 gsub("_measuredElement_.*", "", colnames(impute)))
-        result = rbind(result, impute)
+        ##
+        ## NOTE (Michael): Need to restructure the get formula
+        formulaTuples =
+            getYieldFormula(slot(slot(subKey,
+                                      "dimensions")$measuredItemCPC, "keys"))
+        formulaTuples = formulaTuples[nchar(input) == 4, ]
+        slaughteredAnimal =
+            getSlaughteredAnimal(data = imputed,
+                                 formulaTuples = formulaTuples)
+        result = rbind(result, slaughteredAnimal)
     }
 }
 
