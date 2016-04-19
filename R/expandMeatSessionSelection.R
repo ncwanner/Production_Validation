@@ -2,7 +2,7 @@
 ##' include all necessary meat.
 ##'
 ##' @param oldKey The current key used in the session
-##' @param selectedMeat The data table of the same format returned by
+##' @param selectedMeatTable The data table of the same format returned by
 ##'     the function \code{getAnimalMeatMapping}, but containing the
 ##'     meat selection required.
 ##'
@@ -12,14 +12,14 @@
 ##' @export
 ##'
 
-expandMeatSessionSelection = function(oldKey, selectedMeat){
+expandMeatSessionSelection = function(oldKey, selectedMeatTable){
     rowsIncluded =
-        selectedMeat[, measuredItemParentCPC %in%
+        selectedMeatTable[, measuredItemParentCPC %in%
                        oldKey@dimensions$measuredItemCPC@keys |
                        measuredItemChildCPC %in%
                        oldKey@dimensions$measuredItemCPC@keys]
     requiredMeats =
-        selectedMeat[rowsIncluded, c(measuredItemParentCPC, measuredItemChildCPC)]
+        selectedMeatTable[rowsIncluded, c(measuredItemParentCPC, measuredItemChildCPC)]
     oldKey@dimensions[[itemVar]]@keys = requiredMeats
     if(length(oldKey@dimensions$measuredItemCPC@keys) == 0){
         stop("No meat/animal commodities are in the session, and thus this ",
@@ -30,7 +30,7 @@ expandMeatSessionSelection = function(oldKey, selectedMeat){
     newKey = oldKey
     ## Update the measuredElements
     newKey@dimensions[[elementVar]]@keys =
-        unique(selectedMeat[rowsIncluded,
+        unique(selectedMeatTable[rowsIncluded,
                             c(measuredElementParent, measuredElementChild)])
     
     ## Adjust the years based on the passed information:
