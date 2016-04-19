@@ -47,7 +47,7 @@ minObsForEst = 5
 impFlags = c("I", "E")
 missFlags = "M"
 ## server is only used for debug sessions:
-##server = "Prod"
+## server = "Prod"
 server = "QA"
 
 ## set up for the test environment and parameters
@@ -95,7 +95,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
             baseUrl = url,
             ## token = "f8646896-2ed2-4e88-9cd2-9db6d735991f"
             ## New Token for all the meats
-            token = "2c588cf7-30ef-4fae-8239-34d16a0f9583"
+            token = "4fe1052b-bfb0-45fa-b9ec-2dda5a1b9421"
         )
     }
     sapply(files, source)
@@ -161,7 +161,6 @@ selectedMeatCode =
     getSessionMeatSelection(key = newKey,
                             selectedMeatTable = selectedMeatTable)
 
-
 result = NULL
 successCount = 0
 failCount = 0
@@ -171,7 +170,7 @@ for(iter in 1:length(selectedMeatCode)){
     subKey@dimensions$measuredItemCPC@keys = currentMeat
     print(paste0("Imputation for item: ", currentMeat))
 
-    imputed = try({imputeMeatTriplet(meatKey = subKey)})
+    imputed = imputeMeatTriplet(meatKey = subKey)
 
 
     if(inherits(imputed, "try-error")){
