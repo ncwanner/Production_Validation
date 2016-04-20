@@ -209,6 +209,8 @@ if(!is.null(result)){
         ## Step 3. Copy the slaughtered animal numbers in meat back to the
         ##         animal commodity.
         transferSlaughteredNumber(step1Data, result) %>%
+        ## Post process the data 
+        postProcessing(data = .) %>%
         ## Module Testing before saving the data back to the database
         checkTimeSeriesImputed(dataToBeSaved = .,
                                key = c("geographicAreaM49",
@@ -221,7 +223,6 @@ if(!is.null(result)){
         ## 
         ## Note (Michael): The above comment is incorrect, only the animal
         ##                 number is saved back to the animal commdotiy.
-        postProcessing(data = .) %>%
         SaveData(domain = "agriculture", dataset = "aproduction",
                  data = .)
 
