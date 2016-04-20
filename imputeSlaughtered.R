@@ -164,7 +164,8 @@ for(iter in 1:length(selectedMeatCode)){
     currentMeat = selectedMeatCode[iter]
     subKey = newKey
     subKey@dimensions$measuredItemCPC@keys = currentMeat
-    print(paste0("Imputation for item: ", currentMeat))
+    print(paste0("Imputation for item: ", currentMeat, " (",  iter, " out of ",
+                 length(selectedMeatCode),")"))
 
     imputed = imputeMeatTriplet(meatKey = subKey)
 
@@ -208,7 +209,8 @@ if(!is.null(result)){
     saveResult =
         ## Step 3. Copy the slaughtered animal numbers in meat back to the
         ##         animal commodity.
-        transferSlaughteredNumber(preUpdatedData = step1Data,
+        step1Data %>%
+        transferSlaughteredNumber(preUpdatedData = .,
                                   imputationResult = result,
                                   selectedMeatTable = selectedMeatTable) %>%
         ## Post process the data 

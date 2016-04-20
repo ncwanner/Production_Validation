@@ -32,7 +32,6 @@ transferSlaughteredNumber = function(preUpdatedData,
     parentData[, c("measuredItemChildCPC", "measuredElementChild") := NULL]
     setnames(parentData, c("measuredItemParentCPC", "measuredElementParent"),
              c(itemVar, elementVar))
-    parentData[, timePointYears := as.character(timePointYears)]
 
     ## Only need to keep the updated data
     updatedData = merge(preUpdatedData, parentData, all.y = TRUE,
