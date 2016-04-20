@@ -60,40 +60,16 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 startTime = Sys.time()
 
 cat("Loading preliminary data...\n")
+key = 
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
+                         onlyMeatChildren = FALSE) %>%
+    subsetAnimalMeatMapping(animalMeatMapping = .,
+                            context = swsContext.datasets[[1]]) %>%
+    expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
+                               selectedMeatTable = .)
 
-toSynch = fread(paste0(R_SWS_SHARE_PATH,
-        "/browningj/production/slaughtered_synchronized.csv"),
-        colClasses = "character")
-meatGroups = split(x = toSynch[, measuredItemChildCPC],
-                   f = toSynch[, measuredItemParentCPC])
-meatGroups = lapply(1:length(meatGroups), function(i){
-    c(meatGroups[[i]], names(meatGroups)[i])
-})
 
-meatGroupDT = lapply(1:length(meatGroups), function(i){
-    data.table(meatGroup = i, measuredItemCPC = meatGroups[[i]])
-})
-meatGroupDT = do.call("rbind", meatGroupDT)
 
-## Read the data.  The years and countries provided in the session are used, and
-## the commodities in the session are somewhat considered. For example, if 02111
-## (Cattle) is in the session, then the session will be expanded to also include
-## 21111.01 (meat of cattle, fresh or chilled), 21151 (edible offal of cattle,
-## fresh, chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01 (raw
-## hides and skins of cattle).  The measured element dimension of the session is
-## simply ignored.
-
-## Expand the session to include missing meats
-key = swsContext.datasets[[1]]
-groupIncluded = meatGroupDT[measuredItemCPC %in% key@dimensions$measuredItemCPC@keys,
-                            unique(meatGroup)]
-requiredMeats = meatGroupDT[meatGroup %in% groupIncluded,
-                            unique(measuredItemCPC)]
-key@dimensions[[itemVar]]@keys = requiredMeats
-
-## Update the measuredElements
-key@dimensions[[elementVar]]@keys = unique(c(toSynch$measuredElementParent,
-                                             toSynch$measuredElementChild))
 
 # Execute the get data call.
 cat("Pulling the data\n")
