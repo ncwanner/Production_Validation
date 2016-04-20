@@ -208,7 +208,9 @@ if(!is.null(result)){
     saveResult =
         ## Step 3. Copy the slaughtered animal numbers in meat back to the
         ##         animal commodity.
-        transferSlaughteredNumber(step1Data, result) %>%
+        transferSlaughteredNumber(preUpdatedData = step1Data,
+                                  imputationResult = result,
+                                  selectedMeatTable = selectedMeatTable) %>%
         ## Post process the data 
         postProcessing(data = .) %>%
         ## Module Testing before saving the data back to the database

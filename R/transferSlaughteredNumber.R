@@ -7,6 +7,9 @@
 ##' @param imputationResult This is the result of the imputation, the
 ##'     imputed value contains updated slaughtered number to be
 ##'     updated in the animal numbers
+##' @param selectedMeatTable The data table of the same format returned by
+##'     the function \code{getAnimalMeatMapping}, but containing the
+##'     meat selection required.
 ##'
 ##' @return A data.table object which contains the updated animal
 ##'     number.
@@ -14,7 +17,9 @@
 ##' @export
 ##'
 
-transferSlaughteredNumber = function(preUpdatedData, imputationResult,
+transferSlaughteredNumber = function(preUpdatedData,
+                                     imputationResult,
+                                     selectedMeatTable,
                                      areaVar = "geographicAreaM49",
                                      itemVar = "measuredItemCPC",
                                      elementVar = "measuredElement",
@@ -22,7 +27,7 @@ transferSlaughteredNumber = function(preUpdatedData, imputationResult,
     childData = copy(imputationResult)
     setnames(childData, c(itemVar, elementVar),
              c("measuredItemChildCPC", "measuredElementChild"))
-    parentData = merge(childData, toProcess,
+    parentData = merge(childData, selectedMeatTable,
                        by = c("measuredItemChildCPC", "measuredElementChild"))
     parentData[, c("measuredItemChildCPC", "measuredElementChild") := NULL]
     setnames(parentData, c("measuredItemParentCPC", "measuredElementParent"),
