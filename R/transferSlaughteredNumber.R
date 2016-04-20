@@ -14,7 +14,11 @@
 ##' @export
 ##'
 
-transferSlaughteredNumber = function(preUpdatedData, imputationResult){
+transferSlaughteredNumber = function(preUpdatedData, imputationResult,
+                                     areaVar = "geographicAreaM49",
+                                     itemVar = "measuredItemCPC",
+                                     elementVar = "measuredElement",
+                                     yearVar = "timePointYears"){
     childData = copy(imputationResult)
     setnames(childData, c(itemVar, elementVar),
              c("measuredItemChildCPC", "measuredElementChild"))

@@ -18,7 +18,8 @@ useEstimateForTimeSeriesImputation = function(data,
                                               yieldObsFlagVar,
                                               prodObsFlagVar,
                                               impFlags = c("I", "E"),
-                                              missFlags = "M"){
+                                              missFlags = "M",
+                                              minObsForEst = 5){
     yieldElementNum = gsub("[^0-9]", "", yieldObsFlagVar)
     prodElementNum = gsub("[^0-9]", "", prodObsFlagVar)
     validObsCnt =

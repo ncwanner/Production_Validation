@@ -11,7 +11,11 @@
 ##' @return A list with the yield and production imputation parameters.
 ##'   
 
-getImputationParameters = function(datasets, i = 1){
+getImputationParameters = function(datasets, i = 1,
+                                   areaVar = "geographicAreaM49",
+                                   itemVar = "measuredItemCPC",
+                                   elementVar = "measuredElement",
+                                   yearVar = "timePointYears"){
 
     ## Impute yield
     yieldCode = datasets$formulaTuples[, productivity][i]

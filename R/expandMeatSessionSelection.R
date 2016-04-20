@@ -12,7 +12,11 @@
 ##' @export
 ##'
 
-expandMeatSessionSelection = function(oldKey, selectedMeatTable){
+expandMeatSessionSelection = function(oldKey, selectedMeatTable,
+                                      areaVar = "geographicAreaM49",
+                                      itemVar = "measuredItemCPC",
+                                      elementVar = "measuredElement",
+                                      yearVar = "timePointYears"){
     rowsIncluded =
         selectedMeatTable[, measuredItemParentCPC %in%
                        oldKey@dimensions$measuredItemCPC@keys |
@@ -20,7 +24,7 @@ expandMeatSessionSelection = function(oldKey, selectedMeatTable){
                        oldKey@dimensions$measuredItemCPC@keys]
     requiredMeats =
         selectedMeatTable[rowsIncluded, c(measuredItemParentCPC, measuredItemChildCPC)]
-    oldKey@dimensions[[itemVar]]@keys = requiredMeats
+    oldKey@dimensions[["measuredItemCPC"]]@keys = requiredMeats
     if(length(oldKey@dimensions$measuredItemCPC@keys) == 0){
         stop("No meat/animal commodities are in the session, and thus this ",
              "module has nothing to do.")
@@ -39,6 +43,6 @@ expandMeatSessionSelection = function(oldKey, selectedMeatTable){
 
     ## Include all countries, since all data is required for the imputation
     countryCodes = GetCodeList("agriculture", "aproduction", "geographicAreaM49")
-    newKey@dimensions[[areaVar]]@keys = countryCodes[type == "country", code]
+    newKey@dimensions[["geographicAreaM49"]]@keys = countryCodes[type == "country", code]
     newKey
 }

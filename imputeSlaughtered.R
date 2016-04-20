@@ -38,14 +38,8 @@ library(faoswsImputation)
 library(splines)
 library(magrittr)
 
-areaVar = "geographicAreaM49"
-yearVar = "timePointYears"
-itemVar = "measuredItemCPC"
-elementVar = "measuredElement"
-yearsModeled = 20
 minObsForEst = 5
-impFlags = c("I", "E")
-missFlags = "M"
+yearsModeled = 20
 ## server is only used for debug sessions:
 ## server = "Prod"
 server = "QA"
@@ -104,8 +98,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 }
 
 ## Just testing 1 item
-## swsContext.datasets[[1]]@dimensions[[itemVar]]@keys = "21111.01" ## meat of cattle
-## swsContext.datasets[[1]]@dimensions[[itemVar]]@keys = "21113.01" ## meat of pig
+## swsContext.datasets[[1]]@dimensions[[measuredItemCPC]]@keys = "21111.01" ## meat of cattle
+## swsContext.datasets[[1]]@dimensions[[measuredItemCPC]]@keys = "21113.01" ## meat of pig
 
 startTime = Sys.time()
 
@@ -140,11 +134,13 @@ cat("Pulling the data...\n")
 step1Data = 
     newKey %>%
     GetData(key = .) %>%
+    preProcessing(data = .) %>%
     ## TODO (Michael): Should add preProcessing here
     transferAnimalNumber(data = ., selectedMeatTable)
 
 ## Module test and save the transfered data back
 step1Data %>%
+    postProcessing(data = .) %>%
     checkProtectedData(dataToBeSaved = .) %>%
     SaveData("agriculture", "aproduction", data = .)
 
@@ -225,6 +221,7 @@ if(!is.null(result)){
         ## 
         ## Note (Michael): The above comment is incorrect, only the animal
         ##                 number is saved back to the animal commdotiy.
+        postProcessing(data = .) %>%
         SaveData(domain = "agriculture", dataset = "aproduction",
                  data = .)
 

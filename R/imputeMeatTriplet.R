@@ -1,4 +1,4 @@
-imputeMeatTriplet = function(meatKey){
+imputeMeatTriplet = function(meatKey, minObsForEst = 5){
     cat("Reading in the data...\n")
     datasets = getProductionData(meatKey)
     ## Ignore indigenous/biological:
@@ -46,7 +46,8 @@ imputeMeatTriplet = function(meatKey){
         validObsCnt = 
             useEstimateForTimeSeriesImputation(data = cleanedData$query,
                                                yieldObsFlagVar = flags[1],
-                                               prodObsFlagVar = flags[2])
+                                               prodObsFlagVar = flags[2],
+                                               minObsForEst = minObsForEst)
 
         
         ## For the actual imputation, we must pass all the data (as the 

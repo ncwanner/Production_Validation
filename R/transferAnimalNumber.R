@@ -16,7 +16,11 @@
 ##' @export
 ##'
 
-transferAnimalNumber = function(data, selectedMeat){
+transferAnimalNumber = function(data, selectedMeat,
+                                areaVar = "geographicAreaM49",
+                                itemVar = "measuredItemCPC",
+                                elementVar = "measuredElement",
+                                yearVar = "timePointYears"){
     dataCopy = copy(data)
     ## Step 1. Transfer down the slaughtered animal numbers from the
     ##         animal (parent) commodity to the meat (child) commodity.
