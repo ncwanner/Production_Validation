@@ -14,7 +14,12 @@
 ##'
 
 postProcessing = function(data, params = defaultProcessingParameters()){
+    dataCopy = copy(data)
     ## Converting year back to database
-    data[, `:=`(c(params$yearValue), as.character(.SD[[params$yearValue]]))]
+    dataCopy[, `:=`(c(params$yearValue), as.character(.SD[[params$yearValue]]))]
+    ## Restoring the 0M values
+    dataWith0M =
+        restore0M(dataCopy, valueVars = "Value",
+                  flagVars = "flagObservationStatus")
+    dataWith0M
 }
-

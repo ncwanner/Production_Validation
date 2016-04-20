@@ -21,7 +21,11 @@
 ##'   via data.table.
 ##'   
 
-cleanData = function(datasets, i, maxYear = NULL){
+cleanData = function(datasets, i, maxYear = NULL,
+                     areaVar = "geographicAreaM49",
+                     itemVar = "measuredItemCPC",
+                     elementVar = "measuredElement",
+                     yearVar = "timePointYears"){
     
     codes = datasets$formulaTuples[i, c("input", "productivity",
                                     "output"), with = FALSE]

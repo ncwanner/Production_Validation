@@ -195,7 +195,7 @@ for(years in yearList){
                                  unitConversion = filter$unitConversion)
             ## Module testing
             ##
-            ## NOTE (Michael): Need to write this in a cleaner way.
+            ## TODO (Michael): Need to write this in a cleaner way.
             cat("Module Testing ... \n")
             productionFormula =
                 getYieldFormula(slot(slot(swsContext.datasets[[1]],

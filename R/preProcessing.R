@@ -14,6 +14,11 @@
 ##'
 
 preProcessing = function(data, params = defaultProcessingParameters()){
+    dataCopy = copy(data)
     ## Converting year to numeric for modelling
-    data[, `:=`(c(params$yearValue), as.numeric(.SD[[params$yearValue]]))]
+    dataCopy[, `:=`(c(params$yearValue), as.numeric(.SD[[params$yearValue]]))]
+
+    dataWithout0M =
+        remove0M(dataCopy, valueVars = "Value", flagVars = "flagObservationStatus")
+    dataWithout0M
 }

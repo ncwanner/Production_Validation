@@ -24,8 +24,9 @@
 ##'
 ##' @export
 
-getProductionData = function(dataContext, itemVar = "measuredItemCPC",
+getProductionData = function(dataContext, 
                              areaVar = "geographicAreaM49",
+                             itemVar = "measuredItemCPC",
                              elementVar = "measuredElement",
                              yearVar = "timePointYears"){
     ## Setups

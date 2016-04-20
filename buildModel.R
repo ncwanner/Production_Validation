@@ -131,7 +131,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
     impute = try({
         cat("Reading in the data...\n")
         datasets = getProductionData(dataContext = subKey)
-        ## NOTE (Michael): The yield should have been
+        ## TODO (Michael): The yield should have been
         ##                 calculated a priori to the
         ##                 imputation module.
         
@@ -332,7 +332,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
                 ## If model building failed, we still want to continue in case
                 ## we can build a production model.
                 ##
-                ## NOTE (Michael): Should investigate why the model failed.
+                ## TODO (Michael): Should investigate why the model failed.
                 modelYield = NULL
             }
             
@@ -450,7 +450,7 @@ runModel = function(iter, removePriorImputation, appendName = "",
                                        valueColumn = "Value") %>%
                 checkProtectedData(dataToBeSaved = .)
 
-            ## NOTE (Michael): Need to add in checks for the objects
+            ## TODO (Michael): Need to add in checks for the objects
             ##                 saved.
             save(modelYield, modelProduction, years,
                  file = paste0(saveDir, "prodModel_",

@@ -1,7 +1,7 @@
 ##' This function returns the prefix name used for the denormalised
 ##' dataset.
 ##'
-##' NOTE (Michael): This function should probably be merged with
+##' TODO (Michael): This function should probably be merged with
 ##'                 processing parameters.
 ##'
 ##' @return A data.table containing the prefix

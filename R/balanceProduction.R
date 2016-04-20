@@ -1,15 +1,16 @@
 ##' Function to compute production when new area harvested and yield are given.
 ##' 
 ##' @param data The data.table object containing the data.
-##' @param processingParameters A list of the parameters for the production 
-##'   processing algorithms.  See defaultProcessingParameters() for a starting 
-##'   point.
-##' @param newObservationFlag The flag which should be placed for computed
-##'   observations as the observation flag.
+##' @param processingParameters A list of the parameters for the
+##'     production processing algorithms.  See
+##'     \code{defaultProcessingParameters} for a starting point.
+##' @param newObservationFlag The flag which should be placed for
+##'     computed observations as the observation flag.
 ##' @param newMethodFlag The flag which should be placed for computed
-##'   observations as the method flag.
-##' @param unitConversion Yield is computed as (production) / (area) and 
-##'   multiplied by unitConversion.  This parameter defaults to 1.
+##'     observations as the method flag.
+##' @param unitConversion Yield is computed as (production) / (area)
+##'     and multiplied by unitConversion.  This parameter defaults to
+##'     1.
 ##'   
 ##' @export
 ##' 
