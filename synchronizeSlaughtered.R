@@ -27,9 +27,8 @@ elementVar = "measuredElement"
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
-if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
+if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
 
     if(Sys.info()[7] == "josh"){ # Josh work
@@ -37,7 +36,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
                     full.names = TRUE)
         SetClientFiles("~/R certificate files/QA/")
         R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
-    } else if(Sys.info()[7] == "mk"){ # Josh work
+    } else if(Sys.info()['user'] == "mk"){ # Josh work
         files = dir("R/", full.names = TRUE)
         SetClientFiles("~/.R/qa/")
         R_SWS_SHARE_PATH = "/media/sws_qa_shared_drive/"
@@ -59,80 +58,57 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 
 startTime = Sys.time()
 
-cat("Loading preliminary data...\n")
-key = 
+cat("Loading preliminary data and create expanded Datakey...\n")
+
+## NOTE (Michael): It seems there is no point of pulling the data from
+##                 the children, as the mapping comes from the
+##                 commodity tree and new values are calculated.
+
+selectedMeatTable =
     getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
                          onlyMeatChildren = FALSE) %>%
     subsetAnimalMeatMapping(animalMeatMapping = .,
-                            context = swsContext.datasets[[1]]) %>%
+                            context = swsContext.datasets[[1]])
+key = 
+    selectedMeatTable %>%
     expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
                                selectedMeatTable = .)
 
 
-
-
 # Execute the get data call.
-cat("Pulling the data\n")
-data = GetData(key = key)
-# Remove missing values, as we don't want to copy those.
-data = data[!flagObservationStatus == "M", ]
-# Some figures shouldn't be overwritten, namely anything which is currently 
-# offical.  Actually, we decided to overwrite these figures as well, as they are
-# likely older official data.
-# dontWrite = data[flagObservationStatus == "", ]
-# Filter to only the parents, as we will only create children and do this
-# creation using the parents.
-allowedParents = unique(toSynch[, c("measuredItemParentCPC",
-                                    "measuredElementParent"), with = FALSE])
-setnames(allowedParents, c(itemVar, elementVar))
-data = merge(data, allowedParents, by = colnames(allowedParents))
+cat("Pulling the data ... \n")
 
-cat("Pulling the commodity trees...\n")
+newParentData = 
+    GetData(key = key) %>%
+    preProcessing(data = .) %>%
+    removeMissingEntry(data = .) %>%
+    selectParentData(data = ., selectedMeatTable = selectedMeatTable)
 
-# Get the commodity tree (using faoswsUtil):
-tree = getCommodityTree(geographicAreaM49 = as.character(unique(data$geographicAreaM49)),
-                        timePointYears = as.character(unique(data$timePointYears)))
-tree = tree[share > 0, ]
+cat("Pulling the commodity trees ...\n")
 
-# Use the shares to convert the parent into the child:
-setnames(tree, c("measuredItemParentCPC", "timePointYearsSP"),
-         c("measuredItemCPC", "timePointYears"))
-toWrite = merge(data, tree, by = c("geographicAreaM49", "timePointYears",
-                                      "measuredItemCPC"), all.x = TRUE)
-# Multiply value by share to get final value
-toWrite[, c("Value", "share") := list(Value * share, NULL)]
-# Assign to the children, not the parent
-toWrite[, c("measuredItemCPC", "measuredItemChildCPC") :=
-            list(measuredItemChildCPC, NULL)]
-toWrite[, extractionRate := NULL]
-# The measuredElement corresponds to the parent.  Correct this using the table
-# from Tomasz, now on the share drive
-toMerge = toSynch[, c("measuredItemChildCPC", "measuredElementChild"), with = FALSE]
-setnames(toMerge, "measuredItemChildCPC", "measuredItemCPC")
-toWrite = merge(toWrite, toMerge, by = "measuredItemCPC")
-toWrite[, c("measuredElement", "measuredElementChild") :=
-            list(measuredElementChild, NULL)]
-# Don't write the data if there's currently an official figure in that spot
-# toWrite = merge(toWrite, dontWrite, all.x = TRUE,
-#                 by = c("measuredItemCPC", "geographicAreaM49",
-#                        "timePointYears", "measuredElement"),
-#                 suffixes = c("", ".skip"))
-# toWrite = toWrite[is.na(Value.skip), ]
-# toWrite[, c("Value.skip", "flagObservationStatus.skip",
-#             "flagMethod.skip") := NULL]
+newCommodityTree =
+    newParentData %$%
+    getCommodityTree(geographicAreaM49 = as.character(unique(.$geographicAreaM49)),
+                     timePointYears = as.character(unique(.$timePointYears))) %>%
+    subset(., share > 0) %>%
+    setnames(., c("measuredItemParentCPC", "timePointYearsSP"),
+             c("measuredItemCPC", "timePointYears"))
 
-# Convert factors to character
-for(cname in c(areaVar, itemVar, elementVar, yearVar,
-               "flagObservationStatus", "flagMethod")){
-    toWrite[, c(cname) := as.character(get(cname))]
-}
+cat("Transfere the animal number to all the children commodities ... \n")
+transferedData = 
+    newCommodityTree %>%
+    preProcessing(.) %>%
+    transferParentToChild(commodityTree = .,
+                          parentData = newParentData,
+                          selectedMeatTable) %>%
+    postProcessing(data = .)
 
 
 
-cat("Testing module ...\n")
+cat("Testing module and saving data back ...\n")
 
 sessionAnimalMeatMapping =
-    getAnimalMeatMapping() %>%
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH) %>%
     subsetAnimalMeatMapping(animalMeatMapping = .,
                             context = swsContext.datasets[[1]])
 
@@ -141,7 +117,7 @@ animalNumberDB =
     getAllAnimalNumber(sessionAnimalMeatMapping)
 
 saveResult =
-    toWrite %>%
+    transferedData %>%
     checkSlaughteredSynced(animalMeatMapping = sessionAnimalMeatMapping,
                            animalNumbers = animalNumberDB,
                            slaughteredNumbers = .) %>%
@@ -150,14 +126,6 @@ saveResult =
     SaveData(domain = swsContext.datasets[[1]]@domain,
              dataset = swsContext.datasets[[1]]@dataset,
              data = .)
-
-
-## if(!inherits(moduleTest, "try-error")){
-##     cat("Attempting to save to the database...\n")
-##     saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
-##                           dataset = swsContext.datasets[[1]]@dataset,
-##                           data = toWrite)
-## }
 
 result = paste("Module completed with", saveResult$inserted + saveResult$appended,
       "observations updated and", saveResult$discarded, "problems.\n")
