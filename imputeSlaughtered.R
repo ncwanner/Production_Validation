@@ -37,6 +37,7 @@ library(faoswsUtil)
 library(faoswsImputation)
 library(splines)
 library(magrittr)
+library(dplyr)
 
 minObsForEst = 5
 yearsModeled = 20
@@ -110,10 +111,11 @@ firstDataYear = lastYear - yearsModeled + 1
 stopifnot(firstDataYear <= firstYear)
 stopifnot(firstYear <= lastYear)
 
-toProcess = getAnimalMeatMapping()
-toProcess[, c("Item Name", "Child Item Name") := NULL]
-## Filter to just meats => CPC code like 2111* or 2112* (21111.01, 21112, ...)
-selectedMeatTable = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
+selectedMeatTable =
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
+                         onlyMeatChildren = TRUE) %>%
+    select(measuredItemParentCPC, measuredElementParent,
+           measuredItemChildCPC, measuredElementChild)
 
 ## Read the data.  The years and countries provided in the session are
 ## used, and the commodities in the session are somewhat
@@ -125,8 +127,18 @@ selectedMeatTable = toProcess[grepl("^211(1|2|7).*", measuredItemChildCPC), ]
 ## the session is simply ignored.
 
 ## Expand the session to include missing meats
-newKey = expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
-                                    selectedMeatTable = selectedMeatTable)
+newKey =
+    expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
+                               selectedMeatTable = selectedMeatTable) 
+
+## Adjust the years based on the passed information:
+newKey@dimensions[["timePointYears"]]@keys =
+    as.character(firstDataYear:lastYear)
+
+## Include all countries, since all data is required for the imputation
+countryCodes = GetCodeList("agriculture", "aproduction", "geographicAreaM49")
+newKey@dimensions[["geographicAreaM49"]]@keys =
+    countryCodes[type == "country", code]
 
 ## Execute the get data call.
 cat("Pulling the data...\n")

@@ -2,9 +2,9 @@
 ##' commodity (parent) is in sync with the slaughtered animal in the
 ##' meat commodity (child).
 ##'
-##' @param animalMeatMapping The mapping table which contains the
+##' @param commodityTree The mapping table which contains the
 ##'     relationship between the animal commodity and the meat
-##'     commodity. Can be retrieved from \code{getAnimalMeatMapping}
+##'     commodity. Can be retrieved from \code{getCommodityTree}
 ##'     function.
 ##' @param animalNumbers The data.table object which contains the
 ##'     animal number of the animal commodity.
@@ -18,9 +18,7 @@
 ##' @export
 ##'
 
-
-
-checkSlaughteredSynced = function(animalMeatMapping = getAnimalMeatMapping(),
+checkSlaughteredSynced = function(commodityTree = getCommodityTree,
                                   animalNumbers = getAllAnimalNumber(),
                                   slaughteredNumbers = getAllSlaughteredNumber()){
     ## Function to check whether the slaughtered animal and animal
@@ -32,15 +30,14 @@ checkSlaughteredSynced = function(animalMeatMapping = getAnimalMeatMapping(),
     animalNumbersCopy = copy(animalNumbers)
     slaughteredNumbersCopy = copy(slaughteredNumbers)
     
-    setnames(animalNumbersCopy,
-             old = c("measuredItemCPC", "measuredElement"),
-             new = c("measuredItemParentCPC", "measuredElementParent"))
+    ## NOTE (Michael): allow.cartesian is set to TRUE here because 1
+    ##                 parent can map to multiple children commodity.
     referenceWithAnimalData =
-        merge(animalNumbersCopy, animalMeatMapping,
+        merge(animalNumbersCopy, commodityTree,
               by = intersect(colnames(animalNumbersCopy),
-                             colnames(animalMeatMapping)),
+                             colnames(commodityTree)),
               allow.cartesian = TRUE, all.x = TRUE)
-
+    referenceWithAnimalData[, `:=`(Value, Value * share)]
     setnames(referenceWithAnimalData,
              old = c("Value", "flagObservationStatus", "flagMethod"),
              new = paste0("animal_",
@@ -52,10 +49,10 @@ checkSlaughteredSynced = function(animalMeatMapping = getAnimalMeatMapping(),
              new = c("measuredItemChildCPC", "measuredElementChild"))
     
     referenceWithSlaughteredData =
-        merge(slaughteredNumbersCopy, animalMeatMapping,
+        merge(slaughteredNumbersCopy, commodityTree,
               by = intersect(colnames(slaughteredNumbersCopy),
-                             colnames(animalMeatMapping)),
-              allow.cartesian = TRUE, all.x = TRUE)
+                             colnames(commodityTree)),
+              all.x = TRUE)
 
     setnames(referenceWithSlaughteredData,
              old = c("Value", "flagObservationStatus", "flagMethod"),
@@ -74,14 +71,11 @@ checkSlaughteredSynced = function(animalMeatMapping = getAnimalMeatMapping(),
          )
 
     ## Revert the names
-    setnames(animalNumbersCopy,
-             new = c("measuredItemCPC", "measuredElement"),
-             old = c("measuredItemParentCPC", "measuredElementParent"))
     setnames(slaughteredNumbersCopy,
              new = c("measuredItemCPC", "measuredElement"),
              old = c("measuredItemChildCPC", "measuredElementChild"))
 
-    list(animalMeatMapping = animalMeatMapping,
+    list(commodityTree = commodityTree,
          animalNumbers = animalNumbersCopy,
          slaughteredNumbers = slaughteredNumbersCopy)
 }

@@ -10,26 +10,28 @@
 ## chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01 (raw hides
 ## and skins of cattle).
 ##
-## NOTE (Michael): Sync from parents to children.
+## NOTE (Michael): This is not really a synchronise module, it merely
+##                 transfer from parents to children.
+##
+## NOTE (Michael): According to previous comments, this is the only
+##                 module where official figure and semi-official data
+##                 in the child commodity can be over-written. This is
+##                 due to the consideration that these official
+##                 figures are old.
 ###############################################################################
 
 cat("Beginning slaughtered synchronization script...\n")
-
-library(data.table)
-library(faosws)
-library(faoswsUtil)
-library(magrittr)
-
-areaVar = "geographicAreaM49"
-yearVar = "timePointYears"
-itemVar = "measuredItemCPC"
-elementVar = "measuredElement"
+suppressMessages({
+    library(data.table)
+    library(faosws)
+    library(faoswsUtil)
+    library(magrittr)
+})
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
-if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
+if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
 
     if(Sys.info()[7] == "josh"){ # Josh work
@@ -37,7 +39,7 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
                     full.names = TRUE)
         SetClientFiles("~/R certificate files/QA/")
         R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
-    } else if(Sys.info()[7] == "mk"){ # Josh work
+    } else if(Sys.info()['user'] == "mk"){ # Josh work
         files = dir("R/", full.names = TRUE)
         SetClientFiles("~/.R/qa/")
         R_SWS_SHARE_PATH = "/media/sws_qa_shared_drive/"
@@ -50,7 +52,8 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
         # baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         # token = "916b73ad-2ef5-4141-b1c4-769c73247edd"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "63479732-0657-4b50-8c8d-c41bef92841b"
+        ## token = "63479732-0657-4b50-8c8d-c41bef92841b"
+        token = "4fe1052b-bfb0-45fa-b9ec-2dda5a1b9421" #full production
     )
     sapply(files, source)
 } else {
@@ -59,104 +62,67 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
 
 startTime = Sys.time()
 
-cat("Loading preliminary data...\n")
+cat("Loading preliminary data and create expanded Datakey...\n")
+## Read the data.  The years and countries provided in the session are
+## used, and the commodities in the session are somewhat
+## considered. For example, if 02111 (Cattle) is in the session, then
+## the session will be expanded to also include 21111.01 (meat of
+## cattle, fresh or chilled), 21151 (edible offal of cattle, fresh,
+## chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01
+## (raw hides and skins of cattle).  The measured element dimension of
+## the session is simply ignored.
+##
+## NOTE (Michael): It seems there is no point of pulling the data from
+##                 the children, as the mapping comes from the
+##                 commodity tree and new values are calculated.
 
-toSynch = fread(paste0(R_SWS_SHARE_PATH,
-        "/browningj/production/slaughtered_synchronized.csv"),
-        colClasses = "character")
-meatGroups = split(x = toSynch[, measuredItemChildCPC],
-                   f = toSynch[, measuredItemParentCPC])
-meatGroups = lapply(1:length(meatGroups), function(i){
-    c(meatGroups[[i]], names(meatGroups)[i])
-})
-
-meatGroupDT = lapply(1:length(meatGroups), function(i){
-    data.table(meatGroup = i, measuredItemCPC = meatGroups[[i]])
-})
-meatGroupDT = do.call("rbind", meatGroupDT)
-
-## Read the data.  The years and countries provided in the session are used, and
-## the commodities in the session are somewhat considered. For example, if 02111
-## (Cattle) is in the session, then the session will be expanded to also include
-## 21111.01 (meat of cattle, fresh or chilled), 21151 (edible offal of cattle,
-## fresh, chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01 (raw
-## hides and skins of cattle).  The measured element dimension of the session is
-## simply ignored.
-
-## Expand the session to include missing meats
-key = swsContext.datasets[[1]]
-groupIncluded = meatGroupDT[measuredItemCPC %in% key@dimensions$measuredItemCPC@keys,
-                            unique(meatGroup)]
-requiredMeats = meatGroupDT[meatGroup %in% groupIncluded,
-                            unique(measuredItemCPC)]
-key@dimensions[[itemVar]]@keys = requiredMeats
-
-## Update the measuredElements
-key@dimensions[[elementVar]]@keys = unique(c(toSynch$measuredElementParent,
-                                             toSynch$measuredElementChild))
+selectedMeatTable =
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
+                         onlyMeatChildren = FALSE) %>%
+    subsetAnimalMeatMapping(animalMeatMapping = .,
+                            context = swsContext.datasets[[1]])
+key = 
+    selectedMeatTable %>%
+    expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
+                               selectedMeatTable = .)
 
 # Execute the get data call.
-cat("Pulling the data\n")
-data = GetData(key = key)
-# Remove missing values, as we don't want to copy those.
-data = data[!flagObservationStatus == "M", ]
-# Some figures shouldn't be overwritten, namely anything which is currently 
-# offical.  Actually, we decided to overwrite these figures as well, as they are
-# likely older official data.
-# dontWrite = data[flagObservationStatus == "", ]
-# Filter to only the parents, as we will only create children and do this
-# creation using the parents.
-allowedParents = unique(toSynch[, c("measuredItemParentCPC",
-                                    "measuredElementParent"), with = FALSE])
-setnames(allowedParents, c(itemVar, elementVar))
-data = merge(data, allowedParents, by = colnames(allowedParents))
+cat(length(key@dimensions$measuredItemCPC@keys),
+    "commodities selected to be synchronised \n")
+cat("Pulling the data ... \n")
 
-cat("Pulling the commodity trees...\n")
+newParentData = 
+    GetData(key = key) %>%
+    preProcessing(data = .) %>%
+    ## Remove missing values, as we don't want to copy those.
+    removeMissingEntry(data = .) %>%
+    selectParentData(data = ., selectedMeatTable = selectedMeatTable)
 
-# Get the commodity tree (using faoswsUtil):
-tree = getCommodityTree(geographicAreaM49 = as.character(unique(data$geographicAreaM49)),
-                        timePointYears = as.character(unique(data$timePointYears)))
-tree = tree[share > 0, ]
+cat("Pulling the commodity trees ...\n")
 
-# Use the shares to convert the parent into the child:
-setnames(tree, c("measuredItemParentCPC", "timePointYearsSP"),
-         c("measuredItemCPC", "timePointYears"))
-toWrite = merge(data, tree, by = c("geographicAreaM49", "timePointYears",
-                                      "measuredItemCPC"), all.x = TRUE)
-# Multiply value by share to get final value
-toWrite[, c("Value", "share") := list(Value * share, NULL)]
-# Assign to the children, not the parent
-toWrite[, c("measuredItemCPC", "measuredItemChildCPC") :=
-            list(measuredItemChildCPC, NULL)]
-toWrite[, extractionRate := NULL]
-# The measuredElement corresponds to the parent.  Correct this using the table
-# from Tomasz, now on the share drive
-toMerge = toSynch[, c("measuredItemChildCPC", "measuredElementChild"), with = FALSE]
-setnames(toMerge, "measuredItemChildCPC", "measuredItemCPC")
-toWrite = merge(toWrite, toMerge, by = "measuredItemCPC")
-toWrite[, c("measuredElement", "measuredElementChild") :=
-            list(measuredElementChild, NULL)]
-# Don't write the data if there's currently an official figure in that spot
-# toWrite = merge(toWrite, dontWrite, all.x = TRUE,
-#                 by = c("measuredItemCPC", "geographicAreaM49",
-#                        "timePointYears", "measuredElement"),
-#                 suffixes = c("", ".skip"))
-# toWrite = toWrite[is.na(Value.skip), ]
-# toWrite[, c("Value.skip", "flagObservationStatus.skip",
-#             "flagMethod.skip") := NULL]
+newCommodityTree =
+    newParentData %$%
+    getCommodityTree(geographicAreaM49 = as.character(unique(.$geographicAreaM49)),
+                     timePointYears = as.character(unique(.$timePointYears))) %>%
+    subset(., share > 0) %>%
+    setnames(., c("measuredItemParentCPC", "timePointYearsSP"),
+             c("measuredItemCPC", "timePointYears"))
 
-# Convert factors to character
-for(cname in c(areaVar, itemVar, elementVar, yearVar,
-               "flagObservationStatus", "flagMethod")){
-    toWrite[, c(cname) := as.character(get(cname))]
-}
+cat("Transfere the animal number to all the children commodities ... \n")
+transferedData = 
+    newCommodityTree %>%
+    preProcessing(.) %>%
+    transferParentToChild(commodityTree = .,
+                          parentData = newParentData,
+                          selectedMeatTable) %>%
+    postProcessing(data = .)
 
 
 
-cat("Testing module ...\n")
+cat("Testing module and saving data back ...\n")
 
 sessionAnimalMeatMapping =
-    getAnimalMeatMapping() %>%
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH) %>%
     subsetAnimalMeatMapping(animalMeatMapping = .,
                             context = swsContext.datasets[[1]])
 
@@ -165,8 +131,8 @@ animalNumberDB =
     getAllAnimalNumber(sessionAnimalMeatMapping)
 
 saveResult =
-    toWrite %>%
-    checkSlaughteredSynced(animalMeatMapping = sessionAnimalMeatMapping,
+    transferedData %>%
+    checkSlaughteredSynced(commodityTree = newCommodityTree,
                            animalNumbers = animalNumberDB,
                            slaughteredNumbers = .) %>%
     .$slaughteredNumbers %>%
@@ -174,14 +140,6 @@ saveResult =
     SaveData(domain = swsContext.datasets[[1]]@domain,
              dataset = swsContext.datasets[[1]]@dataset,
              data = .)
-
-
-## if(!inherits(moduleTest, "try-error")){
-##     cat("Attempting to save to the database...\n")
-##     saveResult = SaveData(domain = swsContext.datasets[[1]]@domain,
-##                           dataset = swsContext.datasets[[1]]@dataset,
-##                           data = toWrite)
-## }
 
 result = paste("Module completed with", saveResult$inserted + saveResult$appended,
       "observations updated and", saveResult$discarded, "problems.\n")
