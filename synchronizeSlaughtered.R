@@ -121,14 +121,9 @@ transferedData =
 
 cat("Testing module and saving data back ...\n")
 
-sessionAnimalMeatMapping =
-    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH) %>%
-    subsetAnimalMeatMapping(animalMeatMapping = .,
-                            context = swsContext.datasets[[1]])
-
 
 animalNumberDB =
-    getAllAnimalNumber(sessionAnimalMeatMapping)
+    getAllAnimalNumber(selectedMeatTable)
 
 saveResult =
     transferedData %>%
