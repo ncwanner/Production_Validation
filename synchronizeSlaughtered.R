@@ -10,20 +10,23 @@
 ## chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01 (raw hides
 ## and skins of cattle).
 ##
-## NOTE (Michael): Sync from parents to children.
+## NOTE (Michael): This is not really a synchronise module, it merely
+##                 transfer from parents to children.
+##
+## NOTE (Michael): According to previous comments, this is the only
+##                 module where official figure and semi-official data
+##                 in the child commodity can be over-written. This is
+##                 due to the consideration that these official
+##                 figures are old.
 ###############################################################################
 
 cat("Beginning slaughtered synchronization script...\n")
-
-library(data.table)
-library(faosws)
-library(faoswsUtil)
-library(magrittr)
-
-areaVar = "geographicAreaM49"
-yearVar = "timePointYears"
-itemVar = "measuredItemCPC"
-elementVar = "measuredElement"
+suppressMessages({
+    library(data.table)
+    library(faosws)
+    library(faoswsUtil)
+    library(magrittr)
+})
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -49,7 +52,8 @@ if(CheckDebug()){
         # baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
         # token = "916b73ad-2ef5-4141-b1c4-769c73247edd"
         baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        token = "63479732-0657-4b50-8c8d-c41bef92841b"
+        ## token = "63479732-0657-4b50-8c8d-c41bef92841b"
+        token = "4fe1052b-bfb0-45fa-b9ec-2dda5a1b9421" #full production
     )
     sapply(files, source)
 } else {
@@ -59,7 +63,15 @@ if(CheckDebug()){
 startTime = Sys.time()
 
 cat("Loading preliminary data and create expanded Datakey...\n")
-
+## Read the data.  The years and countries provided in the session are
+## used, and the commodities in the session are somewhat
+## considered. For example, if 02111 (Cattle) is in the session, then
+## the session will be expanded to also include 21111.01 (meat of
+## cattle, fresh or chilled), 21151 (edible offal of cattle, fresh,
+## chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01
+## (raw hides and skins of cattle).  The measured element dimension of
+## the session is simply ignored.
+##
 ## NOTE (Michael): It seems there is no point of pulling the data from
 ##                 the children, as the mapping comes from the
 ##                 commodity tree and new values are calculated.
@@ -74,13 +86,15 @@ key =
     expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
                                selectedMeatTable = .)
 
-
 # Execute the get data call.
+cat(length(key@dimensions$measuredItemCPC@keys),
+    "commodities selected to be synchronised \n")
 cat("Pulling the data ... \n")
 
 newParentData = 
     GetData(key = key) %>%
     preProcessing(data = .) %>%
+    ## Remove missing values, as we don't want to copy those.
     removeMissingEntry(data = .) %>%
     selectParentData(data = ., selectedMeatTable = selectedMeatTable)
 
@@ -118,7 +132,7 @@ animalNumberDB =
 
 saveResult =
     transferedData %>%
-    checkSlaughteredSynced(animalMeatMapping = sessionAnimalMeatMapping,
+    checkSlaughteredSynced(commodityTree = newCommodityTree,
                            animalNumbers = animalNumberDB,
                            slaughteredNumbers = .) %>%
     .$slaughteredNumbers %>%
