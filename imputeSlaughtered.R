@@ -29,15 +29,16 @@
 ## Step 0. Initial set-up
 
 cat("Beginning impute slaughtered script...\n")
-
-library(data.table)
-library(faosws)
-library(faoswsFlag)
-library(faoswsUtil)
-library(faoswsImputation)
-library(splines)
-library(magrittr)
-library(dplyr)
+suppressMessages({
+    library(data.table)
+    library(faosws)
+    library(faoswsFlag)
+    library(faoswsUtil)
+    library(faoswsImputation)
+    library(splines)
+    library(magrittr)
+    library(dplyr)
+})
 
 minObsForEst = 5
 yearsModeled = 20
@@ -47,9 +48,8 @@ server = "QA"
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
-if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
+if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
 
     if(Sys.info()[7] == "josh"){ # Josh work
