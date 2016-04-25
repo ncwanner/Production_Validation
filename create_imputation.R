@@ -13,14 +13,12 @@ areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
 itemVar = "measuredItemCPC"
 elementVar = "measuredElement"
-runParallel = FALSE
 yearsModeled = 20
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
-if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
+if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
     
     server = "Prod"
@@ -76,10 +74,10 @@ if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
     for(file in dir(apiDirectory, full.names = T))
         source(file)
 
-    suppressPackageStartupMessages(library(doParallel))
-    library(foreach)
-    registerDoParallel(cores=detectCores(all.tests=TRUE))
 }
+
+## savePath = paste0(R_SWS_SHARE_PATH, "kao/production/")
+savePath = "~/Desktop/productionTest/"
 
 
 lastYear = as.numeric(swsContext.computationParams$lastYear)
@@ -89,30 +87,28 @@ years = firstYear:lastYear
 newKey = getMainKey(years = years)
 
 ## Just testing 1 commodity
-newKey@dimensions[[itemVar]]@keys = "0111" # Wheat
+## newKey@dimensions[[itemVar]]@keys = "0111" # Wheat
+## newKey@dimensions[[itemVar]]@keys = "21111.01"
+## newKey@dimensions[[itemVar]]@keys = "26190.01"
 
 
-selectedItemCode = newKey@dimensions[[itemVar]]@keys
+## selectedItemCode = newKey@dimensions[[itemVar]]@keys
 
-result = NULL
-successCount = 0
-failCount = 0
+failedItem = read.table("failed_item.txt")
+selectedItemCode = unlist(failedItem)
+
+selectedItemCode = "02121.02"
+
 for(iter in 1:length(selectedItemCode)){
-    currentMeat = selectedItemCode[iter]
+    currentItem = selectedItemCode[iter]
     subKey = newKey
-    subKey@dimensions$measuredItemCPC@keys = currentMeat
-    print(paste0("Imputation for item: ", currentMeat, " (",  iter, " out of ",
+    subKey@dimensions$measuredItemCPC@keys = currentItem
+    print(paste0("Imputation for item: ", currentItem, " (",  iter, " out of ",
                  length(selectedItemCode),")"))
-
-    imputed = imputeMeatTriplet(meatKey = subKey)
-
-
-    if(inherits(imputed, "try-error")){
-        message("Imputation Module Failed!")
-        failCount = failCount + 1
-    } else {
-        successCount = successCount + 1
-        ## New module test
+    saveFileName = paste0("imputation_", currentItem, ".rds")
+    
+    imputation = try({
+        imputed = imputeMeatTriplet(meatKey = subKey)
         imputed %>%
             normalise(.) %>%
             ## Change time point year back to character
@@ -123,26 +119,20 @@ for(iter in 1:length(selectedItemCode)){
                                            "measuredElement"),
                                    valueColumn = "Value") %>%
             checkProtectedData(dataToBeSaved = .) %>%
-            SaveData(domain = "agriculture", dataset = "aproduction", data = .)
-
-
+            saveRDS(object = ., file = paste0(savePath, saveFileName))
+    })
+    if(!inherits(imputation, "try-error")){        
+        ## New module test
         message("Imputation Module Executed Successfully!")
-        ## Just need to return the numbers slaughtered code:
-        ##
-        ## TODO (Michael): Need to restructure the get formula
-        formulaTuples =
-            getYieldFormula(slot(slot(subKey,
-                                      "dimensions")$measuredItemCPC, "keys"))
-        formulaTuples = formulaTuples[nchar(input) == 4, ]
-        slaughteredAnimal =
-            getSlaughteredAnimal(data = imputed,
-                                 formulaTuples = formulaTuples)
-        result = rbind(result, slaughteredAnimal)
+    } else {
+        cat(paste0("Item ",  currentItem, " failed : \n", imputation[1], "\n\n"),
+            file = "imputation.log",
+            append = TRUE)
     }
 }
 
-message = paste("Module completed with", successCount,
-                "commodities imputed out of", successCount + failCount)
-message(message)
+## message = paste("Module completed with", successCount,
+##                 "commodities imputed out of", successCount + failCount)
+## message(message)
 
-message
+## message
