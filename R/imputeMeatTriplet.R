@@ -12,6 +12,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
         message("Processing pair ", i, " of ", nrow(datasets$formulaTuples),
                 " element triples.")
         cleanedData = cleanData(datasets, i = i, maxYear = 2014)
+        warning("The hard coded year in this function should be removed!!!")
 
 
         ## Split the data for easy reference
@@ -32,9 +33,12 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
         yieldParams = p$yieldParams
         productionParams = p$productionParams
 
+        processedData =
+            processProductionDomain(data = currentData,
+                                    processingParameters = processingParams)
         
         removedSingleEntryData =
-            removeSingleEntryCountry(currentData,
+            removeSingleEntryCountry(processedData,
                                      params = processingParams)
 
         forcedZero =
@@ -51,7 +55,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
         flags = paste0(currentPrefix$flagObsPrefix,
                        currentFormula[, c("productivity", "output"), with = FALSE])
 
-        validObsCnt = 
+        validObsCnt =
             useEstimateForTimeSeriesImputation(data = removedSingleEntryData,
                                                yieldObsFlagVar = flags[1],
                                                prodObsFlagVar = flags[2],
@@ -89,7 +93,6 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                    productionImputationParameters =
                                        productionParams,
                                    unitConversion = currentFormula[, unitConversion])
-        
         ## Take all the I/e values that have just been estimated, but don't
         ## include I/i (as balanced observations may not be correct, because
         ## we could use estimates for yield imputation and not for
@@ -126,7 +129,6 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                                  currentFormula[, productivity],
                                              prodElementCode =
                                                  currentFormula[, output])
-
         ## Now, use the identity Yield = Production / Area to add in missing
         ## values.
         computeYield(data = updatedData,
