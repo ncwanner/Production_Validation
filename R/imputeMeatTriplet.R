@@ -4,8 +4,9 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
     ## Ignore indigenous/biological:
     datasets$formulaTuples = datasets$formulaTuples[nchar(input) == 4, ]
 
-    
-    
+    ## Create a placeholder
+    finalData = datasets$query[0, ]
+    setkeyv(finalData, c("geographicAreaM49", "measuredItemCPC", "timePointYears"))
     for(i in 1:nrow(datasets$formulaTuples)){
         ## For convenience, let's save the formula tuple to "formula"
     
@@ -41,6 +42,12 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             removeSingleEntryCountry(processedData,
                                      params = processingParams)
 
+        ## HACK (Michael): The following is to account for the case
+        ##                 where the data becomes empty after the
+        ##                 processing.
+        if(NROW(removedSingleEntryData) < 1)
+            next
+        
         forcedZero =
             getForcedZeroKey(removedSingleEntryData,
                              processingParam = processingParams,
@@ -145,9 +152,12 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
         ## Use keys so we can do an anti-join
         removedZeroData = removeForcedZero(data = updatedData,
                                            forcedZeroKey = forcedZero)
-        finalData = filterTimeRange(data = removedZeroData,
-                                    firstYear = firstYear,
-                                    lastYear = lastYear)            
+        imputedData = filterTimeRange(data = removedZeroData,
+                                      firstYear = firstYear,
+                                      lastYear = lastYear)
+        setkeyv(imputedData,
+                cols = c("geographicAreaM49", "measuredItemCPC", "timePointYears"))
+        finalData = merge(finalData, imputedData, by = key(finalData))
     } ## close item type for loop
     finalData
 } ## close try block
