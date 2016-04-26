@@ -32,7 +32,7 @@ imputeProductionDomain = function(data, processingParameters,
 
     cat("Initializing ... \n")
     dataCopy = copy(data)
-    ### Data Quality Checks
+    ## Data Quality Checks
     ensureImputationInputs(data = dataCopy,
                            imputationParameters = yieldImputationParameters)
     ensureImputationInputs(data = dataCopy,
@@ -54,6 +54,7 @@ imputeProductionDomain = function(data, processingParameters,
     ## NOTE (Michael): The imputation module fails if all yield are
     ##                 missing.
     allYieldMissing = all(is.na(dataCopy[[processingParameters$yieldValue]]))
+    allProductionMissing = all(is.na(dataCopy[[processingParameters$productionValue]]))
     
     if(!all(allYieldMissing)){
         ## Step two: Impute Yield
@@ -73,9 +74,14 @@ imputeProductionDomain = function(data, processingParameters,
         cat("Number of values still missing: ", n.missYield2, "\n")
 
         ## Balance production now using imputed yield
-        balanceProduction(data = dataCopy, processingParameters = processingParameters,
+        balanceProduction(data = dataCopy,
+                          processingParameters = processingParameters,
                           unitConversion = unitConversion)
-
+    } else {
+        warning("The input dataset contains insufficient data for imputation to perform!")
+    }
+    
+    if(!all(allProductionMissing)){
         ## step three: Impute production
         cat("Imputing Production ...\n")
         n.missProduction = length(which(is.na(
@@ -89,26 +95,27 @@ imputeProductionDomain = function(data, processingParameters,
         cat("Number of values imputed: ",
             n.missProduction - n.missProduction2, "\n")
         cat("Number of values still missing: ", n.missProduction2, "\n")
-
-        ## step four: balance area harvested
-        cat("Imputing Area Harvested ...\n")
-        n.missAreaHarvested =
-            length(which(is.na(
-                dataCopy[[processingParameters$areaHarvestedValue]])))
-
-        balanceAreaHarvested(data = dataCopy,
-                             processingParameters = processingParameters,
-                             unitConversion = unitConversion)
-
-        n.missAreaHarvested2 =
-            length(which(is.na(
-                dataCopy[[processingParameters$areaHarvestedValue]])))
-        cat("Number of values imputed: ",
-            n.missAreaHarvested - n.missAreaHarvested2, "\n")
-        cat("Number of values still missing: ", n.missAreaHarvested2, "\n")
     } else {
         warning("The input dataset contains insufficient data for imputation to perform!")
     }
+
+    ## step four: balance area harvested
+    cat("Imputing Area Harvested ...\n")
+    n.missAreaHarvested =
+        length(which(is.na(
+            dataCopy[[processingParameters$areaHarvestedValue]])))
+
+    balanceAreaHarvested(data = dataCopy,
+                         processingParameters = processingParameters,
+                         unitConversion = unitConversion)
+
+    n.missAreaHarvested2 =
+        length(which(is.na(
+            dataCopy[[processingParameters$areaHarvestedValue]])))
+    cat("Number of values imputed: ",
+        n.missAreaHarvested - n.missAreaHarvested2, "\n")
+    cat("Number of values still missing: ", n.missAreaHarvested2, "\n")
+
     
     ## This is to ensure the data type of the output is identical to
     ## the input data.
