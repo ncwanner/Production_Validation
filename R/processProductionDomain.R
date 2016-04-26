@@ -46,6 +46,13 @@ processProductionDomain = function(data, processingParameters){
                     imputedFlag = p$imputedFlag)
     }
 
+    emptyEntry = (is.na(data[[p$productionObservationFlag]]) |
+                  is.na(data[[p$yieldObservationFlag]])|
+                  is.na(data[[p$areaHarvestedObservationFlag]]))
+
+    data = data[!emptyEntry, ]
+
+    
     ## HACK (Michael): Imputed flag should always be removed, change
     ##                 the above condition to remove manual
     ##                 estimates. If imputedFlag "I" is not removed,
@@ -95,17 +102,17 @@ processProductionDomain = function(data, processingParameters){
     }
 
     ### Remove byKey groups that have no data
-#     faoswsUtil::removeNoInfo(data = data,
-#                  value = p$yieldValue,
-#                  observationFlag = p$yieldObservationFlag,
-#                  byKey = p$byKey)
-    # removeNoInfo assigns the new data.table to the variable "data" in the
-    # environment of this function.  Thus, to ensure "data" is returned to the
-    # caller of this function, assign the data.table to the calling environment.
-    # This should be removed/fixed once row deletion by reference is
-    # implemented for data.table, see
-    # http://stackoverflow.com/questions/10790204/how-to-delete-a-row-by-reference-in-r-data-table
-    # This return approach seems a bit too hacky.  Let's just return it the normal way.
+    ## faoswsUtil::removeNoInfo(data = data,
+    ##              value = p$yieldValue,
+    ##              observationFlag = p$yieldObservationFlag,
+    ##              byKey = p$byKey)
+    ## removeNoInfo assigns the new data.table to the variable "data" in the
+    ## environment of this function.  Thus, to ensure "data" is returned to the
+    ## caller of this function, assign the data.table to the calling environment.
+    ## This should be removed/fixed once row deletion by reference is
+    ## implemented for data.table, see
+    ## http://stackoverflow.com/questions/10790204/how-to-delete-a-row-by-reference-in-r-data-table
+    ## This return approach seems a bit too hacky.  Let's just return it the normal way.
     ## dataTableName = as.character(match.call()$data)
     ## assign(x = dataTableName, value = data, envir = parent.frame(1))
     return(data)
