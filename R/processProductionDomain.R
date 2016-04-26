@@ -46,6 +46,28 @@ processProductionDomain = function(data, processingParameters){
                     imputedFlag = p$imputedFlag)
     }
 
+    ## HACK (Michael): Imputed flag should always be removed, change
+    ##                 the above condition to remove manual
+    ##                 estimates. If imputedFlag "I" is not removed,
+    ##                 then they are always retained in the database.
+    faoswsUtil::removeImputation(data = data,
+                                 value = p$areaHarvestedValue,
+                                 observationFlag = p$areaHarvestedObservationFlag,
+                                 methodFlag = p$areaHarvestedMethodFlag,
+                                 missingObservationFlag = p$naFlag,
+                                 imputedFlag = "I")
+    faoswsUtil::removeImputation(data = data,
+                                 value = p$yieldValue,
+                                 observationFlag = p$yieldObservationFlag,
+                                 methodFlag = p$yieldMethodFlag,
+                                 missingObservationFlag = p$naFlag,
+                                 imputedFlag = "I")
+    faoswsUtil::removeImputation(data = data,
+                                 value = p$productionValue,
+                                 observationFlag = p$productionObservationFlag,
+                                 methodFlag = p$productionMethodFlag,
+                                 missingObservationFlag = p$naFlag,
+                                 imputedFlag = "I")
     ### Assign NA's when the flag is missing
     faoswsUtil::remove0M(data = data,
              value = p$areaHarvestedValue,
