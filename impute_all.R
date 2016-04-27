@@ -88,17 +88,27 @@ selectImputationItem = function(selectedKey, imputationKey){
     selectedImputationItems
 }
 
+isPrimary = function(itemCode, primaryPattern = "^0"){
+    grepl(primaryPattern, itemCode)
+}
+
 selectedImputationItems = selectImputationItem(selectedKey, completeImputationKey)
 
 nonImputationItemCodes = nonImputationItems(selectedKey, completeImputationKey)
 
 
-## selectedImputationItems = "0111"
+selectedImputationItems = "21111.01"
 
 ## Start the imputation, looping through each item since the model are
 ## fitted for each item separately.
 for(i in seq(selectedImputationItems)){
     currentItem = selectedImputationItems[i]
+    currentFormula = getYieldFormula(currentItem)
+    currentElements =
+        currentFormula %>%
+        select(input, productivity, output) %>%
+        unlist(x = ., use.names = FALSE)
+
     
     if(!imputationExist(modelLoadingPath = modelLoadingPath,
                         item = currentItem))
@@ -108,6 +118,7 @@ for(i in seq(selectedImputationItems)){
     modelName = paste0("imputation_", currentItem, ".rds")
     subKey = selectedKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
+    subKey@dimensions$measuredElement@keys = currentElements
     print(paste0("Imputation for item: ", currentItem, " (",  i, " out of ",
                  length(selectedImputationItems),")"))
 
@@ -133,8 +144,24 @@ for(i in seq(selectedImputationItems)){
     ##                 missing?
     
     saveResult =
-        ## TODO (Michael): Need to check this join
-        currentValues[imputedValues, ] %>%
+        {
+            ## NOTE (Michael): Only impute production if the item is
+            ##                 not a primary commodity.
+            if(isPrimary(currentItem)){
+                return(currentValues)
+            } else {
+                return(currentValues[measuredElement %in%
+                                     currentFormula[, output], ])
+            }
+        } %>%
+        ## Inner join with the imputed data
+        ##
+        ## TODO (Michael): Need to add a check here if the
+        ##                 imputedValues dataset is smaller than the
+        ##                 selected values. This is an indication that
+        ##                 the imputation does not perform on all
+        ##                 data.
+        .[imputedValues, ] %>%
         ## Subset only flags that can be over-written
         filter(flagObservationStatus %in% c("I", "E", "M")) %>%
         ## Assign the imputed value
@@ -142,10 +169,9 @@ for(i in seq(selectedImputationItems)){
                flagObservationStatus = i.flagObservationStatus,
                flagMethod = i.flagMethod) %>%
         ## Remove imputation column
-        select(.data = ., select = -starts_with("i."))##  %>%
-        ## ## Save data back
-        ## SaveData(domain = "agriculture", dataset = "aproduction", data = .)
-    
+        select(.data = ., select = -starts_with("i.")) %>%
+        ## Save data back
+        SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 }
 
 
