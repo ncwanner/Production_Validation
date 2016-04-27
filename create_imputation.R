@@ -1,18 +1,16 @@
 ## load the library
-library(faosws)
-library(faoswsUtil)
-library(faoswsFlag)
-library(faoswsImputation)
-library(data.table)
-library(splines)
-library(lme4)
-library(magrittr)
+suppressMessages({
+    library(faosws)
+    library(faoswsUtil)
+    library(faoswsFlag)
+    library(faoswsImputation)
+    library(data.table)
+    library(splines)
+    library(lme4)
+    library(magrittr)
+})
 
 ## Setting up variables
-areaVar = "geographicAreaM49"
-yearVar = "timePointYears"
-itemVar = "measuredItemCPC"
-elementVar = "measuredElement"
 yearsModeled = 20
 
 ## set up for the test environment and parameters
@@ -85,19 +83,7 @@ firstYear = lastYear - yearsModeled + 1 # Rolling time range of yearsModeled yea
 years = firstYear:lastYear
 
 newKey = getMainKey(years = years)
-
-## Just testing 1 commodity
-## newKey@dimensions[[itemVar]]@keys = "0111" # Wheat
-## newKey@dimensions[[itemVar]]@keys = "21111.01"
-## newKey@dimensions[[itemVar]]@keys = "26190.01"
-
-
-## selectedItemCode = newKey@dimensions[[itemVar]]@keys
-
-failedItem = read.table("failed_item.txt")
-selectedItemCode = unlist(failedItem)
-
-selectedItemCode = "02121.02"
+selectedItemCode = newKey@dimensions[["measuredItemCPC"]]@keys
 
 for(iter in 1:length(selectedItemCode)){
     currentItem = selectedItemCode[iter]
@@ -108,7 +94,23 @@ for(iter in 1:length(selectedItemCode)){
     saveFileName = paste0("imputation_", currentItem, ".rds")
     
     imputation = try({
+
+        ## NOTE (Michael): We now impute the full triplet rather than
+        ##                 just production for non-primary
+        ##                 products. However, in the imputeModel
+        ##                 module, only the production will be
+        ##                 selected and imputed.
+        ##
+        ##                 Nevertheless, we hope to change this and
+        ##                 impute the full triplet, for all the
+        ##                 commodity. We will need to transfer and
+        ##                 sync the inputs just like in the meat
+        ##                 case. This will allow us to merge the two
+        ##                 components.
+        ##
+        
         imputed = imputeMeatTriplet(meatKey = subKey)
+
         imputed %>%
             normalise(.) %>%
             ## Change time point year back to character
@@ -121,7 +123,7 @@ for(iter in 1:length(selectedItemCode)){
             checkProtectedData(dataToBeSaved = .) %>%
             saveRDS(object = ., file = paste0(savePath, saveFileName))
     })
-    if(!inherits(imputation, "try-error")){        
+    if(!inherits(imputation, "try-error")){
         ## New module test
         message("Imputation Module Executed Successfully!")
     } else {
@@ -130,9 +132,3 @@ for(iter in 1:length(selectedItemCode)){
             append = TRUE)
     }
 }
-
-## message = paste("Module completed with", successCount,
-##                 "commodities imputed out of", successCount + failCount)
-## message(message)
-
-## message
