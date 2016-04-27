@@ -15,6 +15,7 @@ yearsModeled = 20
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
+savePath = paste0(R_SWS_SHARE_PATH, "kao/production/")
 
 if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
@@ -45,12 +46,14 @@ if(CheckDebug()){
                                   "/media/sws_prod_shared_drive/",
                                   "/media/sws_qa_shared_drive/")
         SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod/", "~/.R/qa/"))
+        savePath = "imputation_fit/"
     } else if(Sys.info()[7] == "kao"){
         apiDirectory = "R/"
         R_SWS_SHARE_PATH = ifelse(server == "Prod",
                                   "/media/sws_prod_shared_drive/",
                                   "/media/sws_qa_shared_drive/")
         SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod/", "~/.R/qa/"))
+        savePath = "imputation_fit/"
     }
 
 
@@ -74,8 +77,8 @@ if(CheckDebug()){
 
 }
 
-savePath = paste0(R_SWS_SHARE_PATH, "kao/production/")
-## savePath = "~/Desktop/productionTest/"
+
+
 
 ## HACK (Michael): This is to catch a specific known error, that is,
 ##                 corrupted data in the database with
