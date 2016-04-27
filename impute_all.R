@@ -95,7 +95,8 @@ nonImputationItemCodes = nonImputationItems(selectedKey, completeImputationKey)
 
 ## selectedImputationItems = "0111"
 
-## Start the imputation
+## Start the imputation, looping through each item since the model are
+## fitted for each item separately.
 for(i in seq(selectedImputationItems)){
     currentItem = selectedImputationItems[i]
     
