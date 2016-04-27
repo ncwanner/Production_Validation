@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RScript xmlns="http://www.fao.org/rScript" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
+	<Name>Create Imputated Dataset</Name>
+	<Description> Create datasets which contains imputaed values in order to be filled-in in the imputation module. Note that this module runs for ALL COUNTRIES and ALL COMMODITIES.</Description>
+	<Category>Computation</Category>
+	<Authors>
+		<Author>
+			<Name>Michael C. J. Kao</Name>
+			<Mail>michael.kao@fao.org</Mail>
+		</Author>
+	</Authors>
+  <Params>
+		<Param xsi:type="Number">
+	        <Code>lastYear</Code>
+	            <Label>Last Year for model building</Label>
+		        <Description>
+			    Please specify the last year for which the
+			    data should be pulled to construct the
+			    imputation model.  The first year will be
+			    20 years before this value.  Note that
+			    data cannot be imputed outside this range.
+		        </Description>
+		        <Compulsory>true</Compulsory>
+                <Min>1991</Min>
+                <Max>2050</Max>
+   </Param>
+  </Params>
+	<Datasets>
+		<MainDataset>
+			<Code>aproduction</Code>
+			<SelectableDimensions>
+				<SelectableDimension compulsory="true">geographicAreaM49</SelectableDimension>
+				<SelectableDimension compulsory="true">measuredItemCPC</SelectableDimension>
+				<SelectableDimension compulsory="true">measuredElement</SelectableDimension>
+				<SelectableDimension compulsory="true">timePointYears</SelectableDimension>
+			</SelectableDimensions>
+		</MainDataset>
+	</Datasets>
+	<InteractiveValidation>false</InteractiveValidation>
+	<Background>false</Background>
+</RScript>
