@@ -96,9 +96,6 @@ selectedImputationItems = selectImputationItem(selectedKey, completeImputationKe
 
 nonImputationItemCodes = nonImputationItems(selectedKey, completeImputationKey)
 
-
-selectedImputationItems = "21111.01"
-
 ## Start the imputation, looping through each item since the model are
 ## fitted for each item separately.
 for(i in seq(selectedImputationItems)){
