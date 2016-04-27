@@ -15,7 +15,7 @@ yearsModeled = 20
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-savePath = paste0(R_SWS_SHARE_PATH, "kao/production/")
+savePath = paste0(R_SWS_SHARE_PATH, "kao/production/imputation_fit/")
 
 if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
