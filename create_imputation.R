@@ -74,8 +74,25 @@ if(CheckDebug()){
 
 }
 
-## savePath = paste0(R_SWS_SHARE_PATH, "kao/production/")
-savePath = "~/Desktop/productionTest/"
+savePath = paste0(R_SWS_SHARE_PATH, "kao/production/")
+## savePath = "~/Desktop/productionTest/"
+
+## HACK (Michael): This is to catch a specific known error, that is,
+##                 corrupted data in the database with
+##                 flagObservationStatus taking the value of '-'. This
+##                 should be removed later.
+allowedErrorMessage = "Some observation flags are not in the flag table!"
+
+allowedError = function(tryErrorObject, allowedError){
+    errorMessage = attr(tryErrorObject, "condition")$message
+    if(grepl(allowedError, errorMessage)){
+        warning("The error ('", errorMessage,
+                "')is currently allowed, but should be fixed.")
+    } else {
+        stop(errorMessage)
+    }
+}
+
 
 
 lastYear = as.numeric(swsContext.computationParams$lastYear)
@@ -108,7 +125,6 @@ for(iter in 1:length(selectedItemCode)){
         ##                 case. This will allow us to merge the two
         ##                 components.
         ##
-        
         imputed = imputeMeatTriplet(meatKey = subKey)
 
         imputed %>%
@@ -122,13 +138,20 @@ for(iter in 1:length(selectedItemCode)){
                                    valueColumn = "Value") %>%
             checkProtectedData(dataToBeSaved = .) %>%
             saveRDS(object = ., file = paste0(savePath, saveFileName))
+
+
     })
+
     if(!inherits(imputation, "try-error")){
         ## New module test
         message("Imputation Module Executed Successfully!")
     } else {
-        cat(paste0("Item ",  currentItem, " failed : \n", imputation[1], "\n\n"),
-            file = "imputation.log",
-            append = TRUE)
+
+        allowedError(imputation, allowedError = allowedErrorMessage)
+        ## cat(paste0("Item ",  currentItem, " failed : \n",
+        ##            imputation[1], "\n\n"),
+        ##     file = "imputation.log",
+        ##     append = TRUE)
+
     }
 }
