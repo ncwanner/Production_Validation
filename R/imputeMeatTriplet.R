@@ -8,8 +8,9 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
     ##                 this case, we simply return an empty data table.
     if(NROW(datasets$query) > 0){
 
-        ## Create a placeholder
-        finalData = datasets$query[0, ]
+        ## Create a placeholder to merge, this also ensures the
+        ## imputation is complete.
+        finalData = datasets$query[, .(geographicAreaM49, measuredItemCPC, timePointYears)]
         setkeyv(finalData, c("geographicAreaM49", "measuredItemCPC", "timePointYears"))
         for(i in 1:nrow(datasets$formulaTuples)){
             ## For convenience, let's save the formula tuple to "formula"
@@ -158,7 +159,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                           lastYear = lastYear)
             setkeyv(imputedData,
                     cols = c("geographicAreaM49", "measuredItemCPC", "timePointYears"))
-            finalData = merge(finalData, imputedData, by = key(finalData))
+            finalData = merge(finalData, imputedData, by = key(finalData), all.x = TRUE)
         } ## close item type for loop
     } else {
         finalData = datasets$query
