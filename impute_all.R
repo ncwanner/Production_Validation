@@ -194,4 +194,7 @@ for(i in seq(selectedImputationItems)){
 
 
 ## Return message
-paste0("Imputation module executed successfully, the following seelcted commodities were not imputed as they are not in the imputation list provided\n", paste0(nonImputationItemCodes, collapse = "\n"))
+paste0("Imputation module executed successfully, the following seelcted",
+       " commodities were not imputed as they are not in the ",
+       "imputation list provided\n",
+       paste0(nonImputationItemCodes, collapse = "\n"))
