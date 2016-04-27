@@ -102,6 +102,7 @@ selectedImputationItems = "21111.01"
 ## Start the imputation, looping through each item since the model are
 ## fitted for each item separately.
 for(i in seq(selectedImputationItems)){
+    ## Select the item and the associate formula/elements
     currentItem = selectedImputationItems[i]
     currentFormula = getYieldFormula(currentItem)
     currentElements =
@@ -109,16 +110,23 @@ for(i in seq(selectedImputationItems)){
         select(input, productivity, output) %>%
         unlist(x = ., use.names = FALSE)
 
-    
+    ## Give warning if the imputed data set does not exist
     if(!imputationExist(modelLoadingPath = modelLoadingPath,
                         item = currentItem))
         stop("Imputation does not exist for item '", currentItem,
              "'. Please run imputation model first.")
 
+    ## TODO (Michael): This creates the name of the imputation
+    ##                 object. Probably need a function to standardise
+    ##                 and sync this with the create_imputed_dataset
+    ##                 module.
     modelName = paste0("imputation_", currentItem, ".rds")
+
+    ## Modify the selected key
     subKey = selectedKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
     subKey@dimensions$measuredElement@keys = currentElements
+
     print(paste0("Imputation for item: ", currentItem, " (",  i, " out of ",
                  length(selectedImputationItems),")"))
 
@@ -126,11 +134,12 @@ for(i in seq(selectedImputationItems)){
     imputedValues =
         readRDS(file = paste0(modelLoadingPath, modelName)) %>%
         preProcessing(data = .) %>%
+        filter(flagObservationStatus == "I" & flagMethod %in% c("i", "e")) %>%
         setkeyv(x = ., col = c("geographicAreaM49", "measuredItemCPC",
                                "timePointYears", "measuredElement"))
     
     
-    ## Load the current data
+    ## Load the selected data from the data base
     currentValues =
         GetData(subKey) %>%
         preProcessing(data = .) %>%
@@ -170,6 +179,14 @@ for(i in seq(selectedImputationItems)){
                flagMethod = i.flagMethod) %>%
         ## Remove imputation column
         select(.data = ., select = -starts_with("i.")) %>%
+        postProcessing(data = .) %>%
+        checkProtectedData(dataToBeSaved = .) %>%
+        ## NOTE (Michael): flagMethod can be 'i' or 'e' since yield
+        ##                 can be computed as an identity during the
+        ##                 imputation stage.
+        checkOutputFlags(data = .,
+                         flagObservationStatusExpected = "I",
+                         flagMethodExpected = c("i", "e")) %>%
         ## Save data back
         SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 }
