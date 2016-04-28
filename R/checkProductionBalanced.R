@@ -11,10 +11,10 @@
 ##'
 
 checkProductionBalanced = function(dataToBeSaved,
-                                   areaVar = "geographicAreaM49",
-                                   itemVar = "measuredItemCPC",
-                                   elementVar = "measuredElement",
-                                   yearVar = "timePointYears"){
+                                   areaVar,
+                                   yieldVar,
+                                   prodVar,
+                                   conversion){
     productionDifference =
         abs(dataToBeSaved[[areaVar]] * dataToBeSaved[[yieldVar]] -
             dataToBeSaved[[prodVar]] * conversion)
