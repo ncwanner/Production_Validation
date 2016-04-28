@@ -49,5 +49,20 @@ getImputationParameters = function(datasets, i = 1,
                       extrapolationRange = Inf, level = "local")
     names(productionParams$ensembleModels)[[length(productionParams$ensembleModels)]] =
         "defaultMovingAverage"
-    return(list(yieldParams = yieldParams, productionParams = productionParams))
+
+    ## Impute area harvested
+    areaHarvestedCode = datasets$formulaTuples[, input][i]
+    areaHarvestedParams = 
+        defaultImputationParameters(variable = as.numeric(areaHarvestedCode))
+    areaHarvestedParams$estimateNoData = TRUE
+    areaHarvestedParams$byKey = c(areaVar, itemVar)
+    ## Add moving average model with period of 3 years
+    areaHarvestedParams$ensembleModels[[length(areaHarvestedParams$ensembleModels)+1]] =
+        ensembleModel(model = defaultMovingAverage,
+                      extrapolationRange = Inf, level = "local")
+    names(areaHarvestedParams$ensembleModels)[[length(areaHarvestedParams$ensembleModels)]] =
+        "defaultMovingAverage"
+    return(list(areaHarvestedParams = areaHarvestedParams,
+                yieldParams = yieldParams,
+                productionParams = productionParams))
 }
