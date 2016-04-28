@@ -104,7 +104,7 @@ firstYear = lastYear - yearsModeled + 1 # Rolling time range of yearsModeled yea
 years = firstYear:lastYear
 
 completeImputationKey = getMainKey(years = years)
-selectedItemCode = newKey@dimensions[["measuredItemCPC"]]@keys
+selectedItemCode = completeImputationKey@dimensions[["measuredItemCPC"]]@keys
 
 for(iter in 1:length(selectedItemCode)){
     currentItem = selectedItemCode[iter]
