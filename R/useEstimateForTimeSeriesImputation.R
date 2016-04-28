@@ -15,15 +15,19 @@
 ##'     corresponds to missing value.
 
 useEstimateForTimeSeriesImputation = function(data,
+                                              areaObsFlagVar,
                                               yieldObsFlagVar,
                                               prodObsFlagVar,
                                               impFlags = c("I", "E"),
                                               missFlags = "M",
                                               minObsForEst = 5){
+    areaElementNum = gsub("[^0-9]", "", areaObsFlagVar)
     yieldElementNum = gsub("[^0-9]", "", yieldObsFlagVar)
     prodElementNum = gsub("[^0-9]", "", prodObsFlagVar)
     validObsCnt =
-        data[, list(yield = sum(!get(yieldObsFlagVar) %in%
+        data[, list(area = sum(!get(areaObsFlagVar) %in%
+                                c(impFlags, missFlags)),
+                    yield = sum(!get(yieldObsFlagVar) %in%
                                 c(impFlags, missFlags)),
                     prod = sum(!get(prodObsFlagVar) %in%
                                c(impFlags, missFlags))),
@@ -31,9 +35,9 @@ useEstimateForTimeSeriesImputation = function(data,
     validObsCnt = melt(validObsCnt, id.vars = "geographicAreaM49")
     validObsCnt[, useEstimates := value < minObsForEst]
     validObsCnt[, measuredElement :=
-                      ifelse(variable == "yield",
-                             yieldElementNum,
-                             prodElementNum)]
+                      ifelse(variable == "area", areaElementNum,
+                      ifelse(variable == "yield", yieldElementNum,
+                             prodElementNum))]
     validObsCnt[, c("variable", "value") := NULL]
     validObsCnt
 }
