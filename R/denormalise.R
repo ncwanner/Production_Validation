@@ -21,6 +21,7 @@ denormalise = function(normalisedData,
     denormalised = dcast(normalisedData, formula = denormaliseFormula,
                          value.var = measuredTriplet,
                  sep = seperator)
+    denormalised = fillRecord(denormalised)
 
     uniqueElementCodes =
         unique(gsub("[^0-9]", "",
