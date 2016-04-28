@@ -8,6 +8,7 @@ suppressMessages({
     library(splines)
     library(lme4)
     library(magrittr)
+    library(dplyr)
 })
 
 ## Setting up variables
@@ -102,13 +103,20 @@ lastYear = as.numeric(swsContext.computationParams$lastYear)
 firstYear = lastYear - yearsModeled + 1 # Rolling time range of yearsModeled years
 years = firstYear:lastYear
 
-newKey = getMainKey(years = years)
+completeImputationKey = getMainKey(years = years)
 selectedItemCode = newKey@dimensions[["measuredItemCPC"]]@keys
 
 for(iter in 1:length(selectedItemCode)){
     currentItem = selectedItemCode[iter]
-    subKey = newKey
+    subKey = completeImputationKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
+    ## TODO (Michael): Need to update and get all the formulas?
+    currentFormula = getYieldFormula(currentItem)
+    variablePrefix = getFormulaPrefix()
+    areaValueName = paste0(variablePrefix$valuePrefix, currentFormula$input)
+    yieldValueName = paste0(variablePrefix$valuePrefix, currentFormula$productivity)
+    prodValueName = paste0(variablePrefix$valuePrefix, currentFormula$output)
+
     print(paste0("Imputation for item: ", currentItem, " (",  iter, " out of ",
                  length(selectedItemCode),")"))
     saveFileName = paste0("imputation_", currentItem, ".rds")
@@ -131,6 +139,11 @@ for(iter in 1:length(selectedItemCode)){
         imputed = imputeMeatTriplet(meatKey = subKey)
 
         imputed %>%
+            checkProductionBalanced(dataToBeSaved = .,
+                                    areaVar = areaValueName,
+                                    yieldVar = yieldValueName,
+                                    prodVar = prodValueName,
+                                    conversion = currentFormula$unitConversion) %>%
             normalise(.) %>%
             ## Change time point year back to character
             postProcessing(data = .) %>%
@@ -139,9 +152,11 @@ for(iter in 1:length(selectedItemCode)){
                                            "measuredItemCPC",
                                            "measuredElement"),
                                    valueColumn = "Value") %>%
-            checkProtectedData(dataToBeSaved = .) %>%
-            saveRDS(object = ., file = paste0(savePath, saveFileName))
-
+            {
+                filter(.data = ., flagObservationStatus == "I") %>%
+                    checkProtectedData(dataToBeSaved = .)
+                saveRDS(object = ., file = paste0(savePath, saveFileName))
+            }
 
     })
 
@@ -158,3 +173,54 @@ for(iter in 1:length(selectedItemCode)){
 
     }
 }
+
+## imputation = imputed %>%
+##             normalise(.) %>%
+##             ## Change time point year back to character
+##             postProcessing(data = .) %>%
+##             checkTimeSeriesImputed(dataToBeSaved = .,
+##                                    key = c("geographicAreaM49",
+##                                            "measuredItemCPC",
+##                                            "measuredElement"),
+##                                    valueColumn = "Value")
+## checkProtectedData(dataToBeSaved = imputation)
+
+## validate = merge(dbData, imputation, all = TRUE)
+
+## validate[flagObservationStatus.x %in% c("", "*"), flagObservationStatus.y]
+## validate[flagObservationStatus.y == "I" & flagObservationStatus.x %in% c("", "*"), .(geographicAreaM49, measuredItemCPC, measuredElement, Value.x, Value.y)]
+
+
+## cty = "12"
+## untouched[geographicAreaM49 == cty, ]
+## currentData[geographicAreaM49 == cty, ]
+## origData[geographicAreaM49 == cty, ]
+## valuesImputed[geographicAreaM49 == cty, ]
+## unbalancedImputation[geographicAreaM49 == cty, ]
+## imputed[geographicAreaM49 == cty, ]
+## validate[geographicAreaM49 == cty & flagObservationStatus.x %in% c("", "*"), ]
+
+
+
+## normalisedImputed = normalise(imputed)
+## splitted =
+##     split(normalisedImputed,
+##           list(normalisedImputed$geographicAreaM49,
+##                normalisedImputed$measuredElement))
+
+## checkImputed = function(x){
+##         n.missing = sum(is.na(x$Value))
+##         print(n.missing)
+##         n.missing == 0 | n.missing == length(x$Value)
+##         }
+
+## notImputed =
+##     sapply(splitted, checkImputed)
+
+## (notImputedIndex = which(!notImputed))
+
+## cty = "807"
+## imputed[geographicAreaM49 == cty, ]
+## imputation1[geographicAreaM49 == cty, ]
+## imputation2[geographicAreaM49 == cty, ]
+
