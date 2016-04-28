@@ -24,7 +24,9 @@
 ##' @import data.table
 ##' 
 
-imputeProductionDomain = function(data, processingParameters,
+imputeProductionDomain = function(data,
+                                  processingParameters,
+                                  areaHarvestedImputationParameters,
                                   yieldImputationParameters,
                                   productionImputationParameters,
                                   unitConversion){
@@ -108,7 +110,32 @@ imputeProductionDomain = function(data, processingParameters,
     balanceAreaHarvested(data = dataCopy,
                          processingParameters = processingParameters,
                          unitConversion = unitConversion)
-
+    
+    ## HACK (Michael): This is to ensure the area harvested are also
+    ##                 imputed. Then we delete all computed yield and
+    ##                 then balance again. This causes the yield not
+    ##                 comforming to the imputation model.
+    ##
+    ##                 This whole function should be re-writtened so
+    ##                 that an algorithm similar to the EM algorithm
+    ##                 estimates and impute the triplet in a conherent
+    ##                 way.
+    imputeVariable(data = dataCopy,
+                   imputationParameters = areaHarvestedImputationParameters)
+    dataCopy[!is.na(get(processingParameters$areaHarvestedValue)) &
+             !is.na(get(processingParameters$productionValue)) &
+             !(get(processingParameters$yieldObservationFlag) %in% c("", "*")),
+             `:=`(c(processingParameters$yieldValue,
+                    processingParameters$yieldObservationFlag,
+                    processingParameters$yieldMethodFlag),
+                  list(NA, "M", "u"))]
+    computeYield(dataCopy,
+                 newMethodFlag = "i",
+                 processingParameters = processingParameters,
+                 unitConversion = unitConversion)
+    imputeVariable(data = dataCopy,
+                   imputationParameters = yieldImputationParameters)
+    #####################################################################
     n.missAreaHarvested2 =
         length(which(is.na(
             dataCopy[[processingParameters$areaHarvestedValue]])))
