@@ -42,6 +42,15 @@ balanceAreaHarvested = function(data, processingParameters,
              sapply(computeRatio(get(p$productionValue), get(p$yieldValue)) *
                         unitConversion, roundResults)]
     data[filter, c(p$areaHarvestedObservationFlag) := newObservationFlag]
+    ## If production is zero, then the area harvested should be
+    ## zero. Sometimes this is not calculated as yield can be missing.
+    data[get(p$productionValue) == 0 &
+         get(p$productionObservationFlag) != p$naFlag &
+         !(get(p$areaHarvestedObservationFlag) %in% c("", "*")),
+         `:=`(c(p$areaHarvestedValue, p$areaHarvestedObservationFlag),
+              list(0, "I", "i"))]
+         
+    
     ## Wrap last call in invisible() so no data.table is returned
     invisible(data[filter, c(p$areaHarvestedMethodFlag) := newMethodFlag])
 }
