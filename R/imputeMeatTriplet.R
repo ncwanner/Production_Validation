@@ -5,6 +5,8 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
     datasets$formulaTuples = datasets$formulaTuples[nchar(input) == 4, ]
     ## NOTE (Michael): Sometimes there are no data in the database,
     ##                 this case, we simply return an empty data table.
+    datasets$query = denormalise(preProcessing(normalise(datasets$query)),
+                                 denormaliseKey = "measuredElement")
     if(NROW(datasets$query) > 0){
 
         ## Create a placeholder to merge, this also ensures the
@@ -20,7 +22,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
 
 
             ## Split the data for easy reference
-            currentData = datasets$query
+            currentData = copy(datasets$query)
             currentFormula = datasets$formulaTuples[i, ]
             currentPrefix = datasets$prefixTuples
 
@@ -30,29 +32,30 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                             yieldValue = currentFormula[, productivity],
                                             areaHarvestedValue = currentFormula[, input])
             processingParams$imputedFlag = c("I", "E")
-            p = getImputationParameters(cleanedData, i = i)
+            p = getImputationParameters(datasets, i = i)
             ## NOTE (Michael): Stop the plotting.
             p$yieldParams$plotImputation = ""
             p$productionParams$plotImputation = ""
             yieldParams = p$yieldParams
             productionParams = p$productionParams
+            areaHarvestedParams = p$areaHarvestedParams
 
             processedData =
                 processProductionDomain(data = currentData,
                                         processingParameters = processingParams)
 
-            removedSingleEntryData =
-                removeSingleEntryCountry(processedData,
-                                         params = processingParams)
+            ## removedSingleEntryData =
+            ##     removeSingleEntryCountry(processedData,
+            ##                              params = processingParams)
 
             ## HACK (Michael): The following is to account for the case
             ##                 where the data becomes empty after the
             ##                 processing.
-            if(NROW(removedSingleEntryData) < 1)
+            if(NROW(processedData) < 1)
                 next
 
             forcedZero =
-                getForcedZeroKey(removedSingleEntryData,
+                getForcedZeroKey(processedData,
                                  processingParam = processingParams,
                                  productionParams = productionParams)
 
@@ -66,7 +69,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                           with = FALSE])
 
             validObsCnt =
-                useEstimateForTimeSeriesImputation(data = removedSingleEntryData,
+                useEstimateForTimeSeriesImputation(data = processedData,
                                                    areaObsFlagVar = flags[1],
                                                    yieldObsFlagVar = flags[2],
                                                    prodObsFlagVar = flags[3],
@@ -77,12 +80,14 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             ## available).  However, we'll have to delete some of the
             ## imputations (corresponding to series without enough
             ## official data) and then rerun the imputation.
-            origData = copy(removedSingleEntryData)
+            origData = copy(processedData)
             processingParams$removePriorImputation = TRUE
             cat("Imputation without Manual Estimates\n")
             imputation1 =
                 imputeProductionDomain(copy(origData),
                                        processingParameters = processingParams,
+                                       areaHarvestedImputationParameters =
+                                           areaHarvestedParams,
                                        yieldImputationParameters = yieldParams,
                                        productionImputationParameters =
                                            productionParams,
@@ -95,10 +100,13 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                             "defaultMixedModel")]
             yieldParams$ensembleModels = simplerModels
             productionParams$ensembleModels = simplerModels
+            areaHarvestedParams$ensembleModels = simplerModels
             cat("Imputation with Manual Estimates\n")
             imputation2 =
                 imputeProductionDomain(copy(origData),
                                        processingParameters = processingParams,
+                                       areaHarvestedImputationParameters =
+                                           areaHarvestedParams,
                                        yieldImputationParameters = yieldParams,
                                        productionImputationParameters =
                                            productionParams,
@@ -152,17 +160,18 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             ##                 'E'stimates will eventually be removed.
             unbalancedImputation =
                 denormalise(valuesImputed, denormaliseKey = "measuredElement")
-            ## Now, use the identity Yield = Production / Area to add in missing
-            ## values.
-            computeYield(data = unbalancedImputation,
-                         processingParameters = processingParams,
-                         unitConversion = currentFormula[, unitConversion])
-            balanceProduction(data = unbalancedImputation,
-                              processingParameters = processingParams,
-                              unitConversion = currentFormula[, unitConversion])
-            balanceAreaHarvested(data = unbalancedImputation,
-                                 processingParameters = processingParams,
-                                 unitConversion = currentFormula[, unitConversion])
+
+            ## ## Now, use the identity Yield = Production / Area to add in missing
+            ## ## values.
+            ## computeYield(data = unbalancedImputation,
+            ##              processingParameters = processingParams,
+            ##              unitConversion = currentFormula[, unitConversion])
+            ## balanceProduction(data = unbalancedImputation,
+            ##                   processingParameters = processingParams,
+            ##                   unitConversion = currentFormula[, unitConversion])
+            ## balanceAreaHarvested(data = unbalancedImputation,
+            ##                      processingParameters = processingParams,
+            ##                      unitConversion = currentFormula[, unitConversion])
 
             ## Remove the observations we don't want to impute on
             ## Use keys so we can do an anti-join
