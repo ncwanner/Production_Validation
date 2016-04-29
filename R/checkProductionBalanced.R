@@ -18,9 +18,13 @@ checkProductionBalanced = function(dataToBeSaved,
     productionDifference =
         abs(dataToBeSaved[[areaVar]] * dataToBeSaved[[yieldVar]] -
             dataToBeSaved[[prodVar]] * conversion)
-    ## NOTE (Michael): Test whether the difference is below 1, this is
-    ##                 accounting for rounding error.
-    if(!all(na.omit(productionDifference < 1))){
+
+    ## NOTE (Michael): This is to account for difference due to
+    ##                 rounding. The upper bound of the 1e-6 is the
+    ##                 rounding performed by the system.
+    allowedDifference = dataToBeSaved[[areaVar]] * 1e-6
+    if(any(na.omit(productionDifference > allowedDifference))){
+    ## if(!all(na.omit(productionDifference < 2))){
         stop("Production is not balanced, the A * Y = P identity is not satisfied")
     }
     dataToBeSaved
