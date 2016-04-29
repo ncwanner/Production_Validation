@@ -79,6 +79,10 @@ imputeProductionDomain = function(data,
         balanceProduction(data = dataCopy,
                           processingParameters = processingParameters,
                           unitConversion = unitConversion)
+
+        ## NOTE (Michael): Check again whether production is available
+        ##                 now after it is balanced.
+        allProductionMissing = all(is.na(dataCopy[[processingParameters$productionValue]]))
     } else {
         warning("The input dataset contains insufficient data for imputation to perform!")
     }
@@ -91,7 +95,6 @@ imputeProductionDomain = function(data,
 
         imputeVariable(data = dataCopy,
                        imputationParameters = productionImputationParameters)
-
         n.missProduction2 = length(which(is.na(
             dataCopy[[processingParameters$productionValue]])))
         cat("Number of values imputed: ",
@@ -110,7 +113,6 @@ imputeProductionDomain = function(data,
     balanceAreaHarvested(data = dataCopy,
                          processingParameters = processingParameters,
                          unitConversion = unitConversion)
-    
     ## HACK (Michael): This is to ensure the area harvested are also
     ##                 imputed. Then we delete all computed yield and
     ##                 then balance again. This causes the yield not
