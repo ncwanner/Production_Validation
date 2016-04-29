@@ -37,10 +37,5 @@ useEstimateForTimeSeriesImputation = function(data,
     validObsCntCountry =
         validObsCnt[, as.logical(sum(useEstimates)), by = "geographicAreaM49"]
     setnames(validObsCntCountry, "V1", "useEstimates")
-    ## validObsCntCountry[, measuredElement :=
-    ##                          ifelse(variable == "area", areaElementNum,
-    ##                          ifelse(variable == "yield", yieldElementNum,
-    ##                                 prodElementNum))]
-    validObsCntCountry[, c("value") := NULL]
     validObsCntCountry
 }
