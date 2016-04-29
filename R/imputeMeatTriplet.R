@@ -5,10 +5,10 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
     datasets$formulaTuples = datasets$formulaTuples[nchar(input) == 4, ]
     ## NOTE (Michael): Sometimes there are no data in the database,
     ##                 this case, we simply return an empty data table.
-    datasets$query = denormalise(preProcessing(normalise(datasets$query)),
-                                 denormaliseKey = "measuredElement")
-    if(NROW(datasets$query) > 0){
 
+    if(NROW(datasets$query) > 0){
+        datasets$query = denormalise(preProcessing(normalise(datasets$query)),
+                                     denormaliseKey = "measuredElement")
         ## Create a placeholder to merge, this also ensures the
         ## imputation is complete.
         finalData = datasets$query[, .(geographicAreaM49, measuredItemCPC, timePointYears)]
@@ -43,19 +43,27 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             processedData =
                 processProductionDomain(data = currentData,
                                         processingParameters = processingParams)
+            yieldZeroData =
+                removeZeroYield(data = processedData,
+                               yieldValue =
+                                   processingParams$yieldValue,
+                               yieldObsFlag =
+                                   processingParams$yieldObservationFlag,
+                               yieldMethodFlag =
+                                   processingParams$yieldMethodFlag)
 
             ## removedSingleEntryData =
-            ##     removeSingleEntryCountry(processedData,
+            ##     removeSingleEntryCountry(yieldZeroData,
             ##                              params = processingParams)
 
             ## HACK (Michael): The following is to account for the case
             ##                 where the data becomes empty after the
             ##                 processing.
-            if(NROW(processedData) < 1)
+            if(NROW(yieldZeroData) < 1)
                 next
 
             forcedZero =
-                getForcedZeroKey(processedData,
+                getForcedZeroKey(yieldZeroData,
                                  processingParam = processingParams,
                                  productionParams = productionParams)
 
@@ -69,7 +77,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                           with = FALSE])
 
             validObsCnt =
-                useEstimateForTimeSeriesImputation(data = processedData,
+                useEstimateForTimeSeriesImputation(data = yieldZeroData,
                                                    areaObsFlagVar = flags[1],
                                                    yieldObsFlagVar = flags[2],
                                                    prodObsFlagVar = flags[3],
@@ -80,7 +88,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             ## available).  However, we'll have to delete some of the
             ## imputations (corresponding to series without enough
             ## official data) and then rerun the imputation.
-            origData = copy(processedData)
+            origData = copy(yieldZeroData)
             processingParams$removePriorImputation = TRUE
             cat("Imputation without Manual Estimates\n")
             imputation1 =
@@ -142,7 +150,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             ## Bring together the estimates and reshape them:
             valuesImputed = combineImputation(valuesImputedWithoutEstimates,
                                                 valuesImputedWithEstimates)
-            ## updatedData <<-
+            ## updatedData =
             ##     updateOriginalDataWithImputation(originalData = origData,
             ##                                      imputedData = valuesImputed,
             ##                                      yieldElementCode =
