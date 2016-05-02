@@ -10,9 +10,11 @@ fillRecord = function(data,
     flagMethodVars = grep(flagMethodPattern, colnames(dataCopy), value = TRUE)
 
     for(elementCode in elementCodes){
-        currentValueVar = grep(elementCode, valueVars, value = TRUE)
-        currentFlagObsVar = grep(elementCode, flagObsVars, value = TRUE)
-        currentFlagMethodVar = grep(elementCode, flagMethodVars, value = TRUE)
+        currentValueVar = grep(paste0(elementCode, "$"), valueVars, value = TRUE)
+        currentFlagObsVar = grep(paste0(elementCode, "$"),
+                                 flagObsVars, value = TRUE)
+        currentFlagMethodVar = grep(paste0(elementCode, "$"),
+                                    flagMethodVars, value = TRUE)
         dataCopy[is.na(dataCopy[[currentValueVar]]) &
                  is.na(dataCopy[[currentFlagObsVar]]) &
                  is.na(dataCopy[[currentFlagMethodVar]]),
