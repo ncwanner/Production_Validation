@@ -57,6 +57,7 @@ imputeProductionDomain = function(data,
     ##                 missing.
     allYieldMissing = all(is.na(dataCopy[[processingParameters$yieldValue]]))
     allProductionMissing = all(is.na(dataCopy[[processingParameters$productionValue]]))
+    allAreaMissing = all(is.na(dataCopy[[processingParameters$areaHarvestedValue]]))
     
     if(!all(allYieldMissing)){
         ## Step two: Impute Yield
@@ -113,31 +114,36 @@ imputeProductionDomain = function(data,
     balanceAreaHarvested(data = dataCopy,
                          processingParameters = processingParameters,
                          unitConversion = unitConversion)
-    ## HACK (Michael): This is to ensure the area harvested are also
-    ##                 imputed. Then we delete all computed yield and
-    ##                 then balance again. This causes the yield not
-    ##                 comforming to the imputation model.
-    ##
-    ##                 This whole function should be re-writtened so
-    ##                 that an algorithm similar to the EM algorithm
-    ##                 estimates and impute the triplet in a conherent
-    ##                 way.
-    imputeVariable(data = dataCopy,
-                   imputationParameters = areaHarvestedImputationParameters)
-    dataCopy[!is.na(get(processingParameters$areaHarvestedValue)) &
-             !is.na(get(processingParameters$productionValue)) &
-             !(get(processingParameters$yieldObservationFlag) %in% c("", "*")),
-             `:=`(c(processingParameters$yieldValue,
-                    processingParameters$yieldObservationFlag,
-                    processingParameters$yieldMethodFlag),
-                  list(NA, "M", "u"))]
-    computeYield(dataCopy,
-                 newMethodFlag = "i",
-                 processingParameters = processingParameters,
-                 unitConversion = unitConversion)
-    imputeVariable(data = dataCopy,
-                   imputationParameters = yieldImputationParameters)
-    #####################################################################
+    allAreaMissing = all(is.na(dataCopy[[processingParameters$areaHarvestedValue]]))
+
+    if(!all(allAreaMissing)){
+        ## HACK (Michael): This is to ensure the area harvested are also
+        ##                 imputed. Then we delete all computed yield and
+        ##                 then balance again. This causes the yield not
+        ##                 comforming to the imputation model.
+        ##
+        ##                 This whole function should be re-writtened so
+        ##                 that an algorithm similar to the EM algorithm
+        ##                 estimates and impute the triplet in a conherent
+        ##                 way.
+        ##
+        ##                 Issue #88
+        imputeVariable(data = dataCopy,
+                       imputationParameters = areaHarvestedImputationParameters)
+        dataCopy[!is.na(get(processingParameters$areaHarvestedValue)) &
+                 !is.na(get(processingParameters$productionValue)) &
+                 !(get(processingParameters$yieldObservationFlag) %in% c("", "*")),
+                 `:=`(c(processingParameters$yieldValue,
+                        processingParameters$yieldObservationFlag,
+                        processingParameters$yieldMethodFlag),
+                      list(NA, "M", "u"))]
+        computeYield(dataCopy,
+                     newMethodFlag = "i",
+                     processingParameters = processingParameters,
+                     unitConversion = unitConversion)
+        imputeVariable(data = dataCopy,
+                       imputationParameters = yieldImputationParameters)
+    } ## End of HACK.
     n.missAreaHarvested2 =
         length(which(is.na(
             dataCopy[[processingParameters$areaHarvestedValue]])))
