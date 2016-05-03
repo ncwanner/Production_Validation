@@ -20,10 +20,10 @@ savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
 
 if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
-    
+
     server = "Prod"
     # server = "Prod"
-    
+
     stopifnot(server %in% c("QA", "Prod"))
     ## Define directories
     if(Sys.info()[7] == "josh"){
@@ -106,28 +106,40 @@ years = firstYear:lastYear
 completeImputationKey = getMainKey(years = years)
 selectedItemCode = completeImputationKey@dimensions[["measuredItemCPC"]]@keys
 
+
 for(iter in 1:length(selectedItemCode)){
     currentItem = selectedItemCode[iter]
     subKey = completeImputationKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
     ## TODO (Michael): Need to update and get all the formulas?
-    currentFormula = getYieldFormula(currentItem)
+    currentFormula =
+        getYieldFormula(currentItem) %>%
+        removeIndigenousBiologicalMeat(formula = .)
+
+    subKey@dimensions$measuredElement@keys =
+        currentFormula[, unlist(.(input, productivity, output))]
+
+    ## Assign the variable names
     variablePrefix = getFormulaPrefix()
-    areaValueName = paste0(variablePrefix$valuePrefix, currentFormula$input)
-    yieldValueName = paste0(variablePrefix$valuePrefix, currentFormula$productivity)
-    prodValueName = paste0(variablePrefix$valuePrefix, currentFormula$output)
+    areaValueName =
+        paste0(variablePrefix$valuePrefix, currentFormula$input)
+    yieldValueName =
+        paste0(variablePrefix$valuePrefix, currentFormula$productivity)
+    prodValueName =
+        paste0(variablePrefix$valuePrefix, currentFormula$output)
 
     print(paste0("Imputation for item: ", currentItem, " (",  iter, " out of ",
                  length(selectedItemCode),")"))
     saveFileName = paste0("imputation_", currentItem, ".rds")
-    
+
     imputation = try({
 
         ## NOTE (Michael): We now impute the full triplet rather than
         ##                 just production for non-primary
         ##                 products. However, in the imputeModel
         ##                 module, only the production will be
-        ##                 selected and imputed.
+        ##                 selected and imputed for non-primary
+        ##                 products.
         ##
         ##                 Nevertheless, we hope to change this and
         ##                 impute the full triplet, for all the
@@ -164,8 +176,8 @@ for(iter in 1:length(selectedItemCode)){
         ## New module test
         message("Imputation Module Executed Successfully!")
     } else {
-
-        allowedError(imputation, allowedError = allowedErrorMessage)
+        print("ERROR!!!!!!")
+        ## allowedError(imputation, allowedError = allowedErrorMessage)
         ## cat(paste0("Item ",  currentItem, " failed : \n",
         ##            imputation[1], "\n\n"),
         ##     file = "imputation.log",
@@ -188,7 +200,7 @@ for(iter in 1:length(selectedItemCode)){
 ## validate = merge(dbData, imputation, all = TRUE)
 
 ## validate[flagObservationStatus.x %in% c("", "*"), flagObservationStatus.y]
-## validate[flagObservationStatus.y == "I" & flagObservationStatus.x %in% c("", "*"), .(geographicAreaM49, measuredItemCPC, measuredElement, Value.x, Value.y)]
+## validate[flagObservationStatus.y == "I" & flagObservationStatus.x %in% c("", "*"), .(geographicAreaM49, measuredItemCPC, measuredElement, Value.x, Value.y, flagObservationStatus.y)]
 
 
 ## cty = "12"
@@ -201,6 +213,9 @@ for(iter in 1:length(selectedItemCode)){
 ## validate[geographicAreaM49 == cty & flagObservationStatus.x %in% c("", "*"), ]
 
 
+## check2 = copy(check)
+## imputeVariable(check2, areaHarvestedParams)
+## print(check2[geographicAreaM49 == "762", ])
 
 ## normalisedImputed = normalise(imputed)
 ## splitted =
@@ -219,8 +234,17 @@ for(iter in 1:length(selectedItemCode)){
 
 ## (notImputedIndex = which(!notImputed))
 
-## cty = "807"
+
+## cty = "1248"
 ## imputed[geographicAreaM49 == cty, ]
+## yieldZeroData[geographicAreaM49 == cty, ]
 ## imputation1[geographicAreaM49 == cty, ]
 ## imputation2[geographicAreaM49 == cty, ]
+
+## for(file in dir("~/Github/sws_skeleton_project/faoswsImputation/R/",
+##                 full.names = TRUE))
+##     source(file)
+
+
+
 
