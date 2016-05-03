@@ -25,7 +25,8 @@ denormalise = function(normalisedData,
 
     uniqueElementCodes =
         unique(gsub("[^0-9]", "",
-                    grep("[0-9]{4}", colnames(denormalised), value = TRUE)))
+                    grep("[0-9]{4}", colnames(denormalised),
+                         value = TRUE)))
 
     setcolorder(x = denormalised,
                 neworder = c("geographicAreaM49",
@@ -33,7 +34,8 @@ denormalise = function(normalisedData,
                              "timePointYears",
                              sapply(uniqueElementCodes,
                                     FUN = function(x){
-                                        grep(x, colnames(denormalised),
+                                      grep(paste0(x, "$"),
+                                           colnames(denormalised),
                                              value = TRUE)
                                     }
                                     )))
