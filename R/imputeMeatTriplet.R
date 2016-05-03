@@ -1,14 +1,15 @@
 imputeMeatTriplet = function(meatKey, minObsForEst = 5){
     cat("Reading in the data...\n")
     datasets = getProductionData(meatKey)
-    ## Ignore indigenous/biological:
-    datasets$formulaTuples = datasets$formulaTuples[nchar(input) == 4, ]
+
     ## NOTE (Michael): Sometimes there are no data in the database,
     ##                 this case, we simply return an empty data table.
 
     if(NROW(datasets$query) > 0){
         datasets$query = denormalise(preProcessing(normalise(datasets$query)),
                                      denormaliseKey = "measuredElement")
+        datasets$formulaTuples =
+            removeIndigenousBiologicalMeat(datasets$formulaTuples)
         ## Create a placeholder to merge, this also ensures the
         ## imputation is complete.
         finalData = datasets$query[, .(geographicAreaM49, measuredItemCPC, timePointYears)]
@@ -22,10 +23,16 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
 
 
             ## Split the data for easy reference
-            currentData = copy(datasets$query)
             currentFormula = datasets$formulaTuples[i, ]
-            currentPrefix = datasets$prefixTuples
+            selectedElements = currentFormula[, unlist(.(input, productivity, output))]
+            currentData = datasets$query[, c(key(finalData),
+                                               grep(paste0(paste0(selectedElements, "$"),
+                                                           collapse = "|"),
+                                                    colnames(datasets$query),
+                                                    value = TRUE)),
+                                           with = FALSE]
 
+            currentPrefix = datasets$prefixTuples
             ## Setup for the imputation
             processingParams =
                 defaultProcessingParameters(productionValue = currentFormula[, output],
@@ -36,21 +43,22 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             ## NOTE (Michael): Stop the plotting.
             p$yieldParams$plotImputation = ""
             p$productionParams$plotImputation = ""
+            p$areaHarvestedParams$plotImputation = ""
             yieldParams = p$yieldParams
             productionParams = p$productionParams
             areaHarvestedParams = p$areaHarvestedParams
-
+            print(processingParams)
             processedData =
                 processProductionDomain(data = currentData,
                                         processingParameters = processingParams)
             yieldZeroData =
                 removeZeroYield(data = processedData,
-                               yieldValue =
-                                   processingParams$yieldValue,
-                               yieldObsFlag =
-                                   processingParams$yieldObservationFlag,
-                               yieldMethodFlag =
-                                   processingParams$yieldMethodFlag)
+                                yieldValue =
+                                    processingParams$yieldValue,
+                                yieldObsFlag =
+                                    processingParams$yieldObservationFlag,
+                                yieldMethodFlag =
+                                    processingParams$yieldMethodFlag)
 
             ## removedSingleEntryData =
             ##     removeSingleEntryCountry(yieldZeroData,
@@ -67,9 +75,9 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                  processingParam = processingParams,
                                  productionParams = productionParams)
 
-            ## Imputation is a bit tricky, as we want to exclude previously 
+            ## Imputation is a bit tricky, as we want to exclude previously
             ## estimated data if we have "enough" official/semi-official data in
-            ## a time series but we want to use estimates if we don't have 
+            ## a time series but we want to use estimates if we don't have
             ## enough official/semi-official data.  "Enough" is specified by
             ## minObsForEst.
             flags = paste0(currentPrefix$flagObsPrefix,
@@ -132,8 +140,8 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             imputationNormalised1 = normalise(imputation1)
             valuesImputedWithoutEstimates =
                 selectUseEstimate(data = imputationNormalised1,
-                                 useEstimatesTable = validObsCnt,
-                                 useEstimates = FALSE)
+                                  useEstimatesTable = validObsCnt,
+                                  useEstimates = FALSE)
 
             ## Now add in the values imputed in the second round
             ## valuesImputed2 =
@@ -144,8 +152,8 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             imputationNormalised2 = normalise(imputation2)
             valuesImputedWithEstimates =
                 selectUseEstimate(data = imputationNormalised2,
-                                 useEstimatesTable = validObsCnt,
-                                 useEstimates = TRUE)
+                                  useEstimatesTable = validObsCnt,
+                                  useEstimates = TRUE)
 
             ## Bring together the estimates and reshape them:
             valuesImputed = combineImputation(valuesImputedWithoutEstimates,
