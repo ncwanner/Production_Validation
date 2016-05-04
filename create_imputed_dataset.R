@@ -18,12 +18,10 @@ suppressMessages({
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
+server = "QA"
 
 if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
-
-    server = "Prod"
-    # server = "Prod"
 
     stopifnot(server %in% c("QA", "Prod"))
     ## Define directories
@@ -152,7 +150,7 @@ for(iter in 1:length(selectedItemCode)){
     ## Print message, initialise the save name and start the imputation.
     print(paste0("Imputation for item: ", currentItem, " (",  iter, " out of ",
                  length(selectedItemCode),")"))
-    saveFileName = paste0("imputation_", currentItem, ".rds")
+    saveFileName = createImputationObjectName(item = currentItem)
 
     imputation = try({
 
