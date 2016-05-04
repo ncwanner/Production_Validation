@@ -47,7 +47,6 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             yieldParams = p$yieldParams
             productionParams = p$productionParams
             areaHarvestedParams = p$areaHarvestedParams
-            print(processingParams)
             processedData =
                 processProductionDomain(data = currentData,
                                         processingParameters = processingParams)
