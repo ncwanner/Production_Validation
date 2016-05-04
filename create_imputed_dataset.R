@@ -79,12 +79,22 @@ if(CheckDebug()){
 
 }
 
-
-## HACK (Michael): This is to catch a specific known error, that is,
-##                 corrupted data in the database with
-##                 flagObservationStatus taking the value of '-'. This
-##                 should be removed later.
-allowedErrorMessage = "Some observation flags are not in the flag table!"
+## HACK (Michael): This is to catch a specific known error, but expected to be
+##                 fixed.
+##
+##                 (1) The first error is associated with the corrupted flag '-'
+##                     in the flagObservationStatus field. This is an invalid
+##                     flag is awaiting to be fixed in the database.
+##
+##                 (2) The reason why the protected data check fails is due to
+##                     the conflict official values in the database. (e.g. 0
+##                     production but non-zero areaharvested). Since the
+##                     algorithm attempts to correct this mistake, it
+##                     over-writes official value. (issue #85)
+allowedErrorMessage =
+    paste0("Some observation flags are not in the flag table!",
+           "Protected Data being over written!",
+           sep = "|")
 
 allowedError = function(tryErrorObject, allowedError){
     errorMessage = attr(tryErrorObject, "condition")$message
