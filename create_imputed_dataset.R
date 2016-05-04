@@ -4,15 +4,16 @@ suppressMessages({
     library(faoswsUtil)
     library(faoswsFlag)
     library(faoswsImputation)
-    library(data.table)
-    library(splines)
-    library(lme4)
     library(magrittr)
     library(dplyr)
+    ## TODO (Michael): The following packages should be removed when the
+    ##                 \pkgs{faoswsProduction} package is ready and the module
+    ##                 no longer depends on sourcing the R/ folder.
+    ##
+    ## library(faoswsProduction)
+    library(data.table)
+    library(splines)
 })
-
-## Setting up variables
-yearsModeled = 20
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
@@ -79,8 +80,6 @@ if(CheckDebug()){
 }
 
 
-
-
 ## HACK (Michael): This is to catch a specific known error, that is,
 ##                 corrupted data in the database with
 ##                 flagObservationStatus taking the value of '-'. This
@@ -97,24 +96,37 @@ allowedError = function(tryErrorObject, allowedError){
     }
 }
 
+## NOTE (Michael): The imputation and all modules should now have a base year of
+##                 1999, this is the result of a discussion with Pietro.
+defaultYear = 1999
+imputationYears =
+    GetCodeList(domain = "agriculture",
+                dataset = "aproduction",
+                dimension = "timePointYears") %>%
+    filter(description != "wildcard" & as.numeric(code) >= defaultYear) %>%
+    select(code) %>%
+    unlist(use.names = FALSE)
 
-
-lastYear = as.numeric(swsContext.computationParams$lastYear)
-firstYear = lastYear - yearsModeled + 1 # Rolling time range of yearsModeled years
-years = firstYear:lastYear
-
-completeImputationKey = getMainKey(years = years)
+## Get the required Datakey
+completeImputationKey = getMainKey(years = imputationYears)
 selectedItemCode = completeImputationKey@dimensions[["measuredItemCPC"]]@keys
 
 for(iter in 1:length(selectedItemCode)){
     currentItem = selectedItemCode[iter]
     subKey = completeImputationKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
-    ## TODO (Michael): Need to update and get all the formulas?
+
+    ## Obtain the formula and remove indigenous and biological meat.
+    ##
+    ## NOTE (Michael): Biological and indigenous meat are currently removed, as
+    ##                 they have incorrect data specification. They should be
+    ##                 separate item with different item code rather than under
+    ##                 different element under the meat code.
     currentFormula =
         getYieldFormula(currentItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
+    ## Update the element corresponding to the current item
     subKey@dimensions$measuredElement@keys =
         currentFormula[, unlist(.(input, productivity, output))]
 
@@ -127,6 +139,7 @@ for(iter in 1:length(selectedItemCode)){
     prodValueName =
         paste0(variablePrefix$valuePrefix, currentFormula$output)
 
+    ## Print message, initialise the save name and start the imputation.
     print(paste0("Imputation for item: ", currentItem, " (",  iter, " out of ",
                  length(selectedItemCode),")"))
     saveFileName = paste0("imputation_", currentItem, ".rds")
@@ -149,6 +162,7 @@ for(iter in 1:length(selectedItemCode)){
         ##
         imputed = imputeMeatTriplet(meatKey = subKey)
 
+        ## Check the imputation before saving.
         imputed %>%
             checkProductionBalanced(dataToBeSaved = .,
                                     areaVar = areaValueName,
@@ -156,7 +170,6 @@ for(iter in 1:length(selectedItemCode)){
                                     prodVar = prodValueName,
                                     conversion = currentFormula$unitConversion) %>%
             normalise(.) %>%
-            ## Change time point year back to character
             postProcessing(data = .) %>%
             checkTimeSeriesImputed(dataToBeSaved = .,
                                    key = c("geographicAreaM49",
@@ -172,7 +185,6 @@ for(iter in 1:length(selectedItemCode)){
     })
 
     if(!inherits(imputation, "try-error")){
-        ## New module test
         message("Imputation Module Executed Successfully!")
     } else {
         allowedError(imputation, allowedError = allowedErrorMessage)
