@@ -106,7 +106,6 @@ years = firstYear:lastYear
 completeImputationKey = getMainKey(years = years)
 selectedItemCode = completeImputationKey@dimensions[["measuredItemCPC"]]@keys
 
-
 for(iter in 1:length(selectedItemCode)){
     currentItem = selectedItemCode[iter]
     subKey = completeImputationKey
@@ -176,75 +175,6 @@ for(iter in 1:length(selectedItemCode)){
         ## New module test
         message("Imputation Module Executed Successfully!")
     } else {
-        print("ERROR!!!!!!")
-        ## allowedError(imputation, allowedError = allowedErrorMessage)
-        ## cat(paste0("Item ",  currentItem, " failed : \n",
-        ##            imputation[1], "\n\n"),
-        ##     file = "imputation.log",
-        ##     append = TRUE)
-
+        allowedError(imputation, allowedError = allowedErrorMessage)
     }
 }
-
-## imputation = imputed %>%
-##             normalise(.) %>%
-##             ## Change time point year back to character
-##             postProcessing(data = .) %>%
-##             checkTimeSeriesImputed(dataToBeSaved = .,
-##                                    key = c("geographicAreaM49",
-##                                            "measuredItemCPC",
-##                                            "measuredElement"),
-##                                    valueColumn = "Value")
-## checkProtectedData(dataToBeSaved = imputation)
-
-## validate = merge(dbData, imputation, all = TRUE)
-
-## validate[flagObservationStatus.x %in% c("", "*"), flagObservationStatus.y]
-## validate[flagObservationStatus.y == "I" & flagObservationStatus.x %in% c("", "*"), .(geographicAreaM49, measuredItemCPC, measuredElement, Value.x, Value.y, flagObservationStatus.y)]
-
-
-## cty = "12"
-## untouched[geographicAreaM49 == cty, ]
-## currentData[geographicAreaM49 == cty, ]
-## origData[geographicAreaM49 == cty, ]
-## valuesImputed[geographicAreaM49 == cty, ]
-## unbalancedImputation[geographicAreaM49 == cty, ]
-## imputed[geographicAreaM49 == cty, ]
-## validate[geographicAreaM49 == cty & flagObservationStatus.x %in% c("", "*"), ]
-
-
-## check2 = copy(check)
-## imputeVariable(check2, areaHarvestedParams)
-## print(check2[geographicAreaM49 == "762", ])
-
-## normalisedImputed = normalise(imputed)
-## splitted =
-##     split(normalisedImputed,
-##           list(normalisedImputed$geographicAreaM49,
-##                normalisedImputed$measuredElement))
-
-## checkImputed = function(x){
-##         n.missing = sum(is.na(x$Value))
-##         print(n.missing)
-##         n.missing == 0 | n.missing == length(x$Value)
-##         }
-
-## notImputed =
-##     sapply(splitted, checkImputed)
-
-## (notImputedIndex = which(!notImputed))
-
-
-## cty = "1248"
-## imputed[geographicAreaM49 == cty, ]
-## yieldZeroData[geographicAreaM49 == cty, ]
-## imputation1[geographicAreaM49 == cty, ]
-## imputation2[geographicAreaM49 == cty, ]
-
-## for(file in dir("~/Github/sws_skeleton_project/faoswsImputation/R/",
-##                 full.names = TRUE))
-##     source(file)
-
-
-
-
