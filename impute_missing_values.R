@@ -88,8 +88,6 @@ selectedImputationItems = selectImputationItem(selectedKey, completeImputationKe
 ## that the item should probably be added in.
 nonImputationItemCodes = nonImputationItems(selectedKey, completeImputationKey)
 
-selectedImputationItems = "01371"
-
 ## Start the imputation, looping through each item since the model are
 ## fitted for each item separately.
 for(i in seq(selectedImputationItems)){
