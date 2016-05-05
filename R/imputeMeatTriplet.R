@@ -50,27 +50,16 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             processedData =
                 processProductionDomain(data = currentData,
                                         processingParameters = processingParams)
-            yieldZeroData =
-                removeZeroYield(data = processedData,
-                                yieldValue =
-                                    processingParams$yieldValue,
-                                yieldObsFlag =
-                                    processingParams$yieldObservationFlag,
-                                yieldMethodFlag =
-                                    processingParams$yieldMethodFlag)
 
-            ## removedSingleEntryData =
-            ##     removeSingleEntryCountry(yieldZeroData,
-            ##                              params = processingParams)
 
             ## HACK (Michael): The following is to account for the case
             ##                 where the data becomes empty after the
             ##                 processing.
-            if(NROW(yieldZeroData) < 1)
+            if(NROW(processedData) < 1)
                 next
 
             forcedZero =
-                getForcedZeroKey(yieldZeroData,
+                getForcedZeroKey(processedData,
                                  processingParam = processingParams,
                                  productionParams = productionParams)
 
@@ -84,7 +73,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
                                           with = FALSE])
 
             validObsCnt =
-                useEstimateForTimeSeriesImputation(data = yieldZeroData,
+                useEstimateForTimeSeriesImputation(data = processedData,
                                                    areaObsFlagVar = flags[1],
                                                    yieldObsFlagVar = flags[2],
                                                    prodObsFlagVar = flags[3],
@@ -95,7 +84,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             ## available).  However, we'll have to delete some of the
             ## imputations (corresponding to series without enough
             ## official data) and then rerun the imputation.
-            origData = copy(yieldZeroData)
+            origData = copy(processedData)
             processingParams$removePriorImputation = TRUE
             cat("Imputation without Manual Estimates\n")
             imputation1 =
