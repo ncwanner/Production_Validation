@@ -172,28 +172,38 @@ for(iter in 1:length(selectedItemCode)){
     ##                 case. This will allow us to merge the two
     ##                 components.
     ##
-    imputed = imputeMeatTriplet(meatKey = subKey)
+    imputation = try({
+        imputed = imputeMeatTriplet(meatKey = subKey)
 
-    ## Check the imputation before saving.
-    imputed %>%
-        checkProductionBalanced(dataToBeSaved = .,
-                                areaVar = processingParams$areaHarvestedValue,
-                                yieldVar = processingParams$yieldValue,
-                                prodVar = processingParams$productionValue,
-                                conversion = currentFormula$unitConversion) %>%
-        normalise(.) %>%
-        postProcessing(data = .) %>%
-        checkTimeSeriesImputed(dataToBeSaved = .,
-                               key = c("geographicAreaM49",
-                                       "measuredItemCPC",
-                                       "measuredElement"),
-                               valueColumn = "Value") %>%
-        {
-            ## Check whether protected data are being over-written
-            filter(.data = ., flagObservationStatus == "I") %>%
-                checkProtectedData(dataToBeSaved = .)
-            ## Save the fitted object back
-            postProcessing(data = ., params = processingParams) %>%
-                saveRDS(object = ., file = paste0(savePath, saveFileName))
-        }
+        ## Check the imputation before saving.
+        imputed %>%
+            checkProductionBalanced(dataToBeSaved = .,
+                                    areaVar = processingParams$areaHarvestedValue,
+                                    yieldVar = processingParams$yieldValue,
+                                    prodVar = processingParams$productionValue,
+                                    conversion = currentFormula$unitConversion) %>%
+            normalise(.) %>%
+            postProcessing(data = .) %>%
+            checkTimeSeriesImputed(dataToBeSaved = .,
+                                   key = c("geographicAreaM49",
+                                           "measuredItemCPC",
+                                           "measuredElement"),
+                                   valueColumn = "Value") %>%
+            {
+                ## Check whether protected data are being over-written
+                filter(.data = ., flagObservationStatus == "I") %>%
+                    checkProtectedData(dataToBeSaved = .)
+                ## Save the fitted object back
+                postProcessing(data = ., params = processingParams) %>%
+                    saveRDS(object = ., file = paste0(savePath, saveFileName))
+            }
+    })
+    if(!inherits(imputation, "try-error")){
+        message("Imputation module completed successfully")
+    } else {
+        message(paste0("Imputation moduled failed at item ",
+                       currentItem))
+    }
 }
+
+
