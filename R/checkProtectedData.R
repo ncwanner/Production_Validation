@@ -64,7 +64,7 @@ checkProtectedData = function(dataToBeSaved,
         dbData = GetData(newKey)
         setkeyv(dbData, col = c(areaVar, itemVar, elementVar, yearVar))
         matchSet = dbData[dataToBeSavedCopy, ]
-        protectedData = matchSet[matchSet[[flagObsVar]] %in% protectedFlag, ]
+        protectedData = matchSet[matchSet[[flagMethodVar]] %in% protectedFlag, ]
         if(NROW(protectedData) > 0)
             stop("Protected Data being over written!")
     } else {
