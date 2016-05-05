@@ -21,11 +21,10 @@
 ##' @param elementVar The column name corresponding to the measured
 ##'     element.
 ##' @param yearVar The column name corresponding to the year.
-##' @param flagObsVar The column name corresponding to the observation
-##'     status flag.
+##' @param flagMethodVar The column name corresponding to the method flag.
 ##' @param protectedFlag The set of flag values which corresponds to
 ##'     values that should not be over written.
-##' 
+##'
 ##' @return If the data set passes the test, then the original data
 ##'     will be returned. Otherwise an error will be raised.
 ##'
@@ -39,14 +38,14 @@ checkProtectedData = function(dataToBeSaved,
                               itemVar = "measuredItemCPC",
                               elementVar = "measuredElement",
                               yearVar = "timePointYears",
-                              flagObsVar = "flagObservationStatus",
-                              protectedFlag = c("", "*")){
-    
-    
+                              flagMethodVar = "flagMethod",
+                              protectedFlag = c("-", "q", "p", "h", "c")){
+
+
     dataToBeSavedCopy = copy(dataToBeSaved)
     setkeyv(dataToBeSavedCopy, col = c(areaVar, itemVar, elementVar, yearVar))
 
-    
+
     if(NROW(dataToBeSavedCopy) > 0){
         newKey = DatasetKey(
             domain = domain,
