@@ -164,7 +164,7 @@ for(i in seq(selectedImputationItems)){
         ## TODO (Michael): Discuss with team B and C whether "T" should be
         ##                 imputed and over-written.
         filter(flagObservationStatus %in% c("I", "E", "M")) %>%
-        ## Assign the imputed value
+        ## Assign the imputed value to the current dataset
         mutate(Value = i.Value,
                flagObservationStatus = i.flagObservationStatus,
                flagMethod = i.flagMethod) %>%
@@ -178,6 +178,14 @@ for(i in seq(selectedImputationItems)){
         checkOutputFlags(data = .,
                          flagObservationStatusExpected = "I",
                          flagMethodExpected = c("i", "e")) %>%
+        ## NOTE (Michael): This test might fail because the data may have been
+        ##                 updated since the production imputation module was
+        ##                 performed.
+        checkProductionBalanced(data = .,
+                                areaVar = currentFormula[, input],
+                                yieldVar = currentFormula[, productivity],
+                                prodVar = currentFormula[, output],
+                                conversion = currentFormula[, unitConversion]) %>%
         ## Save data back
         SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 }
