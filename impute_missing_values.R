@@ -160,6 +160,9 @@ for(i in seq(selectedImputationItems)){
         ##                 data.
         .[imputedValues, ] %>%
         ## Subset only flags that can be over-written
+        ##
+        ## TODO (Michael): Discuss with team B and C whether "T" should be
+        ##                 imputed and over-written.
         filter(flagObservationStatus %in% c("I", "E", "M")) %>%
         ## Assign the imputed value
         mutate(Value = i.Value,
@@ -178,8 +181,6 @@ for(i in seq(selectedImputationItems)){
         ## Save data back
         SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 }
-
-
 
 ## Return message
 paste0("Imputation module executed successfully, the following seelcted",
