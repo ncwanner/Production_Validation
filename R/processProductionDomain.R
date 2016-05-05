@@ -1,29 +1,29 @@
 ##' This is a wrapper for all the data manipulation steps before the preparation
 ##' of the imputation.
-##' 
+##'
 ##' @param data The data
-##' @param processingParameters A list of the parameters for the production 
-##'   processing algorithms.  See defaultProductionParameters() for a starting 
+##' @param processingParameters A list of the parameters for the production
+##'   processing algorithms.  See defaultProductionParameters() for a starting
 ##'   point.
-##'   
+##'
 ##' @export
-##' 
+##'
 ##' @return Currently it returns the passed data.table after performing some
 ##'   checks and clean up of the data.  Eventually, it should modify the
 ##'   data.table in place, but this will require an update to data.table (see
 ##'   comment by the return statement).
-##'   
+##'
 
 processProductionDomain = function(data, processingParameters){
-    
+
     ### Data Quality Checks
     if(!exists("ensuredProductionData") || !ensuredProductionData)
         ensureProductionInputs(data = data,
                                processingParameters = processingParameters)
-    
+
     ### processingParameters will be referenced alot, so rename to p
     p = processingParameters
-    
+
     ### Remove prior imputations
     if(processingParameters$removePriorImputation){
         faoswsUtil::removeImputation(data = data,
@@ -52,7 +52,7 @@ processProductionDomain = function(data, processingParameters){
 
     data = data[!emptyEntry, ]
 
-    
+
     ## HACK (Michael): Imputed flag should always be removed, change
     ##                 the above condition to remove manual
     ##                 estimates. If imputedFlag "I" is not removed,
@@ -88,18 +88,7 @@ processProductionDomain = function(data, processingParameters){
              value = p$productionValue,
              flag = p$productionObservationFlag,
              naFlag = p$naFlag)
-    
-    ### Remove conflicting/illogical zeros
-    if(p$removeConflictValues){
-        faoswsUtil::removeZeroConflict(data = data,
-                           value1 = p$areaHarvestedValue,
-                           value2 = p$productionValue,
-                           observationFlag1 = p$areaHarvestedObservationFlag,
-                           observationFlag2 = p$productionObservationFlag,
-                           methodFlag1 = p$areaHarvestedMethodFlag,
-                           methodFlag2 = p$productionMethodFlag,
-                           missingObservationFlag = p$naFlag)
-    }
+
 
     ### Remove byKey groups that have no data
     ## faoswsUtil::removeNoInfo(data = data,

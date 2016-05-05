@@ -138,22 +138,55 @@ for(iter in 1:length(selectedItemCode)){
     subKey@dimensions$measuredElement@keys =
         currentFormula[, unlist(.(input, productivity, output))]
 
-    ## Assign the variable names
-    variablePrefix = getFormulaPrefix()
-    areaValueName =
-        paste0(variablePrefix$valuePrefix, currentFormula$input)
-    yieldValueName =
-        paste0(variablePrefix$valuePrefix, currentFormula$productivity)
-    prodValueName =
-        paste0(variablePrefix$valuePrefix, currentFormula$output)
+
+    processingParams =
+        defaultProcessingParameters(productionValue = currentFormula$output,
+                                    areaHarvestedValue = currentFormula$input,
+                                    yieldValue = currentFormula$productivity)
+
+    print(paste0("Ensuring data consistency for item: ", currentItem, " (",
+                 iter, " out of ", length(selectedItemCode),")"))
+
+    ## NOTE (Michael): This is the data cleaning step, and official/semi-official
+    ##                 flags can be over-written when in conflict are inconsistent.
+    ##
+    ## TODO (Michael): This should be probably be splitted into a seperate
+    ##                 module.
+    subKey %>%
+        GetData(.) %>%
+        preProcessing(data = .,
+                      params = processingParams) %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement") %>%
+        removeZeroYield(data = .,
+                        yieldValue = processingParams$yieldValue,
+                        yieldObsFlag = processingParams$yieldObservationFlag,
+                        yieldMethodFlag = processingParams$yieldMethodFlag) %>%
+        removeZeroConflict(data = .,
+                           value1 = processingParams$productionValue,
+                           value2 = processingParams$areaHarvestedValue,
+                           observationFlag1 =
+                               processingParams$productionObservationFlag,
+                           observationFlag2 =
+                               processingParams$areaHarvestedObservationFlag,
+                           methodFlag1 = processingParams$productionMethodFlag,
+                           methodFlag2 =
+                               processingParams$areaHarvestedMethodFlag) %>%
+        normalise(denormalisedData = .) %>%
+        postProcessing(data = .,
+                       params = processingParams) %>%
+        SaveData(domain = "agriculture",
+                 dataset = "aproduction",
+                 data = .)
+
+
 
     ## Print message, initialise the save name and start the imputation.
     print(paste0("Imputation for item: ", currentItem, " (",  iter, " out of ",
                  length(selectedItemCode),")"))
     saveFileName = createImputationObjectName(item = currentItem)
 
-    imputation = try({
-
+    ## imputation = try({
         ## NOTE (Michael): We now impute the full triplet rather than
         ##                 just production for non-primary
         ##                 products. However, in the imputeModel
@@ -173,9 +206,9 @@ for(iter in 1:length(selectedItemCode)){
         ## Check the imputation before saving.
         imputed %>%
             checkProductionBalanced(dataToBeSaved = .,
-                                    areaVar = areaValueName,
-                                    yieldVar = yieldValueName,
-                                    prodVar = prodValueName,
+                                    areaVar = processingParams$areaHarvestedValue,
+                                    yieldVar = processingParams$yieldValue,
+                                    prodVar = processingParams$productionValue,
                                     conversion = currentFormula$unitConversion) %>%
             normalise(.) %>%
             postProcessing(data = .) %>%
@@ -185,16 +218,19 @@ for(iter in 1:length(selectedItemCode)){
                                            "measuredElement"),
                                    valueColumn = "Value") %>%
             {
+                ## Check whether protected data are being over-written
                 filter(.data = ., flagObservationStatus == "I") %>%
                     checkProtectedData(dataToBeSaved = .)
-                saveRDS(object = ., file = paste0(savePath, saveFileName))
+                ## Save the fitted object back
+                postProcessing(data = ., params = processingParams) %>%
+                    saveRDS(object = ., file = paste0(savePath, saveFileName))
             }
 
-    })
+    ## })
 
-    if(!inherits(imputation, "try-error")){
-        message("Imputation Module Executed Successfully!")
-    } else {
-        allowedError(imputation, allowedError = allowedErrorMessage)
-    }
+    ## if(!inherits(imputation, "try-error")){
+    ##     message("Imputation Module Executed Successfully!")
+    ## } else {
+    ##     ## allowedError(imputation, allowedError = allowedErrorMessage)
+    ## }
 }
