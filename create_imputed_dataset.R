@@ -191,18 +191,20 @@ for(iter in 1:length(selectedItemCode)){
                                    valueColumn = "Value") %>%
             {
                 ## Check whether protected data are being over-written
-                filter(.data = ., flagObservationStatus == "I") %>%
+                filter(.data = ., flagMethod %in% c("i", "e")) %>%
                     checkProtectedData(dataToBeSaved = .)
-                ## Save the fitted object back
+
+                ## Save the fitted object for future loading
                 postProcessing(data = ., params = processingParams) %>%
                     saveRDS(object = ., file = paste0(savePath, saveFileName))
             }
+
     })
+
     if(!inherits(imputation, "try-error")){
         message("Imputation module completed successfully")
     } else {
-        message(paste0("Imputation moduled failed at item ",
-                       currentItem))
+        stop(paste0("Imputation moduled failed at item ", currentItem))
     }
 }
 
