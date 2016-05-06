@@ -16,15 +16,15 @@
 
 processProductionDomain = function(data, processingParameters){
 
-### Data Quality Checks
+    ## Data Quality Checks
     if(!exists("ensuredProductionData") || !ensuredProductionData)
         ensureProductionInputs(data = data,
                                processingParameters = processingParameters)
 
-### processingParameters will be referenced alot, so rename to p
+    ## processingParameters will be referenced alot, so rename to p
     p = processingParameters
 
-### Remove prior imputations
+    ## Remove prior imputations
     if(processingParameters$removePriorImputation){
         removeImputation(data = data,
                          value = p$areaHarvestedValue,
