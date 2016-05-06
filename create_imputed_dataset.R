@@ -189,14 +189,19 @@ for(iter in 1:length(selectedItemCode)){
                                            "measuredItemCPC",
                                            "measuredElement"),
                                    valueColumn = "Value") %>%
+            postProcessing(data = ., params = processingParams) %>%
             {
+                ## HACK (Michael): Before we decide how to deal with the flags,
+                ##                 we will not perform this check as we can not
+                ##                 determine what is considered 'protected'
+                ##
                 ## Check whether protected data are being over-written
-                filter(.data = ., flagMethod %in% c("i", "e")) %>%
-                    checkProtectedData(dataToBeSaved = .)
+                ## filter(.data = ., flagMethod %in% c("i", "e")) %>%
+                ##     checkProtectedData(dataToBeSaved = .) %>%
+                ##     print(.)
 
                 ## Save the fitted object for future loading
-                postProcessing(data = ., params = processingParams) %>%
-                    saveRDS(object = ., file = paste0(savePath, saveFileName))
+                saveRDS(object = ., file = paste0(savePath, saveFileName))
             }
 
     })
