@@ -16,34 +16,34 @@
 
 processProductionDomain = function(data, processingParameters){
 
-    ### Data Quality Checks
+### Data Quality Checks
     if(!exists("ensuredProductionData") || !ensuredProductionData)
         ensureProductionInputs(data = data,
                                processingParameters = processingParameters)
 
-    ### processingParameters will be referenced alot, so rename to p
+### processingParameters will be referenced alot, so rename to p
     p = processingParameters
 
-    ### Remove prior imputations
+### Remove prior imputations
     if(processingParameters$removePriorImputation){
-        faoswsUtil::removeImputation(data = data,
-                    value = p$areaHarvestedValue,
-                    observationFlag = p$areaHarvestedObservationFlag,
-                    methodFlag = p$areaHarvestedMethodFlag,
-                    missingObservationFlag = p$naFlag,
-                    imputedFlag = p$imputedFlag)
-        faoswsUtil::removeImputation(data = data,
-                    value = p$yieldValue,
-                    observationFlag = p$yieldObservationFlag,
-                    methodFlag = p$yieldMethodFlag,
-                    missingObservationFlag = p$naFlag,
-                    imputedFlag = p$imputedFlag)
-        faoswsUtil::removeImputation(data = data,
-                    value = p$productionValue,
-                    observationFlag = p$productionObservationFlag,
-                    methodFlag = p$productionMethodFlag,
-                    missingObservationFlag = p$naFlag,
-                    imputedFlag = p$imputedFlag)
+        removeImputation(data = data,
+                         value = p$areaHarvestedValue,
+                         observationFlag = p$areaHarvestedObservationFlag,
+                         methodFlag = p$areaHarvestedMethodFlag,
+                         missingObservationFlag = p$naFlag,
+                         imputedFlag = p$imputedFlag)
+        removeImputation(data = data,
+                         value = p$yieldValue,
+                         observationFlag = p$yieldObservationFlag,
+                         methodFlag = p$yieldMethodFlag,
+                         missingObservationFlag = p$naFlag,
+                         imputedFlag = p$imputedFlag)
+        removeImputation(data = data,
+                         value = p$productionValue,
+                         observationFlag = p$productionObservationFlag,
+                         methodFlag = p$productionMethodFlag,
+                         missingObservationFlag = p$naFlag,
+                         imputedFlag = p$imputedFlag)
     }
 
     emptyEntry = (is.na(data[[p$productionObservationFlag]]) |
@@ -57,40 +57,40 @@ processProductionDomain = function(data, processingParameters){
     ##                 the above condition to remove manual
     ##                 estimates. If imputedFlag "I" is not removed,
     ##                 then they are always retained in the database.
-    faoswsUtil::removeImputation(data = data,
-                                 value = p$areaHarvestedValue,
-                                 observationFlag = p$areaHarvestedObservationFlag,
-                                 methodFlag = p$areaHarvestedMethodFlag,
-                                 missingObservationFlag = p$naFlag,
-                                 imputedFlag = "I")
-    faoswsUtil::removeImputation(data = data,
-                                 value = p$yieldValue,
-                                 observationFlag = p$yieldObservationFlag,
-                                 methodFlag = p$yieldMethodFlag,
-                                 missingObservationFlag = p$naFlag,
-                                 imputedFlag = "I")
-    faoswsUtil::removeImputation(data = data,
-                                 value = p$productionValue,
-                                 observationFlag = p$productionObservationFlag,
-                                 methodFlag = p$productionMethodFlag,
-                                 missingObservationFlag = p$naFlag,
-                                 imputedFlag = "I")
-    ### Assign NA's when the flag is missing
-    faoswsUtil::remove0M(data = data,
-             value = p$areaHarvestedValue,
-             flag = p$areaHarvestedObservationFlag,
-             naFlag = p$naFlag)
-    faoswsUtil::remove0M(data = data,
-             value = p$yieldValue,
-             flag = p$yieldObservationFlag,
-             naFlag = p$naFlag)
-    faoswsUtil::remove0M(data = data,
-             value = p$productionValue,
-             flag = p$productionObservationFlag,
-             naFlag = p$naFlag)
+    removeImputation(data = data,
+                     value = p$areaHarvestedValue,
+                     observationFlag = p$areaHarvestedObservationFlag,
+                     methodFlag = p$areaHarvestedMethodFlag,
+                     missingObservationFlag = p$naFlag,
+                     imputedFlag = "I")
+    removeImputation(data = data,
+                     value = p$yieldValue,
+                     observationFlag = p$yieldObservationFlag,
+                     methodFlag = p$yieldMethodFlag,
+                     missingObservationFlag = p$naFlag,
+                     imputedFlag = "I")
+    removeImputation(data = data,
+                     value = p$productionValue,
+                     observationFlag = p$productionObservationFlag,
+                     methodFlag = p$productionMethodFlag,
+                     missingObservationFlag = p$naFlag,
+                     imputedFlag = "I")
+### Assign NA's when the flag is missing
+    remove0M(data = data,
+             valueVars = p$areaHarvestedValue,
+             flagVars = p$areaHarvestedObservationFlag,
+             missingFlag = p$naFlag)
+    remove0M(data = data,
+             valueVars = p$yieldValue,
+             flagVars = p$yieldObservationFlag,
+             missingFlag = p$naFlag)
+    remove0M(data = data,
+             valueVars = p$productionValue,
+             flagVars = p$productionObservationFlag,
+             missingFlag = p$naFlag)
 
 
-    ### Remove byKey groups that have no data
+    ## Remove byKey groups that have no data
     ## faoswsUtil::removeNoInfo(data = data,
     ##              value = p$yieldValue,
     ##              observationFlag = p$yieldObservationFlag,
