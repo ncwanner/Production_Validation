@@ -4,7 +4,9 @@
 \alias{cleanData}
 \title{Clean Production Data}
 \usage{
-cleanData(datasets, i, maxYear = NULL)
+cleanData(datasets, i, maxYear = NULL, areaVar = "geographicAreaM49",
+  itemVar = "measuredItemCPC", elementVar = "measuredElement",
+  yearVar = "timePointYears")
 }
 \arguments{
 \item{datasets}{An object as produced by getProductionData.}

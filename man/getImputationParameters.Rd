@@ -4,7 +4,9 @@
 \alias{getImputationParameters}
 \title{Get Imputation Parameters}
 \usage{
-getImputationParameters(datasets, i = 1)
+getImputationParameters(datasets, i = 1, areaVar = "geographicAreaM49",
+  itemVar = "measuredItemCPC", elementVar = "measuredElement",
+  yearVar = "timePointYears")
 }
 \arguments{
 \item{datasets}{The object being imputed on, typically created by 
