@@ -191,7 +191,27 @@ for(i in seq(selectedImputationItems)){
 }
 
 ## Return message
-paste0("Imputation module executed successfully, the following seelcted",
-       " commodities were not imputed as they are not in the ",
-       "imputation list provided\n",
-       paste0(nonImputationItemCodes, collapse = "\n"))
+yearOutOfImputationRange =
+    setdiff(selectedKey@dimensions$timePointYears@keys, imputationYears)
+
+yearWarningMessage =
+    ifelse(length(yearOutOfImputationRange) > 0,
+           paste0("\n\nThe following selected years were not imputed as they ",
+                  "are out of range (1999 - current year): \n",
+                  paste0(yearOutOfImputationRange, collapse = ", "), "\n"),
+           "")
+
+
+commodityWarningMessage =
+    ifelse(length(nonImputationItemCodes) > 0,
+           paste0("\n\n The following selected commodities were not ",
+                  "imputed as they are not included in the current list:\n",
+                  paste0(nonImputationItemCodes, collapse = ", "), "\n"),
+           "")
+
+finalMessage =
+    paste0("Imputation module executed successfully\n",
+           yearWarningMessage,
+           commodityWarningMessage)
+
+message(finalMessage)
