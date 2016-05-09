@@ -45,7 +45,7 @@ cleanData = function(datasets, i, maxYear = NULL,
                                               with = FALSE])
     if(all(is.na(datasets$query[[valueCols[1]]])) &
        all(is.na(datasets$query[[valueCols[2]]]))){
-        stop("No non-missing data!")
+        warning("No non-missing data!")
     }
     
     ## Some rows may be missing entirely, and thus we may fail to impute
