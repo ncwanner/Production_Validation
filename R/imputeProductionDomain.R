@@ -24,7 +24,9 @@
 ##' @import data.table
 ##' 
 
-imputeProductionDomain = function(data, processingParameters,
+imputeProductionDomain = function(data,
+                                  processingParameters,
+                                  areaHarvestedImputationParameters,
                                   yieldImputationParameters,
                                   productionImputationParameters,
                                   unitConversion){
@@ -32,7 +34,7 @@ imputeProductionDomain = function(data, processingParameters,
 
     cat("Initializing ... \n")
     dataCopy = copy(data)
-    ### Data Quality Checks
+    ## Data Quality Checks
     ensureImputationInputs(data = dataCopy,
                            imputationParameters = yieldImputationParameters)
     ensureImputationInputs(data = dataCopy,
@@ -54,6 +56,8 @@ imputeProductionDomain = function(data, processingParameters,
     ## NOTE (Michael): The imputation module fails if all yield are
     ##                 missing.
     allYieldMissing = all(is.na(dataCopy[[processingParameters$yieldValue]]))
+    allProductionMissing = all(is.na(dataCopy[[processingParameters$productionValue]]))
+    allAreaMissing = all(is.na(dataCopy[[processingParameters$areaHarvestedValue]]))
     
     if(!all(allYieldMissing)){
         ## Step two: Impute Yield
@@ -73,9 +77,18 @@ imputeProductionDomain = function(data, processingParameters,
         cat("Number of values still missing: ", n.missYield2, "\n")
 
         ## Balance production now using imputed yield
-        balanceProduction(data = dataCopy, processingParameters = processingParameters,
+        balanceProduction(data = dataCopy,
+                          processingParameters = processingParameters,
                           unitConversion = unitConversion)
 
+        ## NOTE (Michael): Check again whether production is available
+        ##                 now after it is balanced.
+        allProductionMissing = all(is.na(dataCopy[[processingParameters$productionValue]]))
+    } else {
+        warning("The input dataset contains insufficient data for imputation to perform!")
+    }
+    
+    if(!all(allProductionMissing)){
         ## step three: Impute production
         cat("Imputing Production ...\n")
         n.missProduction = length(which(is.na(
@@ -83,32 +96,61 @@ imputeProductionDomain = function(data, processingParameters,
 
         imputeVariable(data = dataCopy,
                        imputationParameters = productionImputationParameters)
-
         n.missProduction2 = length(which(is.na(
             dataCopy[[processingParameters$productionValue]])))
         cat("Number of values imputed: ",
             n.missProduction - n.missProduction2, "\n")
         cat("Number of values still missing: ", n.missProduction2, "\n")
-
-        ## step four: balance area harvested
-        cat("Imputing Area Harvested ...\n")
-        n.missAreaHarvested =
-            length(which(is.na(
-                dataCopy[[processingParameters$areaHarvestedValue]])))
-
-        balanceAreaHarvested(data = dataCopy,
-                             processingParameters = processingParameters,
-                             unitConversion = unitConversion)
-
-        n.missAreaHarvested2 =
-            length(which(is.na(
-                dataCopy[[processingParameters$areaHarvestedValue]])))
-        cat("Number of values imputed: ",
-            n.missAreaHarvested - n.missAreaHarvested2, "\n")
-        cat("Number of values still missing: ", n.missAreaHarvested2, "\n")
     } else {
         warning("The input dataset contains insufficient data for imputation to perform!")
     }
+
+    ## step four: balance area harvested
+    cat("Imputing Area Harvested ...\n")
+    n.missAreaHarvested =
+        length(which(is.na(
+            dataCopy[[processingParameters$areaHarvestedValue]])))
+
+    balanceAreaHarvested(data = dataCopy,
+                         processingParameters = processingParameters,
+                         unitConversion = unitConversion)
+    allAreaMissing = all(is.na(dataCopy[[processingParameters$areaHarvestedValue]]))
+
+    if(!all(allAreaMissing)){
+        ## HACK (Michael): This is to ensure the area harvested are also
+        ##                 imputed. Then we delete all computed yield and
+        ##                 then balance again. This causes the yield not
+        ##                 comforming to the imputation model.
+        ##
+        ##                 This whole function should be re-writtened so
+        ##                 that an algorithm similar to the EM algorithm
+        ##                 estimates and impute the triplet in a conherent
+        ##                 way.
+        ##
+        ##                 Issue #88
+        imputeVariable(data = dataCopy,
+                       imputationParameters = areaHarvestedImputationParameters)
+        dataCopy[!is.na(get(processingParameters$areaHarvestedValue)) &
+                 !is.na(get(processingParameters$productionValue)) &
+                 !(get(processingParameters$yieldObservationFlag) %in% c("", "*")),
+                 `:=`(c(processingParameters$yieldValue,
+                        processingParameters$yieldObservationFlag,
+                        processingParameters$yieldMethodFlag),
+                      list(NA, "M", "u"))]
+        computeYield(dataCopy,
+                     newMethodFlag = "i",
+                     processingParameters = processingParameters,
+                     unitConversion = unitConversion)
+        imputeVariable(data = dataCopy,
+                       imputationParameters = yieldImputationParameters)
+    } ## End of HACK.
+    n.missAreaHarvested2 =
+        length(which(is.na(
+            dataCopy[[processingParameters$areaHarvestedValue]])))
+    cat("Number of values imputed: ",
+        n.missAreaHarvested - n.missAreaHarvested2, "\n")
+    cat("Number of values still missing: ", n.missAreaHarvested2, "\n")
+
     
     ## This is to ensure the data type of the output is identical to
     ## the input data.

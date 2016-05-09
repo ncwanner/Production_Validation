@@ -15,4 +15,5 @@ getFormulaPrefix = function(){
             flagObsPrefix = "flagObservationStatus_measuredElement_",
             flagMethodPrefix = "flagMethod_measuredElement_"
         )
+    formulaPrefix    
 }
