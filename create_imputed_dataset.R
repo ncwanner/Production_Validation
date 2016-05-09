@@ -209,7 +209,8 @@ for(iter in 1:length(selectedItemCode)){
     if(!inherits(imputation, "try-error")){
         message("Imputation module completed successfully")
     } else {
-        stop(paste0("Imputation moduled failed at item ", currentItem))
+        stop(paste0("Imputation moduled failed at item ", currentItem,
+                    " with the following error:\n", imputation[1]))
     }
 }
 
