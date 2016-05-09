@@ -6,3 +6,5 @@ Model
 *.csv
 *.png
 .Rproj.user
+imputation_fit/
+imputation.log
