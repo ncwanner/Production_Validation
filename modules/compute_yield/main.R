@@ -4,10 +4,10 @@
 ########################################################################
 
 suppressMessages({
-    library(data.table)
     library(faosws)
     library(faoswsFlag)
     library(faoswsUtil)
+    library(faoswsProduction)
     library(magrittr)
 })
 

@@ -30,12 +30,11 @@
 
 cat("Beginning impute slaughtered script...\n")
 suppressMessages({
-    library(data.table)
     library(faosws)
     library(faoswsFlag)
     library(faoswsUtil)
     library(faoswsImputation)
-    library(splines)
+    library(faoswsProduction)
     library(magrittr)
     library(dplyr)
 })

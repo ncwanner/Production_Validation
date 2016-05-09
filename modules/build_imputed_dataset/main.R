@@ -4,14 +4,11 @@ suppressMessages({
     library(faoswsUtil)
     library(faoswsFlag)
     library(faoswsImputation)
+    library(faoswsProduction)
     library(magrittr)
     library(dplyr)
-    ## TODO (Michael): The following packages should be removed when the
-    ##                 \pkgs{faoswsProduction} package is ready and the module
-    ##                 no longer depends on sourcing the R/ folder.
-    ##
-    ## library(faoswsProduction)
-    library(data.table)
+    ## TODO (Michael): This package should be removed, some how the
+    ##                 faoswsImputation is not loading it.
     library(splines)
 })
 

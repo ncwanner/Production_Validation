@@ -1,7 +1,7 @@
 suppressMessages({
     library(faosws)
     library(faoswsUtil)
-    library(data.table)
+    library(faoswsProduction)
     library(magrittr)
     library(dplyr)
 })

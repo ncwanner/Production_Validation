@@ -22,9 +22,9 @@
 
 cat("Beginning slaughtered synchronization script...\n")
 suppressMessages({
-    library(data.table)
     library(faosws)
     library(faoswsUtil)
+    library(faoswsProduction)
     library(magrittr)
 })
 
