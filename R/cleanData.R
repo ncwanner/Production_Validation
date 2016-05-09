@@ -1,32 +1,34 @@
 ##' Clean Production Data
-##' 
-##' This function does some basic cleaning of the dataset, such as removing 
+##'
+##' This function does some basic cleaning of the dataset, such as removing
 ##' unneeded columns and checking if there is any missing data to impute.
-##' 
+##'
 ##' @param datasets An object as produced by getProductionData.
-##' @param i The row number of formulaTuples which we are currently working 
-##'   with.  At the time of writing this function, some commodities could have 
-##'   multiple different imputations (biological and indigineous meat is stored 
-##'   under the code for meat).  This is likely to be changed eventually, and 
+##' @param i The row number of formulaTuples which we are currently working
+##'   with.  At the time of writing this function, some commodities could have
+##'   multiple different imputations (biological and indigineous meat is stored
+##'   under the code for meat).  This is likely to be changed eventually, and
 ##'   this argument would then no longer be needed.
-##' @param maxYear The final values in a time series can be blank cells, and this 
+##' @param maxYear The final values in a time series can be blank cells, and this
 ##'   algorithm should provide estimates for such missing values.  As such, this
 ##'   function creates 0Mu values up to the maximum year required.  This maximum
-##'   year is determined by either the maximum of the year variable in datasets 
+##'   year is determined by either the maximum of the year variable in datasets
 ##'   (if this parameter is NULL) or by this parameter.  Note that setting a
 ##'   maximum year that is smaller than the maximum year in the dataset will do
 ##'   nothing.
-##'   
-##' @return No object is returned, but the passed dataset is modified in place 
+##'
+##' @return No object is returned, but the passed dataset is modified in place
 ##'   via data.table.
-##'   
+##'
+##' @export
+##'
 
 cleanData = function(datasets, i, maxYear = NULL,
                      areaVar = "geographicAreaM49",
                      itemVar = "measuredItemCPC",
                      elementVar = "measuredElement",
                      yearVar = "timePointYears"){
-    
+
     codes = datasets$formulaTuples[i, c("input", "productivity",
                                     "output"), with = FALSE]
     allCols = c("measuredItemCPC", "geographicAreaM49", "timePointYears",
@@ -47,9 +49,9 @@ cleanData = function(datasets, i, maxYear = NULL,
        all(is.na(datasets$query[[valueCols[2]]]))){
         warning("No non-missing data!")
     }
-    
+
     ## Some rows may be missing entirely, and thus we may fail to impute
-    ## for those years/countries/commodities if we don't add rows with 
+    ## for those years/countries/commodities if we don't add rows with
     ## missing data.  However, if the last observed value was a 0 we
     ## should assume that commodity has remained 0.  0Mu, or missing,
     ## should not be considered for this adjustment.

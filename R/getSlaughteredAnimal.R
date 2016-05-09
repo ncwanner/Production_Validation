@@ -1,3 +1,12 @@
+##' Function to delete all other elements but only retain elements corresponding
+##' to slaughtered animal
+##'
+##' @param data The dataset
+##' @param formulaTuples The output of \code{getYieldFormula}
+##'
+##' @return A data table where non slaughtered animal elements are removed
+##' @export
+
 getSlaughteredAnimal = function(data, formulaTuples){
     dataCopy = copy(data)
     ## Delete productivity columns

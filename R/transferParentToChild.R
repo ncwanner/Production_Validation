@@ -1,3 +1,15 @@
+##' The function transfer values from parent to child
+##'
+##' @param parentData The data containing the values of the parent
+##' @param commodityTree The commodity tree returned by \code{getCommodityTree}.
+##' @param selectedMeatTable Table of the same format as the output of
+##'     \code{getAnimalMeatMapping}.
+##'
+##' @return A dataset with the codes of children items while values updated from
+##'     parents.
+##' @export
+
+
 transferParentToChild = function(parentData, commodityTree, selectedMeatTable){
     parentDataWithMapping =
         merge(parentData, commodityTree,
@@ -16,7 +28,7 @@ transferParentToChild = function(parentData, commodityTree, selectedMeatTable){
                                  list(NULL, NULL))]
     setnames(parentDataWithMapping, "measuredItemChildCPC", "measuredItemCPC")
 
-    
+
     childElementTable =
         selectedMeatTable[, c("measuredItemChildCPC", "measuredElementChild"),
                           with = FALSE]

@@ -15,7 +15,7 @@ A data.table object containing the dataset of interest.
 }
 \description{
 This function is designed to pull production data from the working system.
-It is essentially a wrapper to the GetData function in faosws, but it 
+It is essentially a wrapper to the GetData function in faosws, but it
 massages the data from that function slightly.
 }
 

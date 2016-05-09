@@ -11,7 +11,7 @@ getUpdatedObs(dataOld, dataNew, key, wideVarName)
 
 \item{dataNew}{The new data.table, in wide format.}
 
-\item{key}{A vector of column names on which dataOld and dataNew should be 
+\item{key}{A vector of column names on which dataOld and dataNew should be
 joined.}
 
 \item{wideVarName}{The name of the "wide" column.  In other words, if we
@@ -19,13 +19,13 @@ have columns with values and flags for each different measuredElement,
 then this parameter should be "measuredElement".}
 }
 \value{
-A data.table with the different observations between dataOld and 
+A data.table with the different observations between dataOld and
   dataNew.
 }
 \description{
-This function takes two data.tables in wide format (i.e. two or three 
-columns for each element code) and finds all observations which have 
-different observations.  The values in dataNew are the values choosen to be 
+This function takes two data.tables in wide format (i.e. two or three
+columns for each element code) and finds all observations which have
+different observations.  The values in dataNew are the values choosen to be
 saved, and these are returned in a narrow format data.table.
 }
 

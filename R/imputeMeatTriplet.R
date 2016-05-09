@@ -1,3 +1,15 @@
+##' This is function performs imputation on the triplet element. However, this
+##' is an implementation from Josh.
+##'
+##' NOTE (Michael); This function should ultimately be removed, it contains a
+##' lot og hacks is unreasonable implementations.
+##'
+##' @param meatKey The Datakey object
+##' @param minObsForEst The minimum number of observation required to keep
+##'     'E'stimated values.
+##' @return Imputed time series
+##' @export
+
 imputeMeatTriplet = function(meatKey, minObsForEst = 5){
     cat("Reading in the data...\n")
     datasets = getProductionData(meatKey)

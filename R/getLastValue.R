@@ -1,12 +1,13 @@
 ##' Get Last Value
-##' 
+##'
 ##' @param d A data.table with columns as described above.
 ##' @param missingObsFlag The observation flag for missing observations.
 ##' @param missingMetFlag The method flag for missing observations.
-##'   
+##'
 ##' @return Nothing is returned, but the passed dataset is filtered to the
 ##'   correct rows.
-##'   
+##'
+##' @export
 
 getLastValue = function(d, missingObsFlag = "M", missingMetFlag = "u"){
     lastVal = copy(d) # Remove the link to passed data.table
@@ -31,7 +32,7 @@ getLastValue = function(d, missingObsFlag = "M", missingMetFlag = "u"){
     valCols = grep("Value_", colnames(d), value = TRUE)
     obsFlagCols = grep("flagObservation", colnames(d), value = TRUE)
     metFlagCols = grep("flagMethod", colnames(d), value = TRUE)
-    
+
     sapply(obsFlagCols, function(colname){
         d[is.na(get(colname)) & stopSeries , c(colname) := "F"]})
     sapply(obsFlagCols, function(colname){

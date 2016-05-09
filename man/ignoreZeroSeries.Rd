@@ -21,12 +21,12 @@ Nothing is returned, but the passed dataset is filtered to the
   correct rows.
 }
 \description{
-This function assumes a data format of three dimension columns 
-(measuredItemCPC, geographicAreaM49, and timePointYears) followed by 9 
-Value/flagObservationStatus/flagMethod columns.  It determines, for each 
-measuredItemCPC and geographicAreaM49 pair, the most recent value (ignoring 
-missing flags).  In case of ties, maximum values are used.  If this most 
-recent value is zero, the series is assumed to have stopped and is removed 
+This function assumes a data format of three dimension columns
+(measuredItemCPC, geographicAreaM49, and timePointYears) followed by 9
+Value/flagObservationStatus/flagMethod columns.  It determines, for each
+measuredItemCPC and geographicAreaM49 pair, the most recent value (ignoring
+missing flags).  In case of ties, maximum values are used.  If this most
+recent value is zero, the series is assumed to have stopped and is removed
 from the imputation process.
 }
 

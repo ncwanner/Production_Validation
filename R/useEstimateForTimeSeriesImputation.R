@@ -13,6 +13,7 @@
 ##'     considered to be imputed.
 ##' @param missFlag The value of the observation flag which
 ##'     corresponds to missing value.
+##' @export
 
 useEstimateForTimeSeriesImputation = function(data,
                                               areaObsFlagVar,

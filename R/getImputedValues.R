@@ -1,3 +1,14 @@
+##' This function extracts the imputation depending on whether estimates are
+##' used
+##'
+##' @param data The imputed dataset
+##' @param useEstimatesTable The table created using the function
+##'     \code{useEstimateForTimeSeriesImputation}.
+##' @param useEstimates logical, whether estimates should be used.
+##'
+##' @export
+##'
+
 getImputedValues = function(data, useEstimatesTable, useEstimates){
     dataCopy = copy(data)
     if(useEstimates){
