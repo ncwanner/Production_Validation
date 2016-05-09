@@ -19,7 +19,7 @@ yieldElements = c(31, 41, 51)
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
-if(!exists("DEBUG_MODE") || DEBUG_MODE == ""){
+if(CheckDebug()){
     cat("Not on server, so setting up environment...\n")
 
     if(Sys.info()[7] == "josh"){ # Josh work
@@ -111,7 +111,7 @@ getYieldData = function(dataContext){
         )
     }
     ## Query the data
-    
+
     list(query = query,
          formulaTuples = formulaTuples,
          prefixTuples = prefixTuples)
@@ -134,9 +134,9 @@ if(allData){
 }
 
 ## Pull data
-## 
+##
 ## Create "yearList" to loop over.  If this module is being run on a session, we
-## shouldn't loop over year.  In that case, yearList will just be an list of 
+## shouldn't loop over year.  In that case, yearList will just be an list of
 ## length one, and so the loop will be ran once.  Otherwise, yearList will be a
 ## list of all the individual years, and so the loop will run over each year
 ## individually.
@@ -147,8 +147,8 @@ if(allData){
 }
 
 queryResult = c()
-## FOR LOOP!  This isn't going to cause much of a performance issue since we're 
-## not looping through a ton of items (only at most 50 or 60) and we're not 
+## FOR LOOP!  This isn't going to cause much of a performance issue since we're
+## not looping through a ton of items (only at most 50 or 60) and we're not
 ## using those items to access different chunks of a data.frame.
 for(years in yearList){
     swsContext.datasets[[1]]@dimensions$timePointYears@keys = years
@@ -165,25 +165,25 @@ for(years in yearList){
     for(i in 1:nrow(uniqueLevels)){
         test = try({
             filter = uniqueLevels[i, ]
-            
+
             ## Get all the CPC codes we need by merging the specific
             ## production/output/input codes with the dataset.
             currentCPC = merge(formulaTuples, filter,
                                by = c("input", "productivity", "output",
                                       "unitConversion"))[, measuredItemCPC]
-            
+
             ## Filter the context to just the revelant item/element keys
             swsContext.datasets[[1]]@dimensions$measuredElement@keys =
                 as.character(filter[, list(input, output, productivity)])
             swsContext.datasets[[1]]@dimensions$measuredItemCPC@keys =
                 currentCPC
             data = getYieldData(swsContext.datasets[[1]])
-            
+
             processingParams = defaultProcessingParameters(
                 productionValue = filter[, output],
                 yieldValue = filter[, productivity],
                 areaHarvestedValue = filter[, input])
-            
+
             computeYield(data = data$query,
                          processingParameters = processingParams,
                          unitConversion = filter$unitConversion)
@@ -202,7 +202,7 @@ for(years in yearList){
                                           "dimensions")$measuredItemCPC,
                                      "keys"))
             formulaPrefix = getFormulaPrefix()
-            
+
             formulaTable =
                 constructFormulaTable(productionFormula, formulaPrefix)
 
