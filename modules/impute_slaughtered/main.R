@@ -39,9 +39,6 @@ suppressMessages({
     library(dplyr)
 })
 
-minObsForEst = 5
-yearsModeled = 20
-
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 
@@ -63,18 +60,20 @@ if(CheckDebug()){
 
 }
 
-## Just testing 1 item
-## swsContext.datasets[[1]]@dimensions[[measuredItemCPC]]@keys = "21111.01" ## meat of cattle
-## swsContext.datasets[[1]]@dimensions[[measuredItemCPC]]@keys = "21113.01" ## meat of pig
-
 startTime = Sys.time()
 
 message("Loading preliminary data...\n")
-firstYear = as.numeric(swsContext.computationParams$firstYear)
-lastYear = as.numeric(swsContext.computationParams$lastYear)
-firstDataYear = lastYear - yearsModeled + 1
-stopifnot(firstDataYear <= firstYear)
-stopifnot(firstYear <= lastYear)
+
+## NOTE (Michael): The imputation and all modules should now have a base year of
+##                 1999, this is the result of a discussion with Pietro.
+defaultYear = 1999
+imputationYears =
+    GetCodeList(domain = "agriculture",
+                dataset = "aproduction",
+                dimension = "timePointYears") %>%
+    filter(description != "wildcard" & as.numeric(code) >= defaultYear) %>%
+    select(code) %>%
+    unlist(use.names = FALSE)
 
 selectedMeatTable =
     getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
@@ -98,7 +97,7 @@ newKey =
 
 ## Adjust the years based on the passed information:
 newKey@dimensions[["timePointYears"]]@keys =
-    as.character(firstDataYear:lastYear)
+    as.character(imputationYears)
 
 ## Include all countries, since all data is required for the imputation
 countryCodes = GetCodeList("agriculture", "aproduction", "geographicAreaM49")
@@ -206,10 +205,6 @@ if(!is.null(result)){
         ##                 number is saved back to the animal commdotiy.
         SaveData(domain = "agriculture", dataset = "aproduction",
                  data = .)
-
-    ## if(!inherits(moduleTest3, "try-error"))
-    ##     saveResult = SaveData(domain = "agriculture", dataset = "aproduction",
-    ##                           data = data)
 }
 
 message = paste("Module completed with", successCount,
