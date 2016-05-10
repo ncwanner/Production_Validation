@@ -4,77 +4,41 @@ suppressMessages({
     library(faoswsUtil)
     library(faoswsFlag)
     library(faoswsImputation)
+    library(faoswsProduction)
     library(magrittr)
     library(dplyr)
-    ## TODO (Michael): The following packages should be removed when the
-    ##                 \pkgs{faoswsProduction} package is ready and the module
-    ##                 no longer depends on sourcing the R/ folder.
-    ##
-    ## library(faoswsProduction)
-    library(data.table)
+    ## TODO (Michael): This package should be removed, some how the
+    ##                 faoswsImputation is not loading it.
     library(splines)
 })
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
-server = "QA"
 
+## This return FALSE if on the Statistical Working System
 if(CheckDebug()){
-    cat("Not on server, so setting up environment...\n")
 
-    stopifnot(server %in% c("QA", "Prod"))
-    ## Define directories
-    if(Sys.info()[7] == "josh"){
-        apiDirectory = "~/Documents/Github/faoswsProduction/R/"
-        R_SWS_SHARE_PATH = ifelse(server == "Prod", "/media/hqlprsws2_prod/",
-                                  "/media/hqlprsws1_qa/")
-        SetClientFiles(dir = ifelse(server == "Prod",
-                                    "~/R certificate files/Production/",
-                                    "~/R certificate files/QA/"))
-        ## Get SWS Parameters
-        SetClientFiles(dir = ifelse(server == "Prod",
-                                    "~/R certificate files/Production/",
-                                    "~/R certificate files/QA/"))
-    } else if(Sys.info()[7] == "rockc_000"){
-        apiDirectory = "~/Github/faoswsProduction/R/"
-        stop("Can't connect to share drives!")
-    } else if(Sys.info()[7] == "mk"){
-        apiDirectory = "R/"
-        R_SWS_SHARE_PATH = ifelse(server == "Prod",
-                                  "/media/sws_prod_shared_drive/",
-                                  "/media/sws_qa_shared_drive/")
-        SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod/", "~/.R/qa/"))
-        savePath = "imputation_fit/"
-    } else if(Sys.info()[7] == "kao"){
-        apiDirectory = "R/"
-        R_SWS_SHARE_PATH = ifelse(server == "Prod",
-                                  "/media/sws_prod_shared_drive/",
-                                  "/media/sws_qa_shared_drive/")
-        SetClientFiles(dir = ifelse(server == "Prod", "~/.R/prod/", "~/.R/qa/"))
-        savePath = "imputation_fit/"
-    }
+    library(faoswsModules)
+    SETTINGS = ReadSettings("sws.yml")
 
+    ## If you're not on the system, your settings will overwrite any others
+    R_SWS_SHARE_PATH = SETTINGS[["share"]]
 
-    ## Get SWS Parameters
+    ## Define where your certificates are stored
+    SetClientFiles(SETTINGS[["certdir"]])
 
-    if(server == "Prod"){
-        GetTestEnvironment(
-            baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-            token = "ad797167-20aa-4ff4-b679-461c96e0da79"
-        )
-    } else {
-        GetTestEnvironment(
-            baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-            token = "5eed31f5-2318-470e-a884-c30c3db6d3db"
-        )
-    }
+    ## Get session information from SWS. Token must be obtained from web interface
+    GetTestEnvironment(baseUrl = SETTINGS[["server"]],
+                       token = SETTINGS[["token"]])
 
-    ## Source local scripts for this local test
-    for(file in dir(apiDirectory, full.names = T))
-        source(file)
+    savePath = SETTINGS[["save_imputation_path"]]
 
 }
+
+## Get user specified imputation selection
+imputationSelection = swsContext.computationParams$imputation_selection
+
 
 ## NOTE (Michael): The imputation and all modules should now have a base year of
 ##                 1999, this is the result of a discussion with Pietro.
@@ -87,11 +51,31 @@ imputationYears =
     select(code) %>%
     unlist(use.names = FALSE)
 
-## Get the required Datakey
+## Get the full imputation Datakey
 completeImputationKey = getMainKey(years = imputationYears)
-selectedItemCode = completeImputationKey@dimensions[["measuredItemCPC"]]@keys
 
-for(iter in 1:length(selectedItemCode)){
+## This is the complete list of items that are in the imputation list
+completeImputationItems =
+    completeImputationKey@dimensions[["measuredItemCPC"]]@keys
+## These are the items selected by the users
+sessionItems =
+    swsContext.datasets[[1]]@dimensions[["measuredItemCPC"]]@keys
+## This returns the list of items current does not have an imputed dataset.
+missingItems =
+    completeImputationItems[!imputationExist(savePath, completeImputationItems)]
+
+## Select the item list based on user input parameter
+if(!imputationSelection %in% c("session", "all", "missing_items"))
+    stop("Incorrect imputation selection specified")
+
+selectedItemCode =
+    switch(imputationSelection,
+           session = sessionItems,
+           all = completeImputationItems,
+           missing_items = missingItems)
+
+
+for(iter in seq(selectedItemCode)){
     currentItem = selectedItemCode[iter]
     subKey = completeImputationKey
     subKey@dimensions$measuredItemCPC@keys = currentItem

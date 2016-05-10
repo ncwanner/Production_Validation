@@ -3,11 +3,13 @@
 ## Author: Josh Browning
 ########################################################################
 
-library(data.table)
-library(faosws)
-library(faoswsFlag)
-library(faoswsUtil)
-library(magrittr)
+suppressMessages({
+    library(faosws)
+    library(faoswsFlag)
+    library(faoswsUtil)
+    library(faoswsProduction)
+    library(magrittr)
+})
 
 areaVar = "geographicAreaM49"
 yearVar = "timePointYears"
@@ -19,40 +21,23 @@ yieldElements = c(31, 41, 51)
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 DEBUG_MODE = Sys.getenv("R_DEBUG_MODE")
 
+## This return FALSE if on the Statistical Working System
 if(CheckDebug()){
-    cat("Not on server, so setting up environment...\n")
 
-    if(Sys.info()[7] == "josh"){ # Josh work
-        files = dir("~/Documents/Github/faoswsProduction/R/",
-                    full.names = TRUE)
-        SetClientFiles("~/R certificate files/Production/")
-    } else if(Sys.info()[7] == "rockc_000"){ # Josh personal
-        files = dir("~/Github/faoswsProduction/R/", full.names = TRUE)
-    } else if(Sys.info()[7] == "mk"){
-        files = dir("R/", full.names = TRUE)
-        SetClientFiles("~/.R/prod")
-    } else {
-        stop("Add your github directory here!")
-    }
+    library(faoswsModules)
+    SETTINGS = ReadSettings("sws.yml")
 
-    ## Get SWS Parameters
-    GetTestEnvironment(
-        baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-        token = "916b73ad-2ef5-4141-b1c4-769c73247edd"
-        ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-        ## token = "feed1154-6590-4ea9-9e6e-2c81f960d0dd"
-    )
-    sapply(files, source)
-} else {
-    cat("Working on SWS...\n")
+    ## If you're not on the system, your settings will overwrite any others
+    R_SWS_SHARE_PATH = SETTINGS[["share"]]
+
+    ## Define where your certificates are stored
+    SetClientFiles(SETTINGS[["certdir"]])
+
+    ## Get session information from SWS. Token must be obtained from web interface
+    GetTestEnvironment(baseUrl = SETTINGS[["server"]],
+                       token = SETTINGS[["token"]])
+
 }
-
-
-
-
-
-
-
 
 startTime = Sys.time()
 

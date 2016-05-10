@@ -1,21 +1,21 @@
 ##' Get Updated Observations
-##' 
-##' This function takes two data.tables in wide format (i.e. two or three 
-##' columns for each element code) and finds all observations which have 
-##' different observations.  The values in dataNew are the values choosen to be 
+##'
+##' This function takes two data.tables in wide format (i.e. two or three
+##' columns for each element code) and finds all observations which have
+##' different observations.  The values in dataNew are the values choosen to be
 ##' saved, and these are returned in a narrow format data.table.
-##' 
+##'
 ##' @param dataOld The original data.table, in wide format.
 ##' @param dataNew The new data.table, in wide format.
-##' @param key A vector of column names on which dataOld and dataNew should be 
+##' @param key A vector of column names on which dataOld and dataNew should be
 ##'   joined.
 ##' @param wideVarName The name of the "wide" column.  In other words, if we
 ##'   have columns with values and flags for each different measuredElement,
 ##'   then this parameter should be "measuredElement".
-##'   
-##' @return A data.table with the different observations between dataOld and 
+##'
+##' @return A data.table with the different observations between dataOld and
 ##'   dataNew.
-##'   
+##' @export
 
 getUpdatedObs = function(dataOld, dataNew, key, wideVarName){
     compare = merge(dataOld, dataNew, all = TRUE, by = key,

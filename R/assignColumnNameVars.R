@@ -1,14 +1,15 @@
 ##' Assign Column Name Variables
-##' 
+##'
 ##' This function acts as a helper function by assigning the column names to the
 ##' global environment.  This makes code much easier to read as it avoids the
 ##' use of continual get() statements within data.table.
-##' 
+##'
 ##' @param prefixTuples See the return object from getProductionData.
 ##' @param formulaTuples See the return object from getProductionData.
-##'   
+##'
 ##' @return No value is returned, but many global variables are assigned.
-##'   
+##'
+##' @export
 
 assignColumnNameVars = function(prefixTuples, formulaTuples){
     assign("productionValue",

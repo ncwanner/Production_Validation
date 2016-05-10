@@ -1,15 +1,15 @@
 ##' Get Imputation Parameters
-##' 
-##' This function contains the logic that we'll use to define the imputation 
+##'
+##' This function contains the logic that we'll use to define the imputation
 ##' models and their parameters.
-##' 
-##' @param datasets The object being imputed on, typically created by 
+##'
+##' @param datasets The object being imputed on, typically created by
 ##'   getProductionData.
 ##' @param i The row number of formulaTuples.  This allows R to produce the
 ##'   correct formula tuple/yield codes, and is typically 1.
-##'   
+##'
 ##' @return A list with the yield and production imputation parameters.
-##'   
+##' @export
 
 getImputationParameters = function(datasets, i = 1,
                                    areaVar = "geographicAreaM49",
@@ -19,7 +19,7 @@ getImputationParameters = function(datasets, i = 1,
 
     ## Impute yield
     yieldCode = datasets$formulaTuples[, productivity][i]
-    yieldParams = 
+    yieldParams =
         defaultImputationParameters(variable = as.numeric(yieldCode))
     ## Change the model formula to use a hierarchical mixed model.  The
     ## code to do this is a bit messy because we have to adjust the
@@ -39,7 +39,7 @@ getImputationParameters = function(datasets, i = 1,
         "defaultMovingAverage"
     ## Impute production
     productionCode = datasets$formulaTuples[, output][i]
-    productionParams = 
+    productionParams =
         defaultImputationParameters(variable = as.numeric(productionCode))
     productionParams$estimateNoData = TRUE
     productionParams$byKey = c(areaVar, itemVar)
@@ -52,7 +52,7 @@ getImputationParameters = function(datasets, i = 1,
 
     ## Impute area harvested
     areaHarvestedCode = datasets$formulaTuples[, input][i]
-    areaHarvestedParams = 
+    areaHarvestedParams =
         defaultImputationParameters(variable = as.numeric(areaHarvestedCode))
     areaHarvestedParams$estimateNoData = TRUE
     areaHarvestedParams$byKey = c(areaVar, itemVar)

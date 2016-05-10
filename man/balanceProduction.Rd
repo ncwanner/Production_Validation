@@ -4,24 +4,22 @@
 \alias{balanceProduction}
 \title{Function to compute production when new area harvested and yield are given.}
 \usage{
-balanceProduction(data, processingParameters, newObservationFlag = "I",
-  newMethodFlag = "i", unitConversion = 1)
+balanceProduction(data, processingParameters, newMethodFlag = "i",
+  unitConversion = 1)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
 
-\item{processingParameters}{A list of the parameters for the production 
-processing algorithms.  See defaultProcessingParameters() for a starting 
-point.}
-
-\item{newObservationFlag}{The flag which should be placed for computed
-observations as the observation flag.}
+\item{processingParameters}{A list of the parameters for the
+production processing algorithms.  See
+\code{defaultProcessingParameters} for a starting point.}
 
 \item{newMethodFlag}{The flag which should be placed for computed
 observations as the method flag.}
 
-\item{unitConversion}{Yield is computed as (production) / (area) and 
-multiplied by unitConversion.  This parameter defaults to 1.}
+\item{unitConversion}{Yield is computed as (production) / (area)
+and multiplied by unitConversion.  This parameter defaults to
+1.}
 }
 \description{
 Function to compute production when new area harvested and yield are given.

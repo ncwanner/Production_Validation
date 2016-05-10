@@ -1,65 +1,34 @@
 suppressMessages({
     library(faosws)
     library(faoswsUtil)
-    library(data.table)
+    library(faoswsProduction)
     library(magrittr)
     library(dplyr)
 })
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-server = "QA"
+modelLoadingPath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
 
+## This return FALSE if on the Statistical Working System
 if(CheckDebug()){
-    cat("Not on server, so setting up environment...\n")
-    if(server == "Prod"){
-        ## Define directories
-        if(Sys.info()[7] == "josh"){
-            apiDirectory = "~/Documents/Github/faoswsProduction/R/"
-            R_SWS_SHARE_PATH = "/media/hqlprsws2_prod/"
-            ## R_SWS_SHARE_PATH = "/media/hqlprsws2_prod"
-            SetClientFiles(dir = "~/R certificate files/Production/")
-        } else if(Sys.info()[7] == "rockc_000"){
-            apiDirectory = "~/Github/faoswsProduction/R/"
-            stop("Can't connect to share drives!")
-        } else if(Sys.info()[7] == "mk"){
-            apiDirectory = "R/"
-            R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
-            SetClientFiles(dir = "~/.R/prod")
-        } else if(Sys.info()[7] == "kao"){
-            apiDirectory = "R/"
-            R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
-            SetClientFiles(dir = "~/.R/prod")
-        }
-        ## Get SWS Parameters
-        GetTestEnvironment(
-            baseUrl = "https://hqlprswsas1.hq.un.fao.org:8181/sws",
-            token = "e518d5c0-7316-4f21-9f6f-4d2aa666c0c2"
-            ## baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-            ## token = "b55f4ae3-5a0c-4514-b89e-d040112bf25e"
-        )
-    } else if(server == "QA"){
-        if(Sys.info()["user"] == "mk"){
-            SetClientFiles("~/.R/qa/")
-            R_SWS_SHARE_PATH = "/media/sws_qa_shared_drive"
-            apiDirectory = "R/"
-        }
-        GetTestEnvironment(
-            baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
-            ## token = "f8646896-2ed2-4e88-9cd2-9db6d735991f"
-            ## New Token for all the meats
-            token = "732603a1-f4ea-40d8-8858-b31e41b0092c"
-        )
-    } else {
-        stop("Please specify a valid server name")
-    }
-    ## Source local scripts for this local test
-    for(file in dir(apiDirectory, full.names = T))
-        source(file)
+
+    library(faoswsModules)
+    SETTINGS = ReadSettings("sws.yml")
+
+    ## If you're not on the system, your settings will overwrite any others
+    R_SWS_SHARE_PATH = SETTINGS[["share"]]
+
+    ## Define where your certificates are stored
+    SetClientFiles(SETTINGS[["certdir"]])
+
+    ## Get session information from SWS. Token must be obtained from web interface
+    GetTestEnvironment(baseUrl = SETTINGS[["server"]],
+                       token = SETTINGS[["token"]])
+    modelLoadingPath = SETTINGS[["load_imputation_path"]]
 }
 
 
-modelLoadingPath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
 selectedKey = swsContext.datasets[[1]]
 
 

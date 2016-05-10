@@ -4,7 +4,8 @@
 \alias{imputeProductionDomain}
 \title{This function imputes the whole production domain.}
 \usage{
-imputeProductionDomain(data, processingParameters, yieldImputationParameters,
+imputeProductionDomain(data, processingParameters,
+  areaHarvestedImputationParameters, yieldImputationParameters,
   productionImputationParameters, unitConversion)
 }
 \arguments{

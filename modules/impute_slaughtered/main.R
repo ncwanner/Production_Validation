@@ -1,18 +1,18 @@
-## ########################################################################### 
+## ###########################################################################
 ## Title: Impute Slaughtered Module for SWS
-## 
+##
 ## Author: Josh Browning
-## 
-## The animals slaughtered for production of meat, offals, fats and hides must 
-## be available before running the production imputation code.  These numbers, 
+##
+## The animals slaughtered for production of meat, offals, fats and hides must
+## be available before running the production imputation code.  These numbers,
 ## however, are not guaranteed to be available, and in the case of missing data,
 ## an imputation method must be applied.  The decision was to use the production
 ## figures of meat, if available, to compute the missing animals slaughtered. If
-## these figures are also missing, they should be imputed using the production 
-## imputation methodology.  Of course, in the case of currently available data 
-## in the animal element, that data should be transferred to the quantity of 
+## these figures are also missing, they should be imputed using the production
+## imputation methodology.  Of course, in the case of currently available data
+## in the animal element, that data should be transferred to the quantity of
 ## animals slaughtered for meat and then the imputation ran.  We also decided to
-## save the imputations for meat so as to retain consistency with the animal 
+## save the imputations for meat so as to retain consistency with the animal
 ## figures.
 ##
 ## The steps are as follows:
@@ -30,72 +30,37 @@
 
 cat("Beginning impute slaughtered script...\n")
 suppressMessages({
-    library(data.table)
     library(faosws)
     library(faoswsFlag)
     library(faoswsUtil)
     library(faoswsImputation)
-    library(splines)
+    library(faoswsProduction)
     library(magrittr)
     library(dplyr)
 })
 
 minObsForEst = 5
 yearsModeled = 20
-## server is only used for debug sessions:
-## server = "Prod"
-server = "QA"
 
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 
+## This return FALSE if on the Statistical Working System
 if(CheckDebug()){
-    cat("Not on server, so setting up environment...\n")
 
-    if(Sys.info()[7] == "josh"){ # Josh work
-        files = dir("~/Documents/Github/faoswsProduction/R/",
-                    full.names = TRUE)
-        if(server == "Prod"){
-            SetClientFiles("~/R certificate files/Production/")
-            R_SWS_SHARE_PATH = "/media/hqlprsws2_prod/"
-            url = "https://hqlprswsas1.hq.un.fao.org:8181/sws"
-        } else {
-            SetClientFiles("~/R certificate files/QA/")
-            R_SWS_SHARE_PATH = "/media/hqlprsws1_qa/"
-            url = "https://hqlqasws1.hq.un.fao.org:8181/sws"
-        }
-    } else if(Sys.info()[7] == "mk"){ # Josh work
-        files = dir("R/", full.names = TRUE)
-        if(server == "Prod"){
-            SetClientFiles("~/.R/prod/")
-            R_SWS_SHARE_PATH = "/media/sws_prod_shared_drive/"
-            url = "https://hqlprswsas1.hq.un.fao.org:8181/sws"
-        } else {
-            SetClientFiles("~/.R/qa/")
-            R_SWS_SHARE_PATH = "/media/sws_qa_shared_drive/"
-            url = "https://hqlqasws1.hq.un.fao.org:8181/sws"
-        }
-    } else {
-        stop("Add your github directory here!")
-    }
+    library(faoswsModules)
+    SETTINGS = ReadSettings("sws.yml")
 
-    ## Get SWS Parameters
-    if(server == "Prod"){
-        GetTestEnvironment(
-            baseUrl = url,
-            token = "2620c6fd-05b2-48ef-b348-61097ed539b6"
-        )
-    } else if(server == "QA"){
-        GetTestEnvironment(
-            baseUrl = url,
-            ## token = "f8646896-2ed2-4e88-9cd2-9db6d735991f"
-            ## New Token for all the meats
-            token = "4fe1052b-bfb0-45fa-b9ec-2dda5a1b9421"
-        )
-    }
-    sapply(files, source)
-} else {
-    cat("Working on SWS...\n")
+    ## If you're not on the system, your settings will overwrite any others
+    R_SWS_SHARE_PATH = SETTINGS[["share"]]
+
+    ## Define where your certificates are stored
+    SetClientFiles(SETTINGS[["certdir"]])
+
+    ## Get session information from SWS. Token must be obtained from web interface
+    GetTestEnvironment(baseUrl = SETTINGS[["server"]],
+                       token = SETTINGS[["token"]])
+
 }
 
 ## Just testing 1 item
@@ -129,7 +94,7 @@ selectedMeatTable =
 ## Expand the session to include missing meats
 newKey =
     expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
-                               selectedMeatTable = selectedMeatTable) 
+                               selectedMeatTable = selectedMeatTable)
 
 ## Adjust the years based on the passed information:
 newKey@dimensions[["timePointYears"]]@keys =
@@ -143,7 +108,7 @@ newKey@dimensions[["geographicAreaM49"]]@keys =
 ## Execute the get data call.
 cat("Pulling the data...\n")
 
-step1Data = 
+step1Data =
     newKey %>%
     GetData(key = .) %>%
     preProcessing(data = .) %>%
@@ -225,7 +190,7 @@ if(!is.null(result)){
         transferSlaughteredNumber(preUpdatedData = .,
                                   imputationResult = result,
                                   selectedMeatTable = selectedMeatTable) %>%
-        ## Post process the data 
+        ## Post process the data
         postProcessing(data = .) %>%
         ## Module Testing before saving the data back to the database
         checkTimeSeriesImputed(dataToBeSaved = .,
@@ -236,7 +201,7 @@ if(!is.null(result)){
         ## Step 4. Save all three variables for meat (production/animals
         ##         slaughterd/carcass weight) and the animals slaughtered
         ##         for the animal.
-        ## 
+        ##
         ## Note (Michael): The above comment is incorrect, only the animal
         ##                 number is saved back to the animal commdotiy.
         SaveData(domain = "agriculture", dataset = "aproduction",

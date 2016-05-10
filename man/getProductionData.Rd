@@ -4,8 +4,8 @@
 \alias{getProductionData}
 \title{Get Production Data}
 \usage{
-getProductionData(dataContext, itemVar = "measuredItemCPC",
-  areaVar = "geographicAreaM49", elementVar = "measuredElement",
+getProductionData(dataContext, areaVar = "geographicAreaM49",
+  itemVar = "measuredItemCPC", elementVar = "measuredElement",
   yearVar = "timePointYears")
 }
 \arguments{
@@ -13,9 +13,9 @@ getProductionData(dataContext, itemVar = "measuredItemCPC",
 parameter provides the configuration of the dataset (i.e. which countries,
 commodities, etc.).}
 
-\item{itemVar}{The column name of the commodity code column.}
-
 \item{areaVar}{The column name of the country code column.}
+
+\item{itemVar}{The column name of the commodity code column.}
 
 \item{elementVar}{The column name of the element code column.}
 

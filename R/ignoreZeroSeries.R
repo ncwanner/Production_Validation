@@ -1,21 +1,22 @@
 ##' Ignore Zero Series
-##' 
-##' This function assumes a data format of three dimension columns 
-##' (measuredItemCPC, geographicAreaM49, and timePointYears) followed by 9 
-##' Value/flagObservationStatus/flagMethod columns.  It determines, for each 
-##' measuredItemCPC and geographicAreaM49 pair, the most recent value (ignoring 
-##' missing flags).  In case of ties, maximum values are used.  If this most 
-##' recent value is zero, the series is assumed to have stopped and is removed 
+##'
+##' This function assumes a data format of three dimension columns
+##' (measuredItemCPC, geographicAreaM49, and timePointYears) followed by 9
+##' Value/flagObservationStatus/flagMethod columns.  It determines, for each
+##' measuredItemCPC and geographicAreaM49 pair, the most recent value (ignoring
+##' missing flags).  In case of ties, maximum values are used.  If this most
+##' recent value is zero, the series is assumed to have stopped and is removed
 ##' from the imputation process.
-##' 
+##'
 ##' @param d A data.table with columns as described above.
 ##' @param missingObsFlag The observation flag for missing observations.
 ##' @param missingMetFlag The method flag for missing observations.
 ##' @param firstImputeYear What is the first year for the imputation?
-##'   
+##'
 ##' @return Nothing is returned, but the passed dataset is filtered to the
 ##'   correct rows.
-##'   
+##'
+##' @export
 
 ignoreZeroSeries = function(d, missingObsFlag = "M", missingMetFlag = "u",
                             firstImputeYear = 2010){
@@ -45,7 +46,7 @@ ignoreZeroSeries = function(d, missingObsFlag = "M", missingMetFlag = "u",
         obsFlagCols = grep("flagObservation", colnames(d), value = TRUE)
         metFlagCols = grep("flagMethod", colnames(d), value = TRUE)
         postfix = gsub("Value", "", valCols)
-        
+
         ## If any value is 0M-, stop the series
         filter = lapply(postfix, function(code){
             d[, (is.na(get(paste0("Value", code))) |
@@ -56,7 +57,7 @@ ignoreZeroSeries = function(d, missingObsFlag = "M", missingMetFlag = "u",
         ## May be a better way to do this:
         filter = apply(do.call("cbind", filter), 1, any)
         d[, stopSeries := stopSeries | filter]
-        
+
         sapply(postfix, function(p){
             d[(stopSeries),
               c(paste0(c("Value", "flagObservationStatus", "flagMethod"), p)) :=

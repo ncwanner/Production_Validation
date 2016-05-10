@@ -10,8 +10,8 @@ processProductionDomain(data, processingParameters)
 \arguments{
 \item{data}{The data}
 
-\item{processingParameters}{A list of the parameters for the production 
-processing algorithms.  See defaultProductionParameters() for a starting 
+\item{processingParameters}{A list of the parameters for the production
+processing algorithms.  See defaultProductionParameters() for a starting
 point.}
 }
 \value{
