@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ##' Check whether the imputation model exist
 ##'
 ##' @param modelLoadingPath The path to where imputed datasets are placed.

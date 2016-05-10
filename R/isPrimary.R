@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ##' This function tests whether a commodity is a primary item.
 ##'
 ##' HACK (Michael): This is a hack from Josh, a list should be provided.
