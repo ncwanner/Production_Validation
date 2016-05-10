@@ -62,7 +62,7 @@ sessionItems =
     swsContext.datasets[[1]]@dimensions[["measuredItemCPC"]]@keys
 ## This returns the list of items current does not have an imputed dataset.
 missingItems =
-    completeImputationItems[imputationExist(savePath, completeImputationItems)]
+    completeImputationItems[!imputationExist(savePath, completeImputationItems)]
 
 ## Select the item list based on user input parameter
 if(!imputationSelection %in% c("session", "all", "missing_items"))
