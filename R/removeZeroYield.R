@@ -15,9 +15,13 @@
 
 removeZeroYield = function(data, yieldValue, yieldObsFlag, yieldMethodFlag){
     dataCopy = copy(data)
-    dataCopy[get(yieldValue) == 0,
-             `:=`(c(yieldValue, yieldObsFlag, yieldMethodFlag),
-                  list(NA, "M", "u"))]
+    if(all(c(yieldValue, yieldObsFlag, yieldMethodFlag) %in% colnames(dataCopy))){
+        dataCopy[get(yieldValue) == 0,
+                 `:=`(c(yieldValue, yieldObsFlag, yieldMethodFlag),
+                      list(NA, "M", "u"))]
+    } else {
+        warning("Yield column is not present")
+    }
     dataCopy
 }
 
