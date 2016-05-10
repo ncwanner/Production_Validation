@@ -5,13 +5,11 @@ library(faoswsProduction)
 source("buildTestDataset.R")
 
 test_data_rep = copy(test_data)
-newObservationFlag = "I"
 newMethodFlag = "i"
 unitConversion = 1
 
 balanceAreaHarvested(data = test_data_rep,
                      processingParameters = param,
-                     newObservationFlag = newObservationFlag,
                      newMethodFlag = newMethodFlag,
                      unitConversion = unitConversion)
 
@@ -46,10 +44,6 @@ test_that("Function performs calculation correctly", {
     expect_equal(modifiedData[[param$areaHarvestedValue]] *
                  modifiedData[[param$yieldValue]] * unitConversion,
                  modifiedData[[param$productionValue]])
-
-    ## Check all observation flags are updated
-    expect_true(all(modifiedData[[param$areaHarvestedObservationFlag]] ==
-                    newObservationFlag))
 
     ## Check all method flags are updated
     expect_true(all(modifiedData[[param$areaHarvestedMethodFlag]] ==

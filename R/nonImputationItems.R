@@ -4,7 +4,7 @@
 ##' The purpose of the function to capture and give warning when items are being
 ##' selected in the session, but not included in the imputation list.
 ##'
-##' @param selected Datakey of the current session.
+##' @param selectedKey Datakey of the current session.
 ##' @param imputationKey The object returned by the function
 ##'     \code{getImputationKey}
 ##'

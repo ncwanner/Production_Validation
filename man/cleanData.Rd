@@ -24,6 +24,14 @@ year is determined by either the maximum of the year variable in datasets
 (if this parameter is NULL) or by this parameter.  Note that setting a
 maximum year that is smaller than the maximum year in the dataset will do
 nothing.}
+
+\item{areaVar}{The column name corresponding to the geographic area.}
+
+\item{itemVar}{The column name corresponding to the commodity item.}
+
+\item{elementVar}{The column name corresponding to the measured element.}
+
+\item{yearVar}{The column name corresponding to the time dimension.}
 }
 \value{
 No object is returned, but the passed dataset is modified in place

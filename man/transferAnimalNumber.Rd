@@ -6,16 +6,23 @@
 commodity (e.g. cattle) to the animal slaughtered element of the
 child commodity (e.g. cattle meat).}
 \usage{
-transferAnimalNumber(data, selectedMeat, areaVar = "geographicAreaM49",
+transferAnimalNumber(data, selectedMeatTable, areaVar = "geographicAreaM49",
   itemVar = "measuredItemCPC", elementVar = "measuredElement",
   yearVar = "timePointYears")
 }
 \arguments{
 \item{data}{A data.table object containing the data.}
 
-\item{selectedMeat}{The data table of the same format returned by
-the function \code{getAnimalMeatMapping}, but containing the
-meat selection required.}
+\item{selectedMeatTable}{animalMeatMapping The mapping returned by the
+\code{getAnimalMeatMapping}}
+
+\item{areaVar}{The column name corresponding to the geographic area.}
+
+\item{itemVar}{The column name corresponding to the commodity item.}
+
+\item{elementVar}{The column name corresponding to the measured element.}
+
+\item{yearVar}{The column name corresponding to the time dimension}
 }
 \value{
 A data.table object of the same dimension but with the

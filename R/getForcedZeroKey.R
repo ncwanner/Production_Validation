@@ -6,7 +6,7 @@
 ##' in this case.
 ##'
 ##' @param data The data.table object containing the data.
-##' @param processingParameters A list of the parameters for the
+##' @param processingParams A list of the parameters for the
 ##'     production processing algorithms. See
 ##'     \code{defaultProcessingParameters} for a starting point.
 ##' @param productionParams The production imputation parameter

@@ -1,28 +1,31 @@
 ##' This function imputes the whole production domain.
-##' 
+##'
 ##' The function will impute production, area harvested and yield at the same
 ##' time.
-##' 
+##'
 ##' Transformation in the yield formula is not allowed and will not be taken
 ##' into account.
-##' 
+##'
 ##' @param data The data
-##' @param processingParameters A list of the parameters for the production 
-##'   processing algorithms.  See defaultProductionParameters() for a starting 
-##'   point.
+##' @param processingParameters A list of the parameters for the production
+##'     processing algorithms. See defaultProductionParameters() for a starting
+##'     point.
 ##' @param yieldImputationParameters A list of the parameters for the yield
-##'   imputation.  See defaultImputationParameters() for a starting point.
-##' @param productionImputationParameters A list of the parameters for the 
-##'   production imputation.  See defaultImputationParameters() for a starting 
-##'   point.
+##'     imputation. See defaultImputationParameters() for a starting point.
+##' @param productionImputationParameters A list of the parameters for the
+##'     production imputation. See defaultImputationParameters() for a starting
+##'     point.
+##' @param areaHarvestedImputationParameters A list of the parameters for the
+##'     area harvested imputation. See defaultImputationParameters() for a
+##'     starting point.
 ##' @param unitConversion The multiplicative factor used for the particular
-##'   commodity in calculating the yield.
-##'   
+##'     commodity in calculating the yield.
+##'
 ##' @export
-##' 
+##'
 ##' @import faoswsImputation
 ##' @import data.table
-##' 
+##'
 
 imputeProductionDomain = function(data,
                                   processingParameters,
@@ -47,7 +50,7 @@ imputeProductionDomain = function(data,
     dataCopy = processProductionDomain(data = dataCopy,
                                        processingParameters = processingParameters)
 
-    
+
     computeYield(dataCopy, newMethodFlag = "i",
                  processingParameters = processingParameters,
                  unitConversion = unitConversion)
@@ -58,7 +61,7 @@ imputeProductionDomain = function(data,
     allYieldMissing = all(is.na(dataCopy[[processingParameters$yieldValue]]))
     allProductionMissing = all(is.na(dataCopy[[processingParameters$productionValue]]))
     allAreaMissing = all(is.na(dataCopy[[processingParameters$areaHarvestedValue]]))
-    
+
     if(!all(allYieldMissing)){
         ## Step two: Impute Yield
         cat("Imputing Yield ...\n")
@@ -68,7 +71,7 @@ imputeProductionDomain = function(data,
         ##     as.formula(gsub(yearValue, "yearValue",
         ##                     gsub(yieldValue, "yieldValue",
         ##                          deparse(yieldFormula))))
-        
+
         imputeVariable(data = dataCopy,
                        imputationParameters = yieldImputationParameters)
         n.missYield2 = length(which(is.na(
@@ -87,7 +90,7 @@ imputeProductionDomain = function(data,
     } else {
         warning("The input dataset contains insufficient data for imputation to perform!")
     }
-    
+
     if(!all(allProductionMissing)){
         ## step three: Impute production
         cat("Imputing Production ...\n")
@@ -151,7 +154,7 @@ imputeProductionDomain = function(data,
         n.missAreaHarvested - n.missAreaHarvested2, "\n")
     cat("Number of values still missing: ", n.missAreaHarvested2, "\n")
 
-    
+
     ## This is to ensure the data type of the output is identical to
     ## the input data.
     dataCopy[, `:=`(colnames(dataCopy),

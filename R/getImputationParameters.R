@@ -7,6 +7,10 @@
 ##'   getProductionData.
 ##' @param i The row number of formulaTuples.  This allows R to produce the
 ##'   correct formula tuple/yield codes, and is typically 1.
+##' @param areaVar The column name corresponding to the geographic area.
+##' @param itemVar The column name corresponding to the commodity item.
+##' @param elementVar The column name corresponding to the measured element.
+##' @param yearVar The column name corresponding to the time dimension
 ##'
 ##' @return A list with the yield and production imputation parameters.
 ##' @export

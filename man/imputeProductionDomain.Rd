@@ -11,15 +11,19 @@ imputeProductionDomain(data, processingParameters,
 \arguments{
 \item{data}{The data}
 
-\item{processingParameters}{A list of the parameters for the production 
-processing algorithms.  See defaultProductionParameters() for a starting 
+\item{processingParameters}{A list of the parameters for the production
+processing algorithms. See defaultProductionParameters() for a starting
 point.}
 
-\item{yieldImputationParameters}{A list of the parameters for the yield
-imputation.  See defaultImputationParameters() for a starting point.}
+\item{areaHarvestedImputationParameters}{A list of the parameters for the
+area harvested imputation. See defaultImputationParameters() for a
+starting point.}
 
-\item{productionImputationParameters}{A list of the parameters for the 
-production imputation.  See defaultImputationParameters() for a starting 
+\item{yieldImputationParameters}{A list of the parameters for the yield
+imputation. See defaultImputationParameters() for a starting point.}
+
+\item{productionImputationParameters}{A list of the parameters for the
+production imputation. See defaultImputationParameters() for a starting
 point.}
 
 \item{unitConversion}{The multiplicative factor used for the particular

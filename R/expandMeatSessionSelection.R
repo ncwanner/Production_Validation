@@ -2,9 +2,12 @@
 ##' include all necessary meat.
 ##'
 ##' @param oldKey The current key used in the session
-##' @param selectedMeatTable The data table of the same format returned by
-##'     the function \code{getAnimalMeatMapping}, but containing the
-##'     meat selection required.
+##' @param areaVar The column name corresponding to the geographic area.
+##' @param itemVar The column name corresponding to the commodity item.
+##' @param elementVar The column name corresponding to the measured element.
+##' @param yearVar The column name corresponding to the time dimension.
+##' @param selectedMeatTable animalMeatMapping The mapping returned by the
+##'     \code{getAnimalMeatMapping}
 ##'
 ##' @return A new DatasetKey object expanded to include the meat
 ##'     selection specified.
@@ -12,7 +15,8 @@
 ##' @export
 ##'
 
-expandMeatSessionSelection = function(oldKey, selectedMeatTable,
+expandMeatSessionSelection = function(oldKey,
+                                      selectedMeatTable,
                                       areaVar = "geographicAreaM49",
                                       itemVar = "measuredItemCPC",
                                       elementVar = "measuredElement",
@@ -25,7 +29,7 @@ expandMeatSessionSelection = function(oldKey, selectedMeatTable,
     requiredItemCodes =
         selectedMeatTable[rowsIncluded,
                           c(measuredItemParentCPC, measuredItemChildCPC)]
-    requiredElementCodes = 
+    requiredElementCodes =
         selectedMeatTable[rowsIncluded,
                           c(measuredElementParent, measuredElementChild)]
     oldKey@dimensions[["measuredItemCPC"]]@keys = unique(requiredItemCodes)

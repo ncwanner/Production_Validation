@@ -2,10 +2,10 @@
 % Please edit documentation in R/transferSlaughteredNumber.R
 \name{transferSlaughteredNumber}
 \alias{transferSlaughteredNumber}
-\title{This function is essentially the reverse of the
-\code{transferAnimalNumber} where the animal slaughtered element
-of the child commodity (e.g. cattle meat) is transfered to the
-animal number element of the parent commodity (e.g. cattle).}
+\title{This function is essentially the reverse of the \code{transferAnimalNumber}
+where the animal slaughtered element of the child commodity (e.g. cattle
+meat) is transfered to the animal number element of the parent commodity
+(e.g. cattle).}
 \usage{
 transferSlaughteredNumber(preUpdatedData, imputationResult, selectedMeatTable,
   areaVar = "geographicAreaM49", itemVar = "measuredItemCPC",
@@ -21,15 +21,23 @@ updated in the animal numbers}
 \item{selectedMeatTable}{The data table of the same format returned by
 the function \code{getAnimalMeatMapping}, but containing the
 meat selection required.}
+
+\item{areaVar}{The column name corresponding to the geographic area.}
+
+\item{itemVar}{The column name corresponding to the commodity item.}
+
+\item{elementVar}{The column name corresponding to the measured element.}
+
+\item{yearVar}{The column name corresponding to the time dimension}
 }
 \value{
 A data.table object which contains the updated animal
     number.
 }
 \description{
-This function is essentially the reverse of the
-\code{transferAnimalNumber} where the animal slaughtered element
-of the child commodity (e.g. cattle meat) is transfered to the
-animal number element of the parent commodity (e.g. cattle).
+This function is essentially the reverse of the \code{transferAnimalNumber}
+where the animal slaughtered element of the child commodity (e.g. cattle
+meat) is transfered to the animal number element of the parent commodity
+(e.g. cattle).
 }
 
