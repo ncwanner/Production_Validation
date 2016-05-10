@@ -124,33 +124,37 @@ for(iter in seq(selectedItemCode)){
     ##
     ## TODO (Michael): This should be probably be splitted into a seperate
     ##                 module.
-    subKey %>%
-        GetData(.) %>%
-        preProcessing(data = .,
-                      params = processingParams) %>%
-        denormalise(normalisedData = .,
-                    denormaliseKey = "measuredElement") %>%
-        removeZeroYield(data = .,
-                        yieldValue = processingParams$yieldValue,
-                        yieldObsFlag = processingParams$yieldObservationFlag,
-                        yieldMethodFlag = processingParams$yieldMethodFlag) %>%
-        removeZeroConflict(data = .,
-                           value1 = processingParams$productionValue,
-                           value2 = processingParams$areaHarvestedValue,
-                           observationFlag1 =
-                               processingParams$productionObservationFlag,
-                           observationFlag2 =
-                               processingParams$areaHarvestedObservationFlag,
-                           methodFlag1 = processingParams$productionMethodFlag,
-                           methodFlag2 =
-                               processingParams$areaHarvestedMethodFlag) %>%
-        normalise(denormalisedData = .) %>%
-        postProcessing(data = .,
-                       params = processingParams) %>%
-        SaveData(domain = "agriculture",
-                 dataset = "aproduction",
-                 data = .)
+    currentData =
+        subKey %>%
+        GetData(.)
 
+    if(NROW(currentData) > 0){
+        currentData %>%
+            preProcessing(data = .,
+                          params = processingParams) %>%
+            denormalise(normalisedData = .,
+                        denormaliseKey = "measuredElement") %>%
+            removeZeroYield(data = .,
+                            yieldValue = processingParams$yieldValue,
+                            yieldObsFlag = processingParams$yieldObservationFlag,
+                            yieldMethodFlag = processingParams$yieldMethodFlag) %>%
+            removeZeroConflict(data = .,
+                               value1 = processingParams$productionValue,
+                               value2 = processingParams$areaHarvestedValue,
+                               observationFlag1 =
+                                   processingParams$productionObservationFlag,
+                               observationFlag2 =
+                                   processingParams$areaHarvestedObservationFlag,
+                               methodFlag1 = processingParams$productionMethodFlag,
+                               methodFlag2 =
+                                   processingParams$areaHarvestedMethodFlag) %>%
+            normalise(denormalisedData = .) %>%
+            postProcessing(data = .,
+                           params = processingParams) %>%
+            SaveData(domain = "agriculture",
+                     dataset = "aproduction",
+                     data = .)
+    }
 
 
     ## Print message, initialise the save name and start the imputation.
