@@ -15,7 +15,6 @@ suppressMessages({
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
-imputationSelection = swsContext.computationParams$imputation_selection
 
 ## This return FALSE if on the Statistical Working System
 if(CheckDebug()){
@@ -34,8 +33,11 @@ if(CheckDebug()){
                        token = SETTINGS[["token"]])
 
     savePath = SETTINGS[["save_imputation_path"]]
+
 }
 
+## Get user specified imputation selection
+imputationSelection = swsContext.computationParams$imputation_selection
 
 
 ## NOTE (Michael): The imputation and all modules should now have a base year of
@@ -63,6 +65,9 @@ missingItems =
     completeImputationItems[imputationExist(savePath, completeImputationItems)]
 
 ## Select the item list based on user input parameter
+if(!imputationSelection %in% c("session", "all", "missing_items"))
+    stop("Incorrect imputation selection specified")
+
 selectedItemCode =
     switch(imputationSelection,
            session = sessionItems,
