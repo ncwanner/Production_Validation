@@ -1,35 +1,34 @@
 ##' Build Ensemble Model
-##' 
-##' This function should build an R object which contains all the information 
-##' from the ensemble models.  Thus, the object should be able to be loaded and 
+##'
+##' This function should build an R object which contains all the information
+##' from the ensemble models.  Thus, the object should be able to be loaded and
 ##' used to fill in imputed values and generate predictions using the originally
 ##' developed model (rather than requiring the model be refit each time).
-##' 
-##' To actually construct and save such a model object is unfortunately quite a 
-##' large task: we must save a model object for each individual model in 
+##'
+##' To actually construct and save such a model object is unfortunately quite a
+##' large task: we must save a model object for each individual model in
 ##' addition to the weights/errors from fitting these models to the data.  Thus,
-##' instead of this task, we can just save the imputations and fill those in 
+##' instead of this task, we can just save the imputations and fill those in
 ##' when the impute module is called.  This also gives us the ability to version
 ##' control the imputations: we could put them in a new table in the SWS.
-##' 
-##' @param data The data.table object containing the dataset we wish to impute 
+##'
+##' @param data The data.table object containing the dataset we wish to impute
 ##'   on.
-##' @param imputationParameters A list of the parameters for the yield 
+##' @param imputationParameters A list of the parameters for the yield
 ##'   imputation.  See defaultImputationParameters() for a starting point.
-##' @param processingParameters A list of the parameters for the production 
-##'   processing algorithms.  See defaultProductionParameters() for a starting 
+##' @param processingParameters A list of the parameters for the production
+##'   processing algorithms.  See defaultProductionParameters() for a starting
 ##'   point.
-##' @param unitConversion A ratio specifying the relationship between yield, 
+##' @param unitConversion A ratio specifying the relationship between yield,
 ##'   production, and area harvested.
-##'   
+##'
 ##' @return A list containing the model fit, model errors, and model weights.
-##'   
-##' @import reshape2
-##'   
+##'
+##'
 
 buildEnsembleModel = function(data, imputationParameters, processingParameters,
                               unitConversion){
-    
+
     ## Data Quality Checks
     if(!exists("ensuredImputationData") || !ensuredImputationData)
         ensureImputationInputs(data = data,
@@ -91,7 +90,7 @@ buildEnsembleModel = function(data, imputationParameters, processingParameters,
     ## Order data by byKey and then by year
     setkeyv(x = data, cols = c(imputationParameters$byKey,
                                imputationParameters$yearValue))
-    
+
     ## Build the ensemble
     ensemble = data[[imputationParameters$imputationValueColumn]]
     missIndex = is.na(ensemble)
@@ -109,7 +108,7 @@ buildEnsembleModel = function(data, imputationParameters, processingParameters,
                      modelWeights = modelWeights, ensemble = ensemble,
                      imputationParameters = imputationParameters,
                      returnFormat = imputationParameters$plotImputation)
-#         plotEnsembleOld(data, modelFits, modelWeights, ensemble)
+        ## plotEnsembleOld(data, modelFits, modelWeights, ensemble)
     }
 
     ## Compute objects to save
@@ -123,8 +122,8 @@ buildEnsembleModel = function(data, imputationParameters, processingParameters,
     for(name in imputationParameters$byKey){
         modelErrors[, c(name) := data[[name]]]
     }
-    modelErrors = reshape2::melt(modelErrors,
-                                 id.vars = imputationParameters$byKey)
+    modelErrors = melt(modelErrors,
+                       id.vars = imputationParameters$byKey)
     ## Use max to pull out the non-zero errors.  All error entries will be
     ## either 0 or the error from the ensemble, so we just need max.
     modelErrors = modelErrors[, max(value),
