@@ -15,6 +15,7 @@ suppressMessages({
 ## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
+imputationSelection = swsContext.computationParams$imputation_selection
 
 ## This return FALSE if on the Statistical Working System
 if(CheckDebug()){
@@ -35,6 +36,8 @@ if(CheckDebug()){
     savePath = SETTINGS[["save_imputation_path"]]
 }
 
+
+
 ## NOTE (Michael): The imputation and all modules should now have a base year of
 ##                 1999, this is the result of a discussion with Pietro.
 defaultYear = 1999
@@ -46,11 +49,28 @@ imputationYears =
     select(code) %>%
     unlist(use.names = FALSE)
 
-## Get the required Datakey
+## Get the full imputation Datakey
 completeImputationKey = getMainKey(years = imputationYears)
-selectedItemCode = completeImputationKey@dimensions[["measuredItemCPC"]]@keys
 
-for(iter in 1:length(selectedItemCode)){
+## This is the complete list of items that are in the imputation list
+completeImputationItems =
+    completeImputationKey@dimensions[["measuredItemCPC"]]@keys
+## These are the items selected by the users
+sessionItems =
+    swsContext.datasets[[1]]@dimensions[["measuredItemCPC"]]@keys
+## This returns the list of items current does not have an imputed dataset.
+missingItems =
+    completeImputationItems[imputationExist(savePath, completeImputationItems)]
+
+## Select the item list based on user input parameter
+selectedItemCode =
+    switch(imputationSelection,
+           session = sessionItems,
+           all = completeImputationItems,
+           missing_items = missingItems)
+
+
+for(iter in seq(selectedItemCode)){
     currentItem = selectedItemCode[iter]
     subKey = completeImputationKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
