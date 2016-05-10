@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ##' This function returns the commodity codes which are selected in the session
 ##' and is in the imputation list
 ##'
@@ -9,7 +10,6 @@
 ##'     included in the imputation list.
 ##' @export
 ##'
-
 
 selectImputationItem = function(selectedKey, imputationKey){
     selectedItems = selectedKey@dimensions$measuredItemCPC@keys

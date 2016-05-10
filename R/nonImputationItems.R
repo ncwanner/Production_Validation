@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ##' This function returns the commodity codes which are selected in the session
 ##' but not in the imputation list
 ##'
