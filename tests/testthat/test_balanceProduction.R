@@ -5,13 +5,11 @@ library(faoswsProduction)
 source("buildTestDataset.R")
 
 test_data_rep = copy(test_data)
-newObservationFlag = "I"
 newMethodFlag = "i"
 unitConversion = 1
 
 balanceProduction(data = test_data_rep,
                   processingParameters = param,
-                  newObservationFlag = newObservationFlag,
                   newMethodFlag = newMethodFlag,
                   unitConversion = unitConversion)
 
@@ -34,7 +32,7 @@ test_that("Function performs calculation correctly", {
     filter = missProd & notMissAreaHarvested & notMissYield
     modifiedData = test_data_rep[filter, ]
 
-    
+
     ## Check all values are calculated
     expect_equal(sum(is.na(modifiedData[[param$productionValue]])), 0)
 
@@ -46,10 +44,6 @@ test_that("Function performs calculation correctly", {
     expect_equal(modifiedData[[param$areaHarvestedValue]] *
                  modifiedData[[param$yieldValue]] * unitConversion,
                  modifiedData[[param$productionValue]])
-
-    ## Check all observation flags are updated
-    expect_true(all(modifiedData[[param$productionObservationFlag]] ==
-                    newObservationFlag))
 
     ## Check all method flags are updated
     expect_true(all(modifiedData[[param$productionMethodFlag]] ==

@@ -8,33 +8,33 @@ buildEnsembleModel(data, imputationParameters, processingParameters,
   unitConversion)
 }
 \arguments{
-\item{data}{The data.table object containing the dataset we wish to impute 
+\item{data}{The data.table object containing the dataset we wish to impute
 on.}
 
-\item{imputationParameters}{A list of the parameters for the yield 
+\item{imputationParameters}{A list of the parameters for the yield
 imputation.  See defaultImputationParameters() for a starting point.}
 
-\item{processingParameters}{A list of the parameters for the production 
-processing algorithms.  See defaultProductionParameters() for a starting 
+\item{processingParameters}{A list of the parameters for the production
+processing algorithms.  See defaultProductionParameters() for a starting
 point.}
 
-\item{unitConversion}{A ratio specifying the relationship between yield, 
+\item{unitConversion}{A ratio specifying the relationship between yield,
 production, and area harvested.}
 }
 \value{
 A list containing the model fit, model errors, and model weights.
 }
 \description{
-This function should build an R object which contains all the information 
-from the ensemble models.  Thus, the object should be able to be loaded and 
+This function should build an R object which contains all the information
+from the ensemble models.  Thus, the object should be able to be loaded and
 used to fill in imputed values and generate predictions using the originally
 developed model (rather than requiring the model be refit each time).
 }
 \details{
-To actually construct and save such a model object is unfortunately quite a 
-large task: we must save a model object for each individual model in 
+To actually construct and save such a model object is unfortunately quite a
+large task: we must save a model object for each individual model in
 addition to the weights/errors from fitting these models to the data.  Thus,
-instead of this task, we can just save the imputations and fill those in 
+instead of this task, we can just save the imputations and fill those in
 when the impute module is called.  This also gives us the ability to version
 control the imputations: we could put them in a new table in the SWS.
 }

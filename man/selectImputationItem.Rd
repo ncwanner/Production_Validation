@@ -8,10 +8,10 @@ and is in the imputation list}
 selectImputationItem(selectedKey, imputationKey)
 }
 \arguments{
+\item{selectedKey}{Datakey of the current session.}
+
 \item{imputationKey}{The object returned by the function
 \code{getImputationKey}}
-
-\item{selected}{Datakey of the current session.}
 }
 \value{
 A vector containing the commodity items that are selected and is

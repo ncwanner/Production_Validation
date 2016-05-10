@@ -14,6 +14,14 @@ getProductionData.}
 
 \item{i}{The row number of formulaTuples.  This allows R to produce the
 correct formula tuple/yield codes, and is typically 1.}
+
+\item{areaVar}{The column name corresponding to the geographic area.}
+
+\item{itemVar}{The column name corresponding to the commodity item.}
+
+\item{elementVar}{The column name corresponding to the measured element.}
+
+\item{yearVar}{The column name corresponding to the time dimension}
 }
 \value{
 A list with the yield and production imputation parameters.

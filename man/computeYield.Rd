@@ -14,6 +14,8 @@ computeYield(data, processingParameters, normalized = FALSE,
 processing algorithms.  See defaultProductionParameters() for a starting
 point.}
 
+\item{normalized}{Is the input data normalised.}
+
 \item{newMethodFlag}{The flag to be used to update the yield method flag
 when imputation occurs.}
 

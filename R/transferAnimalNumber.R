@@ -6,9 +6,12 @@
 ##' as required.
 ##'
 ##' @param data A data.table object containing the data.
-##' @param selectedMeat The data table of the same format returned by
-##'     the function \code{getAnimalMeatMapping}, but containing the
-##'     meat selection required.
+##' @param selectedMeatTable animalMeatMapping The mapping returned by the
+##'     \code{getAnimalMeatMapping}
+##' @param areaVar The column name corresponding to the geographic area.
+##' @param itemVar The column name corresponding to the commodity item.
+##' @param elementVar The column name corresponding to the measured element.
+##' @param yearVar The column name corresponding to the time dimension
 ##'
 ##' @return A data.table object of the same dimension but with the
 ##'     values of the slaughtered animal updated by the animal number.
@@ -16,7 +19,8 @@
 ##' @export
 ##'
 
-transferAnimalNumber = function(data, selectedMeat,
+transferAnimalNumber = function(data,
+                                selectedMeatTable,
                                 areaVar = "geographicAreaM49",
                                 itemVar = "measuredItemCPC",
                                 elementVar = "measuredElement",
@@ -27,7 +31,7 @@ transferAnimalNumber = function(data, selectedMeat,
 
     ## Remove missing values, as we don't want to copy those.
     parentData = dataCopy[!flagObservationStatus == "M" &
-                          measuredItemCPC %in% selectedMeat$measuredItemParentCPC &
+                          measuredItemCPC %in% selectedMeatTable$measuredItemParentCPC &
                           timePointYears <= lastYear &
                           timePointYears >= firstDataYear, ]
     setnames(parentData, c(itemVar, elementVar),
@@ -35,7 +39,7 @@ transferAnimalNumber = function(data, selectedMeat,
     ## TODO (Michael): This should not be called child data, since there
     ##                 is no child data, it is parent data but with the
     ##                 mapping table and variable names changed.
-    childData = merge(parentData, selectedMeat,
+    childData = merge(parentData, selectedMeatTable,
                       by = c("measuredItemParentCPC", "measuredElementParent"))
     childData[, c("measuredItemParentCPC", "measuredElementParent") := NULL]
     setnames(childData, c("measuredItemChildCPC", "measuredElementChild"),

@@ -9,8 +9,13 @@ checkProductionBalanced(dataToBeSaved, areaVar, yieldVar, prodVar, conversion)
 \arguments{
 \item{dataToBeSaved}{The data.table to be saved back to the SWS.}
 
-\item{formulaTable}{The table containing the formula constructed
-by \code{constructFormulaTable}}
+\item{areaVar}{The column name corresponding to the area harvested.}
+
+\item{yieldVar}{The column name corresponding to the yield.}
+
+\item{prodVar}{The column name corresponding to produciton.}
+
+\item{conversion}{The conversion factor for calculating production.}
 }
 \value{
 If the data satisfy the production identity, then the

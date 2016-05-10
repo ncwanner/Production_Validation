@@ -10,6 +10,10 @@ getAnimalMeatMapping(R_SWS_SHARE_PATH, onlyMeatChildren = FALSE,
 }
 \arguments{
 \item{R_SWS_SHARE_PATH}{The path to the shared drive on the SWS.}
+
+\item{onlyMeatChildren}{Whether only the meat children should be returned.}
+
+\item{meatPattern}{The regular expression corresponding to meat}
 }
 \value{
 The mapping table

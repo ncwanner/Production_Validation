@@ -1,8 +1,10 @@
 ##' Function to check whether the production itdentity is satisfied.
 ##'
 ##' @param dataToBeSaved The data.table to be saved back to the SWS.
-##' @param formulaTable The table containing the formula constructed
-##'     by \code{constructFormulaTable}
+##' @param areaVar The column name corresponding to the area harvested.
+##' @param yieldVar The column name corresponding to the yield.
+##' @param prodVar The column name corresponding to produciton.
+##' @param conversion The conversion factor for calculating production.
 ##'
 ##' @return If the data satisfy the production identity, then the
 ##'     original data to be tested is returned. Otherwise, an error is

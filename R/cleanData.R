@@ -16,6 +16,10 @@
 ##'   (if this parameter is NULL) or by this parameter.  Note that setting a
 ##'   maximum year that is smaller than the maximum year in the dataset will do
 ##'   nothing.
+##' @param areaVar The column name corresponding to the geographic area.
+##' @param itemVar The column name corresponding to the commodity item.
+##' @param elementVar The column name corresponding to the measured element.
+##' @param yearVar The column name corresponding to the time dimension.
 ##'
 ##' @return No object is returned, but the passed dataset is modified in place
 ##'   via data.table.

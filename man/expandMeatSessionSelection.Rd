@@ -12,9 +12,16 @@ expandMeatSessionSelection(oldKey, selectedMeatTable,
 \arguments{
 \item{oldKey}{The current key used in the session}
 
-\item{selectedMeatTable}{The data table of the same format returned by
-the function \code{getAnimalMeatMapping}, but containing the
-meat selection required.}
+\item{selectedMeatTable}{animalMeatMapping The mapping returned by the
+\code{getAnimalMeatMapping}}
+
+\item{areaVar}{The column name corresponding to the geographic area.}
+
+\item{itemVar}{The column name corresponding to the commodity item.}
+
+\item{elementVar}{The column name corresponding to the measured element.}
+
+\item{yearVar}{The column name corresponding to the time dimension.}
 }
 \value{
 A new DatasetKey object expanded to include the meat

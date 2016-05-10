@@ -9,6 +9,7 @@
 ##' @param flagTable see data(faoswsFlagTable) in \pkg{faoswsFlag}
 ##' @param unitConversion Yield is computed as (production) / (area) and
 ##'   multiplied by unitConversion.  This parameter defaults to 1.
+##' @param normalized Is the input data normalised.
 ##'
 ##' @return The updated data.table.  This is important in the case where the
 ##'   data is normalized, as the data.table must be cast and reshaped (and thus

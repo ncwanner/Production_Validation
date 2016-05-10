@@ -5,14 +5,12 @@ library(faoswsProduction)
 source("buildTestDataset.R")
 
 test_data_rep = copy(test_data)
-newObservationFlag = "I"
 newMethodFlag = "i"
 unitConversion = 1
 
 computeYield(data = test_data_rep,
              processingParameters = param,
              normalized = FALSE,
-             newObservationFlag = newObservationFlag,
              newMethodFlag = newMethodFlag,
              flagTable = faoswsFlagTable,
              unitConversion = unitConversion)
@@ -37,7 +35,7 @@ test_that("Function performs calculation correctly", {
     zeroFilter = test_data[[param$areaHarvestedValue]] != 0
     modifiedData = test_data_rep[zeroFilter & filter, ]
 
-    
+
     ## Check all values are calculated
     expect_equal(sum(is.na(modifiedData[[param$yieldValue]])), 0)
 
@@ -49,10 +47,6 @@ test_that("Function performs calculation correctly", {
     expect_equal(modifiedData[[param$areaHarvestedValue]] *
                  modifiedData[[param$yieldValue]] * unitConversion,
                  modifiedData[[param$productionValue]])
-
-    ## Check all observation flags are updated
-    expect_true(all(modifiedData[[param$yieldObservationFlag]] ==
-                    newObservationFlag))
 
     ## Check all method flags are updated
     expect_true(all(modifiedData[[param$yieldMethodFlag]] ==

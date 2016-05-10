@@ -2,6 +2,8 @@
 ##' such as cattle) and child (meat such as meat of cattle).
 ##'
 ##' @param R_SWS_SHARE_PATH The path to the shared drive on the SWS.
+##' @param onlyMeatChildren Whether only the meat children should be returned.
+##' @param meatPattern The regular expression corresponding to meat
 ##'
 ##' @return The mapping table
 ##'

@@ -15,12 +15,12 @@ getForcedZeroKey(data, processingParams = defaultProcessingParameters(),
 \arguments{
 \item{data}{The data.table object containing the data.}
 
-\item{productionParams}{The production imputation parameter
-returned by the function \code{getImputationParameters}.}
-
-\item{processingParameters}{A list of the parameters for the
+\item{processingParams}{A list of the parameters for the
 production processing algorithms. See
 \code{defaultProcessingParameters} for a starting point.}
+
+\item{productionParams}{The production imputation parameter
+returned by the function \code{getImputationParameters}.}
 }
 \value{
 A data.table containing the keys where the value should be

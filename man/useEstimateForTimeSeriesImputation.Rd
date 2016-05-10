@@ -13,17 +13,23 @@ useEstimateForTimeSeriesImputation(data, areaObsFlagVar, yieldObsFlagVar,
 \arguments{
 \item{data}{A data.table object containing the data to be imputed.}
 
-\item{yieldObsFlagVar}{The column corresponding to the observation
-flag of the yield.}
+\item{areaObsFlagVar}{The column corresponding to the observation flag of
+the area harvested.}
 
-\item{prodObsFlagVar}{The column corresponding to the observation
-flag of the production.}
+\item{yieldObsFlagVar}{The column corresponding to the observation flag of
+the yield.}
 
-\item{impFlags}{The value of the observation flags which are
-considered to be imputed.}
+\item{prodObsFlagVar}{The column corresponding to the observation flag of
+the production.}
 
-\item{missFlag}{The value of the observation flag which
-corresponds to missing value.}
+\item{impFlags}{The value of the observation flags which are considered to
+be imputed.}
+
+\item{missFlags}{The value of the observation flag which corresponds to
+missing value.}
+
+\item{minObsForEst}{The minimum number of 'E'stimated value that should be
+consider sufficient.}
 }
 \description{
 TODO (Michael): This function should be expanded to include item as well.

@@ -5,14 +5,18 @@
 ##' TODO (Michael): This function should be expanded to include item as well.
 ##'
 ##' @param data A data.table object containing the data to be imputed.
-##' @param yieldObsFlagVar The column corresponding to the observation
-##'     flag of the yield.
-##' @param prodObsFlagVar The column corresponding to the observation
-##'     flag of the production.
-##' @param impFlags The value of the observation flags which are
-##'     considered to be imputed.
-##' @param missFlag The value of the observation flag which
-##'     corresponds to missing value.
+##' @param areaObsFlagVar The column corresponding to the observation flag of
+##'     the area harvested.
+##' @param yieldObsFlagVar The column corresponding to the observation flag of
+##'     the yield.
+##' @param prodObsFlagVar The column corresponding to the observation flag of
+##'     the production.
+##' @param impFlags The value of the observation flags which are considered to
+##'     be imputed.
+##' @param missFlags The value of the observation flag which corresponds to
+##'     missing value.
+##' @param minObsForEst The minimum number of 'E'stimated value that should be
+##'     consider sufficient.
 ##' @export
 
 useEstimateForTimeSeriesImputation = function(data,

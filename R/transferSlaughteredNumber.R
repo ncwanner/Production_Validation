@@ -1,7 +1,7 @@
-##' This function is essentially the reverse of the
-##' \code{transferAnimalNumber} where the animal slaughtered element
-##' of the child commodity (e.g. cattle meat) is transfered to the
-##' animal number element of the parent commodity (e.g. cattle).
+##' This function is essentially the reverse of the \code{transferAnimalNumber}
+##' where the animal slaughtered element of the child commodity (e.g. cattle
+##' meat) is transfered to the animal number element of the parent commodity
+##' (e.g. cattle).
 ##'
 ##' @param preUpdatedData This is the data to be updated
 ##' @param imputationResult This is the result of the imputation, the
@@ -10,6 +10,10 @@
 ##' @param selectedMeatTable The data table of the same format returned by
 ##'     the function \code{getAnimalMeatMapping}, but containing the
 ##'     meat selection required.
+##' @param areaVar The column name corresponding to the geographic area.
+##' @param itemVar The column name corresponding to the commodity item.
+##' @param elementVar The column name corresponding to the measured element.
+##' @param yearVar The column name corresponding to the time dimension
 ##'
 ##' @return A data.table object which contains the updated animal
 ##'     number.
