@@ -31,9 +31,8 @@ transferAnimalNumber = function(data,
 
     ## Remove missing values, as we don't want to copy those.
     parentData = dataCopy[!flagObservationStatus == "M" &
-                          measuredItemCPC %in% selectedMeatTable$measuredItemParentCPC &
-                          timePointYears <= lastYear &
-                          timePointYears >= firstDataYear, ]
+                          measuredItemCPC %in%
+                          selectedMeatTable$measuredItemParentCPC, ]
     setnames(parentData, c(itemVar, elementVar),
              c("measuredItemParentCPC", "measuredElementParent"))
     ## TODO (Michael): This should not be called child data, since there
