@@ -31,7 +31,7 @@
 
 \Shorttitle{Data Sources}
 
-\Abstract{ 
+\Abstract{
 
   This vignette provides a detailed description of the various data sources used in the production imputation modules.
 }
@@ -57,7 +57,7 @@
 library(faosws)
 library(data.table)
 library(xtable)
-SetClientFiles("~/R certificate files/QA/")
+SetClientFiles("~/.R/qa/")
 GetTestEnvironment(
     baseUrl = "https://hqlqasws1.hq.un.fao.org:8181/sws",
     token = "c585c410-fb9e-44ea-ba36-ef940d32185d"
@@ -70,21 +70,35 @@ GetTestEnvironment(
 
 Description of how each module works:
 
-\includegraphics[scale = 0.2]{"Production Flowchart"}\newpage
+\includegraphics[scale = 0.2]{"production_flowchart"}\newpage
 
 Overview of how the modules are ran:
 
-\includegraphics[scale = 0.2]{"Production flowchart overview"}\newpage
+\includegraphics[scale = 0.2]{"production_flowchart_overview"}\newpage
 
 \subsection{Examples of tables}
 
 \begin{itemize}
-    \item item\_type\_yield\_elements (`Data Table' table):  This table is on the statistical working system, and it describes which element codes are used for each commodity group.  For example, wheat belongs to the CRPR item\_type (this can be determined by calling faosws::GetCodeList on the measuredItemCPC dimension).  Thus, the production (51), area harvested (31) and yield (41) elements for wheat are 5510, 5312, and 5421, respectively.  The factor column represents that a multiplicative factor of 1 is used, i.e. yield * 1 = production / area harvested.  In the case of other commodities, for example LSNP, we have the relationship carcass weight * 1000 = production / animals slaughtered.
+    \item item\_type\_yield\_elements (`Data Table' table): This table is on the
+      statistical working system, and it describes which element codes are used
+      for each commodity group. For example, wheat belongs to the CRPR
+      item\_type (this can be determined by calling faosws::GetCodeList on the
+      measuredItemCPC dimension). Thus, the production (51), area harvested (31)
+      and yield (41) elements for wheat are 5510, 5312, and 5421, respectively.
+      The factor column represents that a multiplicative factor of 1 is used,
+      i.e. yield * 1 = production / area harvested. In the case of other
+      commodities, for example LSNP, we have the relationship carcass weight *
+      1000 = production / animals slaughtered.
 <<echo = FALSE, results=tex>>=
 d = ReadDatatable("item_type_yield_elements", limit = 4)
 print(xtable(d), include.rownames = FALSE)
 @
-    \item agriculture domain, aproduction dataset (time series table).  In this table, the countries specified by the user are ignored, as the module requires all countries to construct the model.  Additionally, only elements under the old 31/41/51 codes are used, and are always used, so the element codes provided in the session are also ignored.  However, the years and commodities selected by the user are respected.\\
+    \item agriculture domain, aproduction dataset (time series table). In this
+      table, the countries specified by the user are ignored, as the module
+      requires all countries to construct the model. Additionally, only elements
+      under the old 31/41/51 codes are used, and are always used, so the element
+      codes provided in the session are also ignored. However, the years and
+      commodities selected by the user are respected.\\
 <<echo = FALSE, results=tex>>=
 d = data.table(geographicAreaM49 = 4, measuredElement = c(5312, 5510, 5421),
                measuredItemCPC = "0111", timePointYears = 2011,
@@ -96,14 +110,29 @@ setnames(d, c("Country", "Element", "Item", "Year", "Value", "Flag", "Method"))
 d2 = copy(d)
 print(xtable(d), include.rownames = FALSE)
 @
-    \item Synchronized Slaughtered: Currently this is a .csv file on the SWS server, but it is (at the time of writing this document) being uploaded to the SWS as a valid datatable.  The file contains information on the commodity codes of animal numbers ("Cattle", for example) and the various commodities that are derived from this animal ("Beef and Veal", "Offals of Cattle, Edible", "Fat of Cattle", "Cattle Hides, Fresh").  Each of these derived commodities have an "animals slaughtered" variable that represents the "input", and this value should match the animals slaughtered quantity from the animal time series.  We show the first 8 rows in the table, although there are 44 rows for 16 different animals/animal types.\\
+    \item Synchronized Slaughtered: Currently this is a .csv file on the SWS
+      server, but it is (at the time of writing this document) being uploaded to
+      the SWS as a valid datatable. The file contains information on the
+      commodity codes of animal numbers ("Cattle", for example) and the various
+      commodities that are derived from this animal ("Beef and Veal", "Offals of
+      Cattle, Edible", "Fat of Cattle", "Cattle Hides, Fresh"). Each of these
+      derived commodities have an "animals slaughtered" variable that represents
+      the "input", and this value should match the animals slaughtered quantity
+      from the animal time series. We show the first 8 rows in the table,
+      although there are 44 rows for 16 different animals/animal types.\\
 <<echo=FALSE, results=tex>>=
-d = fread("/media/hqlprsws1_qa/browningj/production/slaughtered_synchronized.csv")
+d = fread("/media/sws_qa_shared_drive/browningj/production/slaughtered_synchronized.csv")
 cat('Column names of d are "', paste0(colnames(d), collapse='", "'), '"', sep = "")
 setnames(d, c("ParIt", "Item", "ParEl", "ChiIt", "Child", "ChiEl"))
 print(xtable(d[1:8, ]), include.rownames = FALSE)
 @
-    \item Aupus Shares: This dataset was used by the old statistical working system as a means of automatically processing forward parent products into derived products.  For example, if the share between Cattle (02111) and Meat of Cattle (21111.01) was 100 (i.e. 100\%), then data was copied from the parent commodity (Cattle/02111) to the child commodity (Meat of Cattle/21111.01).  Values of 0 in the country or year dimensions indicate that a value applies for all countries or years, respectively.\\
+    \item Aupus Shares: This dataset was used by the old statistical working
+      system as a means of automatically processing forward parent products into
+      derived products. For example, if the share between Cattle (02111) and
+      Meat of Cattle (21111.01) was 100 (i.e. 100\%), then data was copied from
+      the parent commodity (Cattle/02111) to the child commodity (Meat of
+      Cattle/21111.01). Values of 0 in the country or year dimensions indicate
+      that a value applies for all countries or years, respectively.\\
 <<echo=FALSE, results=tex>>=
 d = data.table(geographicAreaM49 = c(4, 8, 56, 56, 56),
                measuredItemParentCPC = "02111",
@@ -125,15 +154,41 @@ print(xtable(d), include.rownames = FALSE)
 \subsection{Process}
 
 \begin{enumerate}
-    \item Finalize the production dataset.  This requires all the available questionaires to be imported, all data checked, all manual estimates to be finished, etc.  Once this has been completed, the dataset should be ``frozen'', i.e. no more manual updates or questionaire imports allowed until the process is completed.
+    \item Finalize the production dataset. This requires all the available
+      questionaires to be imported, all data checked, all manual estimates to be
+      finished, etc. Once this has been completed, the dataset should be
+      ``frozen'', i.e. no more manual updates or questionaire imports allowed
+      until the process is completed.
 <<echo = FALSE, results = tex>>=
 d = d2
 print(xtable(d), include.rownames = FALSE)
 @
-    \item Impute time series for meat commodities, using the animal slaughtered figures from the corresponding animal commodity if they are available.  The animal slaughtered numbers that were originally missing but have now been imputed are then copied back to the animal slaughtered number in the animal commodity.  This imputation process builds models using twenty years of data (starting from the maximum desired imputation year and moving back twenty years).
-    Ideally, the imputation process is ran on official and semi-official figures only.  However, some time-series don't have enough official and semi-official figures to support such imputation, and in these cases we must use historical estimates as well.  Thus, the imputation module builds both models (with and without historical estimates) and uses the estimates from the model without estimates if there are five or more official/semi-official historical figures.  The model with estimates included is used in the case of fewer than five historical figures.  Additionally, it should be noted that the model including estimates will use fewer models in the ensemble, and will use the simpler models.
-    \item Animals slaughtered are imported into one field via the questionaire but the same number exists in many fields.  This module ensures consistency across these numbers by copying the animals slaughtered quantity in the animal commodity to the animals slaughtered commodity in all the relevant derived products.
-    \item The compute yield module must be run to ensure any missing area harvested/production/yield values are calculated as a balance when the other two are known.  This is crucial to run before running the production imputation, as we must generate all historical figures for the ensemble to work appropriately.
+    \item Impute time series for meat commodities, using the animal slaughtered
+      figures from the corresponding animal commodity if they are available. The
+      animal slaughtered numbers that were originally missing but have now been
+      imputed are then copied back to the animal slaughtered number in the
+      animal commodity. This imputation process builds models using twenty years
+      of data (starting from the maximum desired imputation year and moving back
+      twenty years). Ideally, the imputation process is ran on official and
+      semi-official figures only. However, some time-series don't have enough
+      official and semi-official figures to support such imputation, and in
+      these cases we must use historical estimates as well. Thus, the imputation
+      module builds both models (with and without historical estimates) and uses
+      the estimates from the model without estimates if there are five or more
+      official/semi-official historical figures. The model with estimates
+      included is used in the case of fewer than five historical figures.
+      Additionally, it should be noted that the model including estimates will
+      use fewer models in the ensemble, and will use the simpler models.
+    \item Animals slaughtered are imported into one field via the questionaire
+      but the same number exists in many fields. This module ensures consistency
+      across these numbers by copying the animals slaughtered quantity in the
+      animal commodity to the animals slaughtered commodity in all the relevant
+      derived products.
+    \item The compute yield module must be run to ensure any missing area
+      harvested/production/yield values are calculated as a balance when the
+      other two are known. This is crucial to run before running the production
+      imputation, as we must generate all historical figures for the ensemble to
+      work appropriately.
 <<echo = FALSE, results = tex>>=
 invisible({
 d[3, Value := 3388000/2232000]
@@ -141,8 +196,16 @@ d[3, c("flagObservationStatus", "flagMethod") := list("I", "i")]
 })
 print(xtable(d), include.rownames = FALSE)
 @
-    \item The production imputation models can now be constructed, and they should be constructed for every available primary commodity as well as derived commodities which are disseminated.  As with the imputation for the meat commodities, two separate models are built for each commodity/country pair (with and without estimates), with the same logic as described previously.  The details of the imputation methodology itself is contained in the methodology vignette of this package.
-    \item The imputation models built in the previous step should be used to impute into the database.  This module imports the results from the imputation into the user's session.
+    \item The production imputation models can now be constructed, and they
+      should be constructed for every available primary commodity as well as
+      derived commodities which are disseminated. As with the imputation for the
+      meat commodities, two separate models are built for each commodity/country
+      pair (with and without estimates), with the same logic as described
+      previously. The details of the imputation methodology itself is contained
+      in the methodology vignette of this package.
+    \item The imputation models built in the previous step should be used to
+      impute into the database. This module imports the results from the
+      imputation into the user's session.
 <<echo = FALSE, results = tex>>=
 invisible({
 d[6, Value := 4.230052]
@@ -152,7 +215,8 @@ d[5, c("flagObservationStatus", "flagMethod") := list("I", "i")]
 })
 print(xtable(d), include.rownames = FALSE)
 @
-    \item The imputations should be provided to the clerks for a manual check and validation, and then results can be saved to the database.
+    \item The imputations should be provided to the clerks for a manual check
+      and validation, and then results can be saved to the database.
 \end{enumerate}
 
 \end{document}
