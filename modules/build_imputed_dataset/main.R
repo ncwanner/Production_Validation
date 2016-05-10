@@ -54,9 +54,26 @@ imputationYears =
 ## Get the full imputation Datakey
 completeImputationKey = getMainKey(years = imputationYears)
 
+
+## NOTE (Michael): Since the animal/meat are currently imputed by the
+##                 imputed_slaughtered and synchronise slaughtered module, so
+##                 they should not be imputed here.
+##
+## TODO (Michael): Merge the this module with the imputed slaughtered and
+##                 synchronise slaughtered as the logic are identical.
+liveStockItems =
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
+                         onlyMeatChildren = FALSE) %>%
+    select(measuredItemParentCPC, measuredItemChildCPC) %>%
+    unlist(x = ., use.names = FALSE) %>%
+    unique(x = .)
+
+
 ## This is the complete list of items that are in the imputation list
 completeImputationItems =
-    completeImputationKey@dimensions[["measuredItemCPC"]]@keys
+    completeImputationKey@dimensions[["measuredItemCPC"]]@keys %>%
+    setdiff(., liveStockItems)
+
 ## These are the items selected by the users
 sessionItems =
     swsContext.datasets[[1]]@dimensions[["measuredItemCPC"]]@keys
@@ -73,7 +90,6 @@ selectedItemCode =
            session = sessionItems,
            all = completeImputationItems,
            missing_items = missingItems)
-
 
 for(iter in seq(selectedItemCode)){
     currentItem = selectedItemCode[iter]
