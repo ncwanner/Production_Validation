@@ -25,6 +25,7 @@ suppressMessages({
     library(faosws)
     library(faoswsUtil)
     library(faoswsProduction)
+    library(dplyr)
     library(magrittr)
 })
 
@@ -69,18 +70,18 @@ selectedMeatTable =
                          onlyMeatChildren = FALSE) %>%
     subsetAnimalMeatMapping(animalMeatMapping = .,
                             context = swsContext.datasets[[1]])
-key =
+expandedMeatKey =
     selectedMeatTable %>%
     expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
                                selectedMeatTable = .)
 
-                                        # Execute the get data call.
-cat(length(key@dimensions$measuredItemCPC@keys),
+## Execute the get data call.
+cat(length(expandedMeatKey@dimensions$measuredItemCPC@keys),
     "commodities selected to be synchronised \n")
 cat("Pulling the data ... \n")
 
 newParentData =
-    GetData(key = key) %>%
+    GetData(key = expandedMeatKey) %>%
     preProcessing(data = .) %>%
     ## Remove missing values, as we don't want to copy those.
     removeMissingEntry(data = .) %>%
@@ -93,8 +94,9 @@ newCommodityTree =
     getCommodityTree(geographicAreaM49 = as.character(unique(.$geographicAreaM49)),
                      timePointYears = as.character(unique(.$timePointYears))) %>%
     subset(., share > 0) %>%
-    setnames(., c("measuredItemParentCPC", "timePointYearsSP"),
-             c("measuredItemCPC", "timePointYears"))
+    setnames(.,
+             old = c("measuredItemParentCPC", "timePointYearsSP"),
+             new = c("measuredItemCPC", "timePointYears"))
 
 cat("Transfere the animal number to all the children commodities ... \n")
 transferedData =
@@ -109,17 +111,22 @@ transferedData =
 
 cat("Testing module and saving data back ...\n")
 
-
 animalNumberDB =
     getAllAnimalNumber(selectedMeatTable)
 
 saveResult =
     transferedData %>%
+    ## Check whether the values are synced
     checkSlaughteredSynced(commodityTree = newCommodityTree,
                            animalNumbers = animalNumberDB,
                            slaughteredNumbers = .) %>%
     .$slaughteredNumbers %>%
-    checkProtectedData(dataToBeSaved = .) %>%
+    ## NOTE (Michael): This section has been commented out, since the check is
+    ##                 not required as mentioned in the comment in the
+    ##                 beginning. Official and semi-official figures can be
+    ##                 over-written.
+    ## subset(x = ., flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+    ## checkProtectedData(dataToBeSaved = .) %>%
     SaveData(domain = swsContext.datasets[[1]]@domain,
              dataset = swsContext.datasets[[1]]@dataset,
              data = .)
