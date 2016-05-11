@@ -5,7 +5,8 @@ processing the production domain.
 
 
 Production Module Flow:
-![flowchart mm](https://cloud.githubusercontent.com/assets/1054320/15190163/cab26e2a-17ae-11e6-874b-9baa293d2619.png)
+![flowchart mm](https://cloud.githubusercontent.com/assets/1054320/15193239/18f489fc-17bd-11e6-9f3b-282c4891a702.png)
+
 
 
 ** All work under this repository represents the latest status of development
