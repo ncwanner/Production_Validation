@@ -33,17 +33,18 @@ getYieldData = function(dataContext){
                     swsContext.modifiedCells[, cname, with = FALSE]))
             }
         }
-    } else {# running in non-interactive mode, so get all the session data
-        print("Reading all data.")
+    } else {
+        ## running in non-interactive mode, so get all the session data
+        print("Reading all yield data.")
         data2process = TRUE
     }
 
     ## Pivot to vectorize yield computation
     newPivot = c(
-        Pivoting(code = areaVar, ascending = TRUE),
-        Pivoting(code = itemVar, ascending = TRUE),
-        Pivoting(code = yearVar, ascending = FALSE),
-        Pivoting(code = elementVar, ascending = TRUE)
+        Pivoting(code = "geographicAreaM49", ascending = TRUE),
+        Pivoting(code = "measuredItemCPC", ascending = TRUE),
+        Pivoting(code = "timePointYears", ascending = FALSE),
+        Pivoting(code = "measuredElement", ascending = TRUE)
     )
 
     if (data2process == TRUE){
