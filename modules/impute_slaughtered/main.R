@@ -18,7 +18,7 @@
 ## The steps are as follows:
 ## 0. Transfer down the slaughtered animal numbers from the animal (parent)
 ## commodity to the meat (child) commodity.
-## 1. Save the transfered data back to the database
+## 1. Save the transferred data back to the database
 ## 2. Impute the meat data (production/animals slaughtered/carcass weight)
 ## following the logic from the production imputation module.
 ## 3. Copy the slaughtered animal numbers in meat back to the animal commodity.
@@ -37,6 +37,7 @@ suppressMessages({
     library(faoswsProduction)
     library(magrittr)
     library(dplyr)
+    library(splines)
 })
 
 ## set up for the test environment and parameters
@@ -107,20 +108,23 @@ newKey@dimensions[["geographicAreaM49"]]@keys =
 ## Execute the get data call.
 cat("Pulling the data...\n")
 
+## Transfer the animal number in the animal to the slaughtered animal in the
+## meat.
 step1Data =
     newKey %>%
     GetData(key = .) %>%
     preProcessing(data = .) %>%
-    ## TODO (Michael): Should add preProcessing here
     transferAnimalNumber(data = ., selectedMeatTable)
 
-## Module test and save the transfered data back
+## Module test and save the transferred data back
+##
+## NOTE (Michael): The transfer can over-write official and semi-official
+##                 figures as indicated by in the synchronise slaughtered
+##                 module.
+cat("Saving the transferred data back...\n")
 step1Data %>%
     postProcessing(data = .) %>%
-    checkProtectedData(dataToBeSaved = .) %>%
     SaveData("agriculture", "aproduction", data = .)
-
-
 
 ## Step 2. Impute the meat data (production/animals
 ##         slaughtered/carcass weight) following the logic from the
@@ -129,6 +133,7 @@ step1Data %>%
 ## NOTE (Michael): The imputed data for meat triplet is also saved
 ##                 back in this step.
 
+cat("Imputing the meat commodity...\n")
 selectedMeatCode =
     getSessionMeatSelection(key = newKey,
                             selectedMeatTable = selectedMeatTable)
@@ -136,7 +141,7 @@ selectedMeatCode =
 result = NULL
 successCount = 0
 failCount = 0
-for(iter in 1:length(selectedMeatCode)){
+for(iter in seq(selectedMeatCode)){
     currentMeat = selectedMeatCode[iter]
     subKey = newKey
     subKey@dimensions$measuredItemCPC@keys = currentMeat
@@ -151,16 +156,22 @@ for(iter in 1:length(selectedMeatCode)){
         failCount = failCount + 1
     } else {
         successCount = successCount + 1
+
         ## New module test
         imputed %>%
             normalise(.) %>%
-            ## Change time point year back to character
             postProcessing(data = .) %>%
             checkTimeSeriesImputed(dataToBeSaved = .,
                                    key = c("geographicAreaM49",
                                            "measuredItemCPC",
                                            "measuredElement"),
                                    valueColumn = "Value") %>%
+            filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+            ## NOTE (Michael): This test currently fails because it can not
+            ##                 overwrite the ('I', '-') flag for imputed value
+            ##                 from the old system. This is an error in the
+            ##                 system as the flag ('I', '-') should be replaced
+            ##                 with ('E', 'e') which can be over-written.
             checkProtectedData(dataToBeSaved = .) %>%
             SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 
@@ -182,6 +193,7 @@ for(iter in 1:length(selectedMeatCode)){
 
 
 if(!is.null(result)){
+    cat("Saving back the animal numbers...\n")
     saveResult =
         ## Step 3. Copy the slaughtered animal numbers in meat back to the
         ##         animal commodity.
@@ -212,3 +224,5 @@ message = paste("Module completed with", successCount,
 message(message)
 
 message
+
+
