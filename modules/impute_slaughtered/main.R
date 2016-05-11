@@ -2,6 +2,7 @@
 ## Title: Impute Slaughtered Module for SWS
 ##
 ## Author: Josh Browning
+## Restructured : Michael C. J. Kao
 ##
 ## The animals slaughtered for production of meat, offals, fats and hides must
 ## be available before running the production imputation code.  These numbers,
@@ -63,6 +64,7 @@ if(CheckDebug()){
 startTime = Sys.time()
 
 ("Loading preliminary data...\n")
+sessionKey = swsContext.datasets[[1]]
 
 ## NOTE (Michael): The imputation and all modules should now have a base year of
 ##                 1999, this is the result of a discussion with Pietro.
@@ -75,6 +77,7 @@ imputationYears =
     select(code) %>%
     unlist(use.names = FALSE)
 
+## Load the animal/meat mapping table
 selectedMeatTable =
     getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
                          onlyMeatChildren = TRUE) %>%
@@ -91,26 +94,26 @@ selectedMeatTable =
 ## the session is simply ignored.
 
 ## Expand the session to include missing meats
-newKey =
-    expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
+expandedMeatKey =
+    expandMeatSessionSelection(oldKey = sessionKey,
                                selectedMeatTable = selectedMeatTable)
 
 ## Adjust the years based on the passed information:
-newKey@dimensions[["timePointYears"]]@keys =
+expandedMeatKey@dimensions[["timePointYears"]]@keys =
     as.character(imputationYears)
 
 ## Include all countries, since all data is required for the imputation
 countryCodes = GetCodeList("agriculture", "aproduction", "geographicAreaM49")
-newKey@dimensions[["geographicAreaM49"]]@keys =
+expandedMeatKey@dimensions[["geographicAreaM49"]]@keys =
     countryCodes[type == "country", code]
 
 ## Execute the get data call.
-cat("Pulling the data...\n")
+cat("Pulling the complete data...\n")
 
 ## Transfer the animal number in the animal to the slaughtered animal in the
 ## meat.
 step1Data =
-    newKey %>%
+    expandedMeatKey %>%
     GetData(key = .) %>%
     preProcessing(data = .) %>%
     transferAnimalNumber(data = ., selectedMeatTable)
@@ -120,10 +123,10 @@ step1Data =
 ## NOTE (Michael): The transfer can over-write official and semi-official
 ##                 figures as indicated by in the synchronise slaughtered
 ##                 module.
-cat("Saving the transferred data back...\n")
+cat("Saving the transferred animal to meat data back...\n")
 step1Data %>%
     postProcessing(data = .) %>%
-    SaveData("agriculture", "aproduction", data = .)
+    SaveData(expandedMeatKey@domain, expandedMeatKey@dataset, data = .)
 
 ## Step 2. Impute the meat data (production/animals
 ##         slaughtered/carcass weight) following the logic from the
@@ -134,71 +137,58 @@ step1Data %>%
 
 cat("Imputing the meat commodity...\n")
 selectedMeatCode =
-    getSessionMeatSelection(key = newKey,
+    getSessionMeatSelection(key = expandedMeatKey,
                             selectedMeatTable = selectedMeatTable)
-
 result = NULL
-successCount = 0
-failCount = 0
 for(iter in seq(selectedMeatCode)){
     currentMeat = selectedMeatCode[iter]
-    subKey = newKey
+    subKey = expandedMeatKey
     subKey@dimensions$measuredItemCPC@keys = currentMeat
     print(paste0("Imputation for item: ", currentMeat, " (",  iter, " out of ",
                  length(selectedMeatCode),")"))
 
     imputed = imputeWithAndWithoutEstimates(meatKey = subKey)
 
-
-    if(inherits(imputed, "try-error")){
-        message("Imputation Module Failed!")
-        failCount = failCount + 1
-    } else {
-        successCount = successCount + 1
-
-        ## New module test
-        imputed %>%
-            normalise(.) %>%
-            postProcessing(data = .) %>%
-            checkTimeSeriesImputed(dataToBeSaved = .,
-                                   key = c("geographicAreaM49",
-                                           "measuredItemCPC",
-                                           "measuredElement"),
-                                   valueColumn = "Value") %>%
-            filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
-            ## NOTE (Michael): This test currently fails because it can not
-            ##                 overwrite the ('I', '-') flag for imputed value
-            ##                 from the old system. This is an error in the
-            ##                 system as the flag ('I', '-') should be replaced
-            ##                 with ('E', 'e') which can be over-written.
-            checkProtectedData(dataToBeSaved = .) %>%
-            SaveData(domain = "agriculture", dataset = "aproduction", data = .)
+    ## New module test
+    imputed %>%
+        normalise(.) %>%
+        postProcessing(data = .) %>%
+        checkTimeSeriesImputed(dataToBeSaved = .,
+                               key = c("geographicAreaM49",
+                                       "measuredItemCPC",
+                                       "measuredElement"),
+                               valueColumn = "Value") %>%
+        filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+        ## NOTE (Michael): This test currently fails because it can not
+        ##                 overwrite the ('I', '-') flag for imputed value
+        ##                 from the old system. This is an error in the
+        ##                 system as the flag ('I', '-') should be replaced
+        ##                 with ('E', 'e') which can be over-written.
+        checkProtectedData(dataToBeSaved = .) %>%
+        SaveData(domain = subKey@domain, dataset = subKey@dataset, data = .)
 
 
-        message("Imputation Module Executed Successfully!")
-        ## Just need to return the numbers slaughtered code:
-        ##
-        ## TODO (Michael): Need to restructure the get formula
-        formulaTuples =
-            getYieldFormula(slot(slot(subKey,
-                                      "dimensions")$measuredItemCPC, "keys"))
-        formulaTuples = formulaTuples[nchar(input) == 4, ]
-        slaughteredAnimal =
-            getSlaughteredAnimal(data = imputed,
-                                 formulaTuples = formulaTuples)
-        result = rbind(result, slaughteredAnimal)
-    }
+
+    ## Just need to return the numbers slaughtered code:
+    ##
+    ## TODO (Michael): Need to restructure the get formula
+    formulaTuples =
+        getYieldFormula(slot(slot(subKey,
+                                  "dimensions")$measuredItemCPC, "keys"))
+    formulaTuples = formulaTuples[nchar(input) == 4, ]
+    slaughteredAnimal =
+        getSlaughteredAnimal(data = imputed,
+                             formulaTuples = formulaTuples)
+    result = rbind(result, slaughteredAnimal)
 }
 
-
 if(!is.null(result)){
-    cat("Saving back the animal numbers...\n")
-    saveResult =
-        ## Step 3. Copy the slaughtered animal numbers in meat back to the
-        ##         animal commodity.
-        step1Data %>%
+    cat("Saving back the updated animal numbers...\n")
+    ## Step 3. Copy the slaughtered animal numbers in meat back to the
+    ##         animal commodity.
+    step1Data %>%
         transferSlaughteredNumber(preUpdatedData = .,
-                                  imputationResult = result,
+                                  imputationResult = slaughteredAnimal,
                                   selectedMeatTable = selectedMeatTable) %>%
         ## Post process the data
         postProcessing(data = .) %>%
@@ -214,14 +204,9 @@ if(!is.null(result)){
         ##
         ## Note (Michael): The above comment is incorrect, only the animal
         ##                 number is saved back to the animal commdotiy.
-        SaveData(domain = "agriculture", dataset = "aproduction",
+        SaveData(domain = subKey@domain, dataset = subKey@dataset,
                  data = .)
 }
 
-message = paste("Module completed with", successCount,
-                "commodities imputed out of", successCount + failCount)
-message(message)
 
-message
-
-
+message("Imputation Module Executed Successfully!")
