@@ -147,7 +147,7 @@ for(iter in seq(selectedMeatCode)){
     print(paste0("Imputation for item: ", currentMeat, " (",  iter, " out of ",
                  length(selectedMeatCode),")"))
 
-    imputed = imputeMeatTriplet(meatKey = subKey)
+    imputed = imputeWithAndWithoutEstimates(meatKey = subKey)
 
 
     if(inherits(imputed, "try-error")){

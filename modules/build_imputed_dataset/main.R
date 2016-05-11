@@ -174,7 +174,7 @@ for(iter in seq(selectedItemCode)){
     ##                 components.
     ##
     imputation = try({
-        imputed = imputeMeatTriplet(meatKey = subKey)
+        imputed = imputeWithAndWithoutEstimates(meatKey = subKey)
 
         ## Check the imputation before saving.
         imputed %>%

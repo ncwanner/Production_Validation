@@ -1,8 +1,10 @@
-##' This is function performs imputation on the triplet element. However, this
-##' is an implementation from Josh.
+##' This is function performs imputation on the triplet element. This is an
+##' implementation from Josh to account to exclude estimates when sufficient
+##' data is available or use estimates when they are not.
 ##'
-##' NOTE (Michael); This function should ultimately be removed, it contains a
-##' lot og hacks is unreasonable implementations.
+##' NOTE (Michael): This function should ultimately be removed, it contains a
+##'                 lot of hacks and manual estimated values with method flag
+##'                 'f' should not be imputed.
 ##'
 ##' @param meatKey The Datakey object
 ##' @param minObsForEst The minimum number of observation required to keep
@@ -10,7 +12,7 @@
 ##' @return Imputed time series
 ##' @export
 
-imputeMeatTriplet = function(meatKey, minObsForEst = 5){
+imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
     cat("Reading in the data...\n")
     datasets = getProductionData(meatKey)
 
@@ -38,11 +40,11 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
             currentFormula = datasets$formulaTuples[i, ]
             selectedElements = currentFormula[, unlist(.(input, productivity, output))]
             currentData = datasets$query[, c(key(finalData),
-                                               grep(paste0(paste0(selectedElements, "$"),
-                                                           collapse = "|"),
-                                                    colnames(datasets$query),
-                                                    value = TRUE)),
-                                           with = FALSE]
+                                             grep(paste0(paste0(selectedElements, "$"),
+                                                         collapse = "|"),
+                                                  colnames(datasets$query),
+                                                  value = TRUE)),
+                                         with = FALSE]
 
             currentPrefix = datasets$prefixTuples
             ## Setup for the imputation
@@ -157,7 +159,7 @@ imputeMeatTriplet = function(meatKey, minObsForEst = 5){
 
             ## Bring together the estimates and reshape them:
             valuesImputed = combineImputation(valuesImputedWithoutEstimates,
-                                                valuesImputedWithEstimates)
+                                              valuesImputedWithEstimates)
             ## updatedData =
             ##     updateOriginalDataWithImputation(originalData = origData,
             ##                                      imputedData = valuesImputed,
