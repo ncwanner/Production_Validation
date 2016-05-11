@@ -16,6 +16,14 @@ transferParentToChild = function(parentData, commodityTree, selectedMeatTable){
               by = c("geographicAreaM49", "timePointYears", "measuredItemCPC"),
               all.x = TRUE)
     if(any(is.na(parentDataWithMapping$measuredItemChildCPC))){
+        ## NOTE (Michael): After checking the validity of the commodity table,
+        ##                 we wil change the warning to an error.
+        ##
+        ## missingTable = parentDataWithMapping[is.na(measuredItemChildCPC), ]
+        ## stop("Not all child mapped,",
+        ##      "Please updated the commodity table so all child are mapped ",
+        ##      "for each country, commodity and year combination key",
+        ##      print(missingTable, NROW(missingTable)))
         warning("Not all child mapped, unmapped children will be ommited! ",
                 "Please updated the commodity table so all child are mapped ",
                 "for each country, commodity and year combination key")
