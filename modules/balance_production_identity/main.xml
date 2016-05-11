@@ -1,20 +1,24 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <RScript xmlns="http://www.fao.org/rScript" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
-	<Name>Compute Yield (NEW)</Name>
-	<Description>Perform computation of the yield.</Description>
+	       xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
+	<Name>Balance Production Identity</Name>
+	<Description> Performs balancing for all elements of the production triplet.
+	That is, to ensure the equation (production = area harvested x yield).
+  </Description>
 	<Category>Computation</Category>
 	<Authors>
 		<Author>
-			<Name>Josh Browning</Name>
-			<Mail>joshua.browning@fao.org</Mail>
+			<Name>Michael C. J. Kao</Name>
+			<Mail>michael.kao@fao.org</Mail>
 		</Author>
 	</Authors>
 	<Params>
 		<Param xsi:type="List">
-			<Code>updateAll</Code>
-			<Label>What values should be computed?</Label>
-			<Description>Should yield be computed for all values in the production database, or only the values in this session?  Default is session only.</Description>
+      <Code>computation_selection</Code>
+	    <Label>Perform computation on </Label>
+		  <Description>
+			  Please specify the selection to perform computation.
+		  </Description>
 			<Compulsory>false</Compulsory>
 			<Options>
 				<Option>
