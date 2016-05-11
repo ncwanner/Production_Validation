@@ -9,3 +9,4 @@ Model
 imputation_fit/
 imputation.log
 sws.yml
+*.sh
