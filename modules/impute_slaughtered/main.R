@@ -37,7 +37,6 @@ suppressMessages({
     library(faoswsProduction)
     library(magrittr)
     library(dplyr)
-    library(splines)
 })
 
 ## set up for the test environment and parameters
@@ -63,7 +62,7 @@ if(CheckDebug()){
 
 startTime = Sys.time()
 
-message("Loading preliminary data...\n")
+("Loading preliminary data...\n")
 
 ## NOTE (Michael): The imputation and all modules should now have a base year of
 ##                 1999, this is the result of a discussion with Pietro.

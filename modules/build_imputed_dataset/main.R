@@ -7,9 +7,6 @@ suppressMessages({
     library(faoswsProduction)
     library(magrittr)
     library(dplyr)
-    ## TODO (Michael): This package should be removed, some how the
-    ##                 faoswsImputation is not loading it.
-    library(splines)
 })
 
 ## set up for the test environment and parameters
