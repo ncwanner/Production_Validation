@@ -7,7 +7,7 @@
 getYieldData(dataContext)
 }
 \arguments{
-\item{dataContect}{The data contect returned by \code{GetTestEnvironment}}
+\item{dataContext}{The data contect returned by \code{GetTestEnvironment}}
 }
 \value{
 A list containing the yield data, the yield formula and also the

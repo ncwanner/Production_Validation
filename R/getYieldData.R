@@ -1,6 +1,6 @@
 ##' This function extracts the yield data
 ##'
-##' @param dataContect The data contect returned by \code{GetTestEnvironment}
+##' @param dataContext The data contect returned by \code{GetTestEnvironment}
 ##'
 ##' @return A list containing the yield data, the yield formula and also the
 ##'     prefix of the column names.
