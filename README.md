@@ -19,12 +19,15 @@ Production Module Flow:
 
 ### 1. Impute Slaughtered
 
+The module imputes the animal and meat commodity and ensure the slaughtered
+number in both commodity are identical.
+
 **Input Datasets:**
 
-* Production Domain
+* Production domain
 * Animal to meat mapping table
 * Flag table
-* Yield Formula
+* Yield formula
 
 **Steps:**
 
@@ -33,13 +36,15 @@ Production Module Flow:
 3. Transfer the imputed slaughtered animal back to the animal commodity.
 
 **Flag Changes:**
-------------------------------------------------------------------------
+
 | Procedure | Observation Status Flag | Method Flag|
 | --- | --- | --- |
-| Tranasfer between animal and meat commodity | <Same as origin> | c |
+| Tranasfer between animal and meat commodity | `<Same as origin>` | `<Same as origin>` |
 | Balance by Production Identity | I | i |
 | Imputation | I | e |
-------------------------------------------------------------------------
+
+**NOTE: The method flag for transfer is currently incorrectly implemented, it
+  will be changed to "c"**
 
 **Output:**
 
@@ -49,15 +54,124 @@ synced between the meat and the parent commodity.
 
 ### 2. Synchronise Slaughtered
 
+The module transfers the animal slaughtered from the animal commodity to all
+related derivative such as skins, hide, and offals.
+
+**Input Datasets:**
+
+* Production domain
+* Animal to meat mapping table
+* Flag table
+* Commodity tree table
+
+**Steps:**
+
+
+commodity.
+
+**Flag Changes:**
+
+| Procedure | Observation Status Flag | Method Flag|
+| --- | --- | --- |
+| Tranasfer between animal and meat commodity | `<Same as origin>` | `<Same as origin>` |
+
+**NOTE: The method flag for transfer is currently incorrectly implemented, it
+  will be changed to "c"**
+
+**Output:**
+
+Animal slaughtered in the animal commodity transfered to all derived products.
+
 
 ### 3. Balance Production Identity
+
+This module ensures the production/area harvested/yield relationship is
+fulfilled and calculate any missing values where available.
+
+**Input Datasets:**
+
+* Production domain
+* Yield formula
+
+**Steps:**
+
+1. Compute yield
+2. Balance Production
+3. Balance Area Harvested
+
+**Flag Changes:**
+
+| Procedure | Observation Status Flag | Method Flag|
+| --- | --- | --- |
+| Compute/Balance | `<Flag Aggregation>` | i |
+
+**Output:**
+
+The production domain data balanced according to the equation.
 
 
 ### 4. Build Imputed Dataset
 
+This module performs the imputation and saves the imputed values as `.rds`
+objects back to the SWS shared drive. The purpose of this module is to avoid the
+long running time of imputation, and allow the imputation to be loaded.
+
+**Input Datasets:**
+
+* Production domain
+* Animal to meat mapping table
+* Complete imputation key
+* Yield formula
+
+**Steps:**
+
+1. Compute yield
+2. Impute yield
+3. Balance production
+4. Impute production
+5. Balance Area Harvested
+6. Impute Area harvested
+7. Compute yield
+8. Impute yield
+
+**NOTE: Step 7 and 8 are to ensure that yield are updated again according to the
+  new imputation of production and area harvested. However, this does not ensure
+  convergence and full complete imputation. A new algorithm is in development to
+  ensure convergence and complete imputation where available.**
+
+**Flag Changes:**
+No flag change as the data is not saved back.
+
+**Output:**
+
+An `.rds` object saved on the SWS shared drive with all production imputed where
+available.
 
 ### 5. Fill Imputation
 
+This module loads the imputed value from the `.rds` file from the shared drive
+and fill and save the missing values.
+
+**Input Datasets:**
+
+* Production domain
+* Imputed `.rds` object
+* Complete imputation key
+* Yield formula
+
+**Steps:**
+
+1. Fill in imputed value from previous imputed dataset
+
+**Flag Changes:**
+
+| Procedure | Observation Status Flag | Method Flag|
+| Compute/Balance | `<Flag Aggregation>` | i |
+| Imputation | I | e |
+
+**Output:**
+
+Production domain imputed where available.
 
 
 **All work under this repository represents the latest status of development and
