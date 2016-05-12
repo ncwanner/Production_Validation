@@ -16,6 +16,7 @@ Production Module Flow:
   module is to balance the identity again when manual estimates are inputted
   after the imputation.**
 
+---
 
 ### 1. Impute Slaughtered
 
@@ -51,6 +52,7 @@ number in both commodity are identical.
 Meat commodity complete imputed where available and the slaughtered animal
 synced between the meat and the parent commodity.
 
+---
 
 ### 2. Synchronise Slaughtered
 
@@ -82,6 +84,7 @@ commodity.
 
 Animal slaughtered in the animal commodity transfered to all derived products.
 
+---
 
 ### 3. Balance Production Identity
 
@@ -109,6 +112,7 @@ fulfilled and calculate any missing values where available.
 
 The production domain data balanced according to the equation.
 
+---
 
 ### 4. Build Imputed Dataset
 
@@ -147,6 +151,8 @@ No flag change as the data is not saved back.
 An `.rds` object saved on the SWS shared drive with all production imputed where
 available.
 
+---
+
 ### 5. Fill Imputation
 
 This module loads the imputed value from the `.rds` file from the shared drive
@@ -173,6 +179,7 @@ and fill and save the missing values.
 
 Production domain imputed where available.
 
+---
 
 **All work under this repository represents the latest status of development and
    is made public for collaboration purposes. It does not reflect the current
