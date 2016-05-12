@@ -60,7 +60,6 @@ formulaTuples =
 unique_formulas = unique(formulaTuples[, list(input, productivity, output,
                                               unitConversion)])
 
-
 for(i in 1:nrow(unique_formulas)){
     ## Subset the formula table
     current_formula = unique_formulas[i, ]
@@ -82,11 +81,14 @@ for(i in 1:nrow(unique_formulas)){
         as.character(current_formula[, list(input, output, productivity)])
     subKey@dimensions$measuredItemCPC@keys = currentCPC
 
-    ## Get hte yield data and perform the necessary pre-processing
+    ## Get the yield data and perform the necessary pre-processing
     yieldData =
         getYieldData(subKey) %>%
         .$query %>%
-        preProcessing(data = .)
+        fillRecord(data = .) %>%
+        normalise(denormalisedData = .) %>%
+        preProcessing(data = .) %>%
+        denormalise(normalisedData = ., denormaliseKey = "measuredElement")
 
     ## Obtain the processing parameter associated with the data
     processingParams = defaultProcessingParameters(
@@ -105,36 +107,26 @@ for(i in 1:nrow(unique_formulas)){
                          processingParameters = processingParams,
                          unitConversion = current_formula$unitConversion)
     ## Module testing
-    ##
-    ## TODO (Michael): Need to write this in a cleaner way.
     cat("Module Testing and saving data back ... \n")
-    productionFormula =
-        getYieldFormula(slot(slot(subKey,
-                                  "dimensions")$measuredItemCPC,
-                             "keys"))
-    formulaPrefix = getFormulaPrefix()
-
-    formulaTable =
-        constructFormulaTable(productionFormula, formulaPrefix)
-
-    valueVars = grep(formulaPrefix$valuePrefix,
-                     colnames(yieldData), value = TRUE)
-    flagObsVars = grep(formulaPrefix$flagObsPrefix,
-                       colnames(yieldData), value = TRUE)
 
     yieldData %>%
+        checkProductionBalanced(dataToBeSaved = .,
+                                areaVar = processingParams$areaHarvestedValue,
+                                yieldVar = processingParams$yieldValue,
+                                prodVar = processingParams$productionValue,
+                                conversion = processingParams$unitConversion) %>%
+        checkIdentityCalculated(dataToBeSaved = .,
+                                areaVar = processingParams$areaHarvestedValue,
+                                yieldVar = processingParams$yieldValue,
+                                prodVar = processingParams$productionValue) %>%
         normalise(.) %>%
         postProcessing(.) %>%
-        checkProductionBalanced(dataToBeSaved = .,
-                                areaVar = current_formula$input,
-                                yieldVar = current_formula$productivity,
-                                prodVar = current_formula$output,
-                                conversion = current_formula$unitConversion) %>%
         filter(filter = flagMethod %in% c("i", "t", "e", "n", "u")) %>%
         checkProtectedData(dataToBeSaved = .) %>%
         SaveData(domain = "agriculture",
                  dataset = "aproduction",
                  data = .)
+
 }
 
 
