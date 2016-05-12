@@ -17,6 +17,8 @@ checkProductionBalanced = function(dataToBeSaved,
                                    yieldVar,
                                    prodVar,
                                    conversion){
+    stopifnot(all(c(areaVar, yieldVar, prodVar) %in% colnames(dataToBeSaved)))
+
     for(i in seq(areaVar)){
         productionDifference =
             abs(dataToBeSaved[[areaVar[i]]] * dataToBeSaved[[yieldVar[i]]] -
