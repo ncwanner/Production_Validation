@@ -30,28 +30,32 @@ computeYield = function(data, processingParameters, normalized = FALSE,
     stopifnot(faoswsUtil::checkMethodFlag(newMethodFlag))
 
     ## Abbreviate processingParameters since it is used alot
-    p = processingParameters
+    param = processingParameters
 
     ## Balance yield values only when they're missing
-    missingYield = is.na(data[[p$yieldValue]]) |
-        data[[p$yieldObservationFlag]] == "M"
+    missingYield = is.na(data[[param$yieldValue]]) |
+        data[[param$yieldObservationFlag]] == param$missingValueObservationFlag
     filter = missingYield &
-        !is.na(data[[p$productionValue]]) &
-        !is.na(data[[p$areaHarvestedValue]]) &
-        data[[p$productionObservationFlag]] != "M" &
-        data[[p$areaHarvestedObservationFlag]] != "M"
-    data[filter, c(p$yieldValue) :=
-         faoswsUtil::computeRatio(get(p$productionValue),
-                                  get(p$areaHarvestedValue)) * unitConversion]
+        !is.na(data[[param$productionValue]]) &
+        !is.na(data[[param$areaHarvestedValue]]) &
+        data[[param$productionObservationFlag]] != param$missingValueObservationFlag &
+        data[[param$areaHarvestedObservationFlag]] != param$missingValueObservationFlag
+
+    data[filter, `:=`(c(param$yieldValue),
+                      computeRatio(get(param$productionValue),
+                                   get(param$areaHarvestedValue)) *
+                      unitConversion)]
     data[filter,
-         `:=`(c(p$yieldObservationFlag),
-              aggregateObservationFlag(get(p$productionObservationFlag),
-                                       get(p$areaHarvestedObservationFlag)))]
-    data[filter, c(p$yieldMethodFlag) := newMethodFlag]
+         `:=`(c(param$yieldObservationFlag),
+              aggregateObservationFlag(get(param$productionObservationFlag),
+                                       get(param$areaHarvestedObservationFlag)))]
+    data[filter, c(param$yieldMethodFlag) := newMethodFlag]
     ## If yieldValue is still NA, make sure observation flag is "M".  Note:
     ## this can happen by taking 0 production / 0 area.
-    data[is.na(get(p$yieldValue)), c(p$yieldObservationFlag) := "M"]
-    data[is.na(get(p$yieldValue)), c(p$yieldMethodFlag) := "u"]
+    data[is.na(get(param$yieldValue)),
+         `:=`(c(param$yieldObservationFlag), param$missingValueObservationFlag)]
+         data[is.na(get(param$yieldValue)),
+              `:=`(c(param$yieldMethodFlag), param$missingValueMethodFlag)]
 
     return(data)
 }

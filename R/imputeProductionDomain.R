@@ -45,7 +45,7 @@ imputeProductionDomain = function(data,
     ensureProductionInputs(data = dataCopy,
                            processingParameters = processingParameters)
 
-    setkeyv(x = dataCopy, cols = c(processingParameters$byKey,
+    setkeyv(x = dataCopy, cols = c(processingParameters$areaVar,
                                    processingParameters$yearValue))
     dataCopy = processProductionDomain(data = dataCopy,
                                        processingParameters = processingParameters)

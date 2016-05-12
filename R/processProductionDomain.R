@@ -30,19 +30,19 @@ processProductionDomain = function(data, processingParameters){
                          value = p$areaHarvestedValue,
                          observationFlag = p$areaHarvestedObservationFlag,
                          methodFlag = p$areaHarvestedMethodFlag,
-                         missingObservationFlag = p$naFlag,
+                         missingObservationFlag = p$missingObservationFlag,
                          imputedFlag = p$imputedFlag)
         removeImputation(data = data,
                          value = p$yieldValue,
                          observationFlag = p$yieldObservationFlag,
                          methodFlag = p$yieldMethodFlag,
-                         missingObservationFlag = p$naFlag,
+                         missingObservationFlag = p$missingObservationFlag,
                          imputedFlag = p$imputedFlag)
         removeImputation(data = data,
                          value = p$productionValue,
                          observationFlag = p$productionObservationFlag,
                          methodFlag = p$productionMethodFlag,
-                         missingObservationFlag = p$naFlag,
+                         missingObservationFlag = p$missingObservationFlag,
                          imputedFlag = p$imputedFlag)
     }
 
@@ -61,40 +61,40 @@ processProductionDomain = function(data, processingParameters){
                      value = p$areaHarvestedValue,
                      observationFlag = p$areaHarvestedObservationFlag,
                      methodFlag = p$areaHarvestedMethodFlag,
-                     missingObservationFlag = p$naFlag,
-                     imputedFlag = "I")
+                     missingObservationFlag = p$missingObservationFlag,
+                     imputedFlag = param$imputationObservatoinFlag)
     removeImputation(data = data,
                      value = p$yieldValue,
                      observationFlag = p$yieldObservationFlag,
                      methodFlag = p$yieldMethodFlag,
-                     missingObservationFlag = p$naFlag,
-                     imputedFlag = "I")
+                     missingObservationFlag = p$missingObservationFlag,
+                     imputedFlag = param$imputationObservatoinFlag)
     removeImputation(data = data,
                      value = p$productionValue,
                      observationFlag = p$productionObservationFlag,
                      methodFlag = p$productionMethodFlag,
-                     missingObservationFlag = p$naFlag,
-                     imputedFlag = "I")
+                     missingObservationFlag = p$missingObservationFlag,
+                     imputedFlag = param$imputationObservatoinFlag)
 ### Assign NA's when the flag is missing
     remove0M(data = data,
              valueVars = p$areaHarvestedValue,
              flagVars = p$areaHarvestedObservationFlag,
-             missingFlag = p$naFlag)
+             missingFlag = p$missingObservationFlag)
     remove0M(data = data,
              valueVars = p$yieldValue,
              flagVars = p$yieldObservationFlag,
-             missingFlag = p$naFlag)
+             missingFlag = p$missingObservationFlag)
     remove0M(data = data,
              valueVars = p$productionValue,
              flagVars = p$productionObservationFlag,
-             missingFlag = p$naFlag)
+             missingFlag = p$missingObservationFlag)
 
 
     ## Remove byKey groups that have no data
     ## faoswsUtil::removeNoInfo(data = data,
     ##              value = p$yieldValue,
     ##              observationFlag = p$yieldObservationFlag,
-    ##              byKey = p$byKey)
+    ##              byKey = p$areaVar)
     ## removeNoInfo assigns the new data.table to the variable "data" in the
     ## environment of this function.  Thus, to ensure "data" is returned to the
     ## caller of this function, assign the data.table to the calling environment.
