@@ -173,6 +173,7 @@ and fill and save the missing values.
 **Flag Changes:**
 
 | Procedure | Observation Status Flag | Method Flag |
+| --- | --- | --- |
 | Compute/Balance | `<Flag Aggregation>` | i |
 | Imputation | I | e |
 
