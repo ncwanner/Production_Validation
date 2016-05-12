@@ -15,8 +15,6 @@ checkIdentityCalculated(dataToBeSaved, areaVar, yieldVar, prodVar)
 \item{yieldVar}{The column name corresponding to the yield.}
 
 \item{prodVar}{The column name corresponding to produciton.}
-
-\item{conversion}{The conversion factor for calculating production.}
 }
 \value{
 If the data satisfy the production identity, then the
