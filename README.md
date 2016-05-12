@@ -23,7 +23,7 @@ Production Module Flow:
 The module imputes the animal and meat commodity and ensure the slaughtered
 number in both commodity are identical.
 
-**Input Datasets:**
+**Inputs:**
 
 * Production domain
 * Animal to meat mapping table
@@ -59,7 +59,7 @@ synced between the meat and the parent commodity.
 The module transfers the animal slaughtered from the animal commodity to all
 related derivative such as skins, hide, and offals.
 
-**Input Datasets:**
+**Inputs:**
 
 * Production domain
 * Animal to meat mapping table
@@ -91,7 +91,7 @@ Animal slaughtered in the animal commodity transfered to all derived products.
 This module ensures the production/area harvested/yield relationship is
 fulfilled and calculate any missing values where available.
 
-**Input Datasets:**
+**Inputs:**
 
 * Production domain
 * Yield formula
@@ -120,7 +120,7 @@ This module performs the imputation and saves the imputed values as `.rds`
 objects back to the SWS shared drive. The purpose of this module is to avoid the
 long running time of imputation, and allow the imputation to be loaded.
 
-**Input Datasets:**
+**Inputs:**
 
 * Production domain
 * Animal to meat mapping table
@@ -144,6 +144,7 @@ long running time of imputation, and allow the imputation to be loaded.
   ensure convergence and complete imputation where available.**
 
 **Flag Changes:**
+
 No flag change as the data is not saved back.
 
 **Output:**
@@ -158,7 +159,7 @@ available.
 This module loads the imputed value from the `.rds` file from the shared drive
 and fill and save the missing values.
 
-**Input Datasets:**
+**Inputs:**
 
 * Production domain
 * Imputed `.rds` object
@@ -171,7 +172,7 @@ and fill and save the missing values.
 
 **Flag Changes:**
 
-| Procedure | Observation Status Flag | Method Flag|
+| Procedure | Observation Status Flag | Method Flag |
 | Compute/Balance | `<Flag Aggregation>` | i |
 | Imputation | I | e |
 
