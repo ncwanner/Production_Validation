@@ -115,6 +115,7 @@ cat("Pulling the complete data...\n")
 step1Data =
     expandedMeatKey %>%
     GetData(key = .) %>%
+    fillRecord(data = .) %>%
     preProcessing(data = .) %>%
     transferAnimalNumber(data = ., selectedMeatTable)
 
