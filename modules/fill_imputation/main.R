@@ -68,6 +68,13 @@ for(i in seq(selectedImputationItems)){
         select(input, productivity, output) %>%
         unlist(x = ., use.names = FALSE)
 
+    processingParams =
+        productionProcessingParameters(
+            datasetConfig = GetDatasetConfig("agriculture", "aproduction"),
+            productionCode = currentFormula$output,
+            areaHarvestedCode = currentFormula$input,
+            yieldCode = currentFormula$productivity)
+
     ## Give warning if the imputed data set does not exist
     if(!imputationExist(modelLoadingPath = modelLoadingPath,
                         item = currentItem))
@@ -100,6 +107,7 @@ for(i in seq(selectedImputationItems)){
     ## Load the selected data from the data base
     currentValues =
         GetData(subKey) %>%
+        fillRecord(data = .) %>%
         preProcessing(data = .) %>%
         setkeyv(x = , col = c("geographicAreaM49", "measuredItemCPC",
                               "timePointYears", "measuredElement"))
@@ -143,6 +151,16 @@ for(i in seq(selectedImputationItems)){
                flagMethod = i.flagMethod) %>%
         ## Remove imputation column
         select(.data = ., select = -starts_with("i.")) %>%
+        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+        ## NOTE (Michael): This test might fail because the data may have been
+        ##                 updated since the production imputation module was
+        ##                 performed.
+        checkProductionBalanced(data = .,
+                                areaVar = processingParams$areaHarvestedValue,
+                                yieldVar = processingParams$yieldValue,
+                                prodVar = processingParams$productionValue,
+                                conversion = currentFormula[, unitConversion]) %>%
+        normalise(.) %>%
         postProcessing(data = .) %>%
         checkProtectedData(dataToBeSaved = .) %>%
         ## NOTE (Michael): flagMethod can be 'i' or 'e' since yield
@@ -151,16 +169,9 @@ for(i in seq(selectedImputationItems)){
         checkOutputFlags(data = .,
                          flagObservationStatusExpected = "I",
                          flagMethodExpected = c("i", "e")) %>%
-        ## NOTE (Michael): This test might fail because the data may have been
-        ##                 updated since the production imputation module was
-        ##                 performed.
-        checkProductionBalanced(data = .,
-                                areaVar = currentFormula[, input],
-                                yieldVar = currentFormula[, productivity],
-                                prodVar = currentFormula[, output],
-                                conversion = currentFormula[, unitConversion]) %>%
         ## Save data back
         SaveData(domain = "agriculture", dataset = "aproduction", data = .)
+
 }
 
 ## Return message

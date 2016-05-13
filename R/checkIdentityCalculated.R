@@ -21,13 +21,24 @@ checkIdentityCalculated = function(dataToBeSaved,
     stopifnot(all(c(areaVar, yieldVar, prodVar) %in% colnames(dataToBeSaved)))
 
     for(i in seq(areaVar)){
-        number_of_na =
-            is.na(dataToBeSaved[[areaVar[i]]]) +
-            is.na(dataToBeSaved[[yieldVar[i]]]) +
-            is.na(dataToBeSaved[[prodVar[i]]])
+        ## If the number of NA's is 1, then the identity is not calculated, as
+        ## the number can be calculated by the other two non-missing values.
+        containOneNA =
+            (is.na(dataToBeSaved[[areaVar[i]]]) +
+             is.na(dataToBeSaved[[yieldVar[i]]]) +
+             is.na(dataToBeSaved[[prodVar[i]]])) == 1
 
-        if(any(number_of_na == 1)){
-            print(which(number_of_na == 1))
+        ## NOTE (Michael): However, yield can be a missing value when area
+        ##                 harvested is zero.
+        acceptableNACase =
+            (dataToBeSaved[[areaVar[i]]] == 0 &
+             is.na(dataToBeSaved[[yieldVar[i]]]))
+
+        ## Return the index where identities are not calculated
+        identityNotCalculated = setdiff(which(containOneNA), which(acceptableNACase))
+
+        if(length(identityNotCalculated) > 0){
+            print(identityNotCalculated)
             stop("Not all entries are calculated")
         }
     }

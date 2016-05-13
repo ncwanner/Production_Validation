@@ -25,7 +25,7 @@ balanceProduction = function(data,
 
     ## Impute only when area and yield are available and production isn't
     filter = data[,!is.na(get(param$areaHarvestedValue)) & # area is available
-                   is.na(get(param$paramroductionValue)) &    # production is missing
+                   is.na(get(param$productionValue)) &    # production is missing
                    !is.na(get(param$yieldValue))]          # yield is missing
     filter2 = data[,get(param$areaHarvestedObservationFlag) !=
                     param$missingValueObservationFlag &
@@ -38,7 +38,7 @@ balanceProduction = function(data,
                              get(param$yieldValue) /
                              unitConversion, FUN = roundResults))]
     data[filter,
-         `:=`(c(param$poductionObservationFlag),
+         `:=`(c(param$productionObservationFlag),
               aggregateObservationFlag(get(param$areaHarvestedObservationFlag),
                                        get(param$yieldObservationFlag)))]
     ## Wrap last call in invisible() so no data.table is returned

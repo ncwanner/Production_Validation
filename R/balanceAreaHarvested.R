@@ -20,36 +20,36 @@ balanceAreaHarvested = function(data,
                                processingParameters = processingParameters)
 
     ## Save clutter by renaming "processingParameters" to "p" locally.
-    p = processingParameters
+    param = processingParameters
 
     ## Impute only when area and yield are available and production isn't
-    filter = data[,is.na(get(p$areaHarvestedValue)) & # area is missing
-                  !is.na(get(p$yieldValue)) &         # yield is available
-                  !is.na(get(p$productionValue))]     # production is available
-    filter2 = data[,get(p$productionObservationFlag) != param$missingValueObservationFlag &
-                    get(p$yieldObservationFlag) != param$missingValueObservationFlag]
+    filter = data[,is.na(get(param$areaHarvestedValue)) & # area is missing
+                   !is.na(get(param$yieldValue)) &        # yield is available
+                   !is.na(get(param$productionValue))]    # production is available
+    filter2 = data[,get(param$productionObservationFlag) != param$missingValueObservationFlag &
+                    get(param$yieldObservationFlag) != param$missingValueObservationFlag]
     filter = filter & filter2
 
-    data[filter, `:=`(c(p$areaHarvestedValue),
-                      sapply(computeRatio(get(p$productionValue),
-                                          get(p$yieldValue)) *
+    data[filter, `:=`(c(param$areaHarvestedValue),
+                      sapply(computeRatio(get(param$productionValue),
+                                          get(param$yieldValue)) *
                              unitConversion, roundResults))]
 
     data[filter,
-         `:=`(c(p$areaHarvestedObservationFlag),
-              aggregateObservationFlag(get(p$productionObservationFlag),
-                                       get(p$yieldObservationFlag)))]
+         `:=`(c(param$areaHarvestedObservationFlag),
+              aggregateObservationFlag(get(param$productionObservationFlag),
+                                       get(param$yieldObservationFlag)))]
     ## If production is zero, then the area harvested should be
     ## zero. Sometimes this is not calculated as yield can be missing.
-    data[get(p$productionValue) == 0 &
-         get(p$productionObservationFlag) != p$naFlag &
-         !(get(p$areaHarvestedMethodFlag) %in% param$protectedMethodFlag),
-         `:=`(c(p$areaHarvestedValue, p$areaHarvestedObservationFlag,
-                p$areaHarvestedMethodFlag),
+    data[get(param$productionValue) == 0 &
+         get(param$productionObservationFlag) != param$missingValueObservationFlag &
+         !(get(param$areaHarvestedMethodFlag) %in% param$protectedMethodFlag),
+         `:=`(c(param$areaHarvestedValue, param$areaHarvestedObservationFlag,
+                param$areaHarvestedMethodFlag),
               list(0, param$imputationObservationFlag, param$balanceMethodFlag))]
 
 
     ## Wrap last call in invisible() so no data.table is returned
-    invisible(data[filter, `:=`(c(p$areaHarvestedMethodFlag),
+    invisible(data[filter, `:=`(c(param$areaHarvestedMethodFlag),
                                 param$imputationMethodFlag)])
 }

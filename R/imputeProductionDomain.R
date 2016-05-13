@@ -62,6 +62,7 @@ imputeProductionDomain = function(data,
     allProductionMissing = all(is.na(dataCopy[[processingParameters$productionValue]]))
     allAreaMissing = all(is.na(dataCopy[[processingParameters$areaHarvestedValue]]))
 
+
     if(!all(allYieldMissing)){
         ## Step two: Impute Yield
         cat("Imputing Yield ...\n")
