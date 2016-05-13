@@ -82,6 +82,7 @@ cat("Pulling the data ... \n")
 
 newParentData =
     GetData(key = expandedMeatKey) %>%
+    fillRecord(data = .) %>%
     preProcessing(data = .) %>%
     ## Remove missing values, as we don't want to copy those.
     removeMissingEntry(data = .) %>%
@@ -101,7 +102,7 @@ newCommodityTree =
 cat("Transfere the animal number to all the children commodities ... \n")
 transferedData =
     newCommodityTree %>%
-    preProcessing(.) %>%
+    mutate(timePointYears = as.numeric(timePointYears)) %>%
     transferParentToChild(commodityTree = .,
                           parentData = newParentData,
                           selectedMeatTable) %>%
@@ -125,7 +126,7 @@ saveResult =
     ##                 not required as mentioned in the comment in the
     ##                 beginning. Official and semi-official figures can be
     ##                 over-written.
-    ## subset(x = ., flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+    ## filter(x = ., flagMethod %in% c("i", "t", "e", "n", "u")) %>%
     ## checkProtectedData(dataToBeSaved = .) %>%
     SaveData(domain = swsContext.datasets[[1]]@domain,
              dataset = swsContext.datasets[[1]]@dataset,
