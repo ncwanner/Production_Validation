@@ -111,9 +111,11 @@ for(iter in seq(selectedItemCode)){
 
     ## Create processing parameters
     processingParams =
-        defaultProcessingParameters(productionValue = currentFormula$output,
-                                    areaHarvestedValue = currentFormula$input,
-                                    yieldValue = currentFormula$productivity)
+        productionProcessingParameters(
+            datasetConfig = GetDatasetConfig("agriculture", "aproduction"),
+            productionCode = currentFormula$output,
+                                       areaHarvestedCode = currentFormula$input,
+                                       yieldCode = currentFormula$productivity)
 
     print(paste0("Ensuring data consistency for item: ", currentItem, " (",
                  iter, " out of ", length(selectedItemCode),")"))
@@ -129,8 +131,7 @@ for(iter in seq(selectedItemCode)){
 
     if(NROW(currentData) > 0){
         currentData %>%
-            preProcessing(data = .,
-                          params = processingParams) %>%
+            preProcessing(data = .) %>%
             denormalise(normalisedData = .,
                         denormaliseKey = "measuredElement") %>%
             removeZeroYield(data = .,
@@ -148,8 +149,7 @@ for(iter in seq(selectedItemCode)){
                                methodFlag2 =
                                    processingParams$areaHarvestedMethodFlag) %>%
             normalise(denormalisedData = .) %>%
-            postProcessing(data = .,
-                           params = processingParams) %>%
+            postProcessing(data = .) %>%
             SaveData(domain = "agriculture",
                      dataset = "aproduction",
                      data = .)
@@ -192,7 +192,7 @@ for(iter in seq(selectedItemCode)){
                                            "measuredItemCPC",
                                            "measuredElement"),
                                    valueColumn = "Value") %>%
-            postProcessing(data = ., params = processingParams) %>%
+            postProcessing(data = .) %>%
             {
                 ## HACK (Michael): Before we decide how to deal with the flags,
                 ##                 we will not perform this check as we can not

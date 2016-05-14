@@ -26,33 +26,37 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
             removeIndigenousBiologicalMeat(datasets$formulaTuples)
         ## Create a placeholder to merge, this also ensures the
         ## imputation is complete.
-        finalData = datasets$query[, .(geographicAreaM49, measuredItemCPC, timePointYears)]
-        setkeyv(finalData, c("geographicAreaM49", "measuredItemCPC", "timePointYears"))
+        finalData =
+            datasets$query[, .(geographicAreaM49, measuredItemCPC, timePointYears)]
+        setkeyv(finalData,
+                c("geographicAreaM49", "measuredItemCPC", "timePointYears"))
         for(i in 1:nrow(datasets$formulaTuples)){
             ## For convenience, let's save the formula tuple to "formula"
             message("Processing pair ", i, " of ", nrow(datasets$formulaTuples),
                     " element triples.")
-            ## cleanedData = cleanData(datasets, i = i, maxYear = 2014)
-            warning("The hard coded year in this function should be removed!!!")
 
-
-            ## Split the data for easy reference
+            ## Split the data by formula for easy processing
             currentFormula = datasets$formulaTuples[i, ]
-            selectedElements = currentFormula[, unlist(.(input, productivity, output))]
-            currentData = datasets$query[, c(key(finalData),
-                                             grep(paste0(paste0(selectedElements, "$"),
-                                                         collapse = "|"),
-                                                  colnames(datasets$query),
-                                                  value = TRUE)),
-                                         with = FALSE]
+            selectedElements =
+                currentFormula[, unlist(.(input, productivity, output))]
+            currentData =
+                datasets$query[, c(key(finalData),
+                                   grep(paste0(paste0(selectedElements, "$"),
+                                               collapse = "|"),
+                                        colnames(datasets$query),
+                                        value = TRUE)),
+                               with = FALSE]
 
             currentPrefix = datasets$prefixTuples
             ## Setup for the imputation
             processingParams =
-                defaultProcessingParameters(productionValue = currentFormula[, output],
-                                            yieldValue = currentFormula[, productivity],
-                                            areaHarvestedValue = currentFormula[, input])
-            processingParams$imputedFlag = c("I", "E")
+                productionProcessingParameters(
+                    GetDatasetConfig("agriculture", "aproduction"),
+                    productionCode = currentFormula[, output],
+                    yieldCode = currentFormula[, productivity],
+                    areaHarvestedCode = currentFormula[, input]
+                )
+
             p = getImputationParameters(datasets, i = i)
             ## NOTE (Michael): Stop the plotting.
             p$yieldParams$plotImputation = ""
@@ -71,11 +75,6 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
             ##                 processing.
             if(NROW(processedData) < 1)
                 next
-
-            forcedZero =
-                getForcedZeroKey(processedData,
-                                 processingParam = processingParams,
-                                 productionParams = productionParams)
 
             ## Imputation is a bit tricky, as we want to exclude previously
             ## estimated data if we have "enough" official/semi-official data in
@@ -99,7 +98,7 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
             ## imputations (corresponding to series without enough
             ## official data) and then rerun the imputation.
             origData = copy(processedData)
-            processingParams$removePriorImputation = TRUE
+            processingParams$removeManualEstimation = TRUE
             cat("Imputation without Manual Estimates\n")
             imputation1 =
                 imputeProductionDomain(copy(origData),
@@ -109,9 +108,10 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
                                        yieldImputationParameters = yieldParams,
                                        productionImputationParameters =
                                            productionParams,
-                                       unitConversion = currentFormula[, unitConversion])
+                                       unitConversion =
+                                           currentFormula[, unitConversion])
             ## Now impute while leaving estimates in
-            processingParams$removePriorImputation = FALSE
+            processingParams$removeManualEstimation = FALSE
             simplerModels = allDefaultModels()
             simplerModels = simplerModels[c("defaultMean", "defaultLm",
                                             "defaultExp", "defaultNaive",
@@ -129,15 +129,7 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
                                        productionImputationParameters =
                                            productionParams,
                                        unitConversion = currentFormula[, unitConversion])
-            ## Take all the I/e values that have just been estimated, but don't
-            ## include I/i (as balanced observations may not be correct, because
-            ## we could use estimates for yield imputation and not for
-            ## production, for example).
-            ## valuesImputed1 =
-            ##     getUpdatedObs(dataOld = origData,
-            ##                   dataNew = imputation1,
-            ##                   key = c("geographicAreaM49", "timePointYears"),
-            ##                   wideVarName = "measuredElement")
+
             ## Formula to only include series with enough data:
             imputationNormalised1 = normalise(imputation1)
             valuesImputedWithoutEstimates =
@@ -146,11 +138,6 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
                                   useEstimates = FALSE)
 
             ## Now add in the values imputed in the second round
-            ## valuesImputed2 =
-            ##     getUpdatedObs(dataOld = origData,
-            ##                   dataNew = imputation2,
-            ##                   key = c("geographicAreaM49", "timePointYears"),
-            ##                   wideVarName = "measuredElement")
             imputationNormalised2 = normalise(imputation2)
             valuesImputedWithEstimates =
                 selectUseEstimate(data = imputationNormalised2,
@@ -160,41 +147,13 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
             ## Bring together the estimates and reshape them:
             valuesImputed = combineImputation(valuesImputedWithoutEstimates,
                                               valuesImputedWithEstimates)
-            ## updatedData =
-            ##     updateOriginalDataWithImputation(originalData = origData,
-            ##                                      imputedData = valuesImputed,
-            ##                                      yieldElementCode =
-            ##                                          currentFormula[, productivity],
-            ##                                      prodElementCode =
-            ##                                          currentFormula[, output])
 
-            ## NOTE (Michael): The reason why we have to rebalance the
-            ##                 imputation is due to the fact that the
-            ##                 imputation comes from 2 different
-            ##                 process.
-            ##
-            ##                 The hack of switching between
-            ##                 imputation with/without manual
-            ##                 'E'stimates will eventually be removed.
+
+            ## The hack of switching between imputation with/without manual 'E'
+            ## stimates will eventually be removed.
             unbalancedImputation =
                 denormalise(valuesImputed, denormaliseKey = "measuredElement")
 
-            ## ## Now, use the identity Yield = Production / Area to add in missing
-            ## ## values.
-            ## computeYield(data = unbalancedImputation,
-            ##              processingParameters = processingParams,
-            ##              unitConversion = currentFormula[, unitConversion])
-            ## balanceProduction(data = unbalancedImputation,
-            ##                   processingParameters = processingParams,
-            ##                   unitConversion = currentFormula[, unitConversion])
-            ## balanceAreaHarvested(data = unbalancedImputation,
-            ##                      processingParameters = processingParams,
-            ##                      unitConversion = currentFormula[, unitConversion])
-
-            ## Remove the observations we don't want to impute on
-            ## Use keys so we can do an anti-join
-            ## removedZeroData = removeForcedZero(data = unbalancedImputation,
-            ##                                      forcedZeroKey = forcedZero)
             setkeyv(unbalancedImputation,
                     cols = c("geographicAreaM49", "measuredItemCPC",
                              "timePointYears"))

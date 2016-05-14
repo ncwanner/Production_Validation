@@ -3,9 +3,7 @@
 ##' @param data The data.table object containing the data.
 ##' @param processingParameters A list of the parameters for the
 ##'     production processing algorithms.  See
-##'     \code{defaultProcessingParameters} for a starting point.
-##' @param newMethodFlag The flag which should be placed for computed
-##'     observations as the method flag.
+##'     \code{productionProcessingParameters} for a starting point.
 ##' @param unitConversion Yield is computed as (production) / (area)
 ##'     and multiplied by unitConversion.  This parameter defaults to
 ##'     1.
@@ -13,30 +11,54 @@
 ##' @export
 ##'
 
-balanceProduction = function(data, processingParameters,
-                             newMethodFlag = "i",
+balanceProduction = function(data,
+                             processingParameters,
                              unitConversion = 1){
 
-    ### Data Quality Checks
+    ## Data Quality Checks
+    if(!exists("ensuredProductionData") || !ensuredProductionData)
+        ensureProductionInputs(data = data,
+                               processingParameters = processingParameters)
 
-    ### Type "p" instead of "processingParameters"
-    p = processingParameters
+    ## Type "param" instead of "processingParameters"
+    param = processingParameters
 
-    ### Impute only when area and yield are available and production isn't
-    filter = data[,!is.na(get(p$areaHarvestedValue)) & # area is available
-                    is.na(get(p$productionValue)) &    # production is missing
-                   !is.na(get(p$yieldValue))]          # yield is missing
-    filter2 = data[,get(p$areaHarvestedObservationFlag) != "M" &
-                    get(p$yieldObservationFlag) != "M"]
-    filter = filter & filter2
+    ## Impute only when area and yield are available and production isn't
+    missingProduction =
+        is.na(data[[param$productionValue]]) |
+        data[[param$productionObservationFlag]] == param$missingValueObservationFlag
+    nonMissingAreaHarvested =
+        !is.na(data[[param$areaHarvestedValue]]) &
+        data[[param$areaHarvestedObservationFlag]] != param$missingValueObservationFlag
+    nonMissingYield =
+        !is.na(data[[param$yieldValue]]) &
+        data[[param$yieldObservationFlag]] != param$missingValueObservationFlag
 
-    data[filter, c(p$productionValue) :=
-             sapply(get(p$areaHarvestedValue) * get(p$yieldValue) /
-                        unitConversion, FUN = roundResults)]
-    data[filter,
-         `:=`(c(p$productionObservationFlag),
-              aggregateObservationFlag(get(p$areaHarvestedObservationFlag),
-                                       get(p$yieldObservationFlag)))]
-    ## Wrap last call in invisible() so no data.table is returned
-    invisible(data[filter, c(p$productionMethodFlag) := newMethodFlag])
+    feasibleFilter =
+        missingProduction &
+        nonMissingAreaHarvested &
+        nonMissingYield
+
+    ## TODO (Michael): The yield can not be zero by definition. This should be
+    ##                 removed or return an error. The input data can not
+    ##                 contain zero yield.
+    nonZeroYieldFilter =
+        (data[[param$yieldValue]] != 0)
+
+    ## Calculate production
+    data[feasibleFilter & nonZeroYieldFilter,
+         `:=`(c(param$productionValue),
+              sapply(get(param$areaHarvestedValue) *
+                     get(param$yieldValue) /
+                     unitConversion, FUN = roundResults))]
+    ## Assign observation flag
+    data[feasibleFilter & nonZeroYieldFilter,
+         `:=`(c(param$productionObservationFlag),
+              aggregateObservationFlag(get(param$areaHarvestedObservationFlag),
+                                       get(param$yieldObservationFlag)))]
+
+    ## Assign method flag
+    data[feasibleFilter, `:=`(c(param$productionMethodFlag),
+                              param$imputationMethodFlag)]
+    return(data)
 }

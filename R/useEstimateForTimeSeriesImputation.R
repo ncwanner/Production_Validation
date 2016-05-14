@@ -23,7 +23,7 @@ useEstimateForTimeSeriesImputation = function(data,
                                               areaObsFlagVar,
                                               yieldObsFlagVar,
                                               prodObsFlagVar,
-                                              impFlags = c("I", "E"),
+                                              impFlags = "E",
                                               missFlags = "M",
                                               minObsForEst = 5){
     areaElementNum = gsub("[^0-9]", "", areaObsFlagVar)

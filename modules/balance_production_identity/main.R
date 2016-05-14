@@ -60,6 +60,7 @@ formulaTuples =
 unique_formulas = unique(formulaTuples[, list(input, productivity, output,
                                               unitConversion)])
 
+## Loop through the formulas
 for(i in 1:nrow(unique_formulas)){
     ## Subset the formula table
     current_formula = unique_formulas[i, ]
@@ -81,6 +82,14 @@ for(i in 1:nrow(unique_formulas)){
         as.character(current_formula[, list(input, output, productivity)])
     subKey@dimensions$measuredItemCPC@keys = currentCPC
 
+    ## Obtain the processing parameter associated with the data
+    processingParams =
+        productionProcessingParameters(
+            datasetConfig = GetDatasetConfig("agriculture", "aproduction"),
+            productionCode = current_formula[, output],
+            yieldCode = current_formula[, productivity],
+            areaHarvestedCode = current_formula[, input])
+
     ## Get the yield data and perform the necessary pre-processing
     yieldData =
         getYieldData(subKey) %>%
@@ -88,13 +97,14 @@ for(i in 1:nrow(unique_formulas)){
         fillRecord(data = .) %>%
         normalise(denormalisedData = .) %>%
         preProcessing(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement")
-
-    ## Obtain the processing parameter associated with the data
-    processingParams = defaultProcessingParameters(
-        productionValue = current_formula[, output],
-        yieldValue = current_formula[, productivity],
-        areaHarvestedValue = current_formula[, input])
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement",
+                    fillEmptyRecords = TRUE) %>%
+        removeZeroYield(data = .,
+                        yieldValue = processingParams$yieldValue,
+                        yieldObsFlag =
+                            processingParams$yieldObservationFlag,
+                        yieldMethodFlag = processingParams$yieldMethodFlag)
 
     ## Perform the yield module.
     computeYield(data = yieldData,

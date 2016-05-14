@@ -7,8 +7,7 @@ element combinated time series should use include estimates in the
 iputation process.}
 \usage{
 useEstimateForTimeSeriesImputation(data, areaObsFlagVar, yieldObsFlagVar,
-  prodObsFlagVar, impFlags = c("I", "E"), missFlags = "M",
-  minObsForEst = 5)
+  prodObsFlagVar, impFlags = "E", missFlags = "M", minObsForEst = 5)
 }
 \arguments{
 \item{data}{A data.table object containing the data to be imputed.}

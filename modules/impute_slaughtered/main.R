@@ -112,7 +112,7 @@ cat("Pulling the complete data...\n")
 
 ## Transfer the animal number in the animal to the slaughtered animal in the
 ## meat.
-step1Data =
+animalTransferredData =
     expandedMeatKey %>%
     GetData(key = .) %>%
     fillRecord(data = .) %>%
@@ -125,7 +125,7 @@ step1Data =
 ##                 figures as indicated by in the synchronise slaughtered
 ##                 module.
 cat("Saving the transferred animal to meat data back...\n")
-step1Data %>%
+animalTransferredData %>%
     postProcessing(data = .) %>%
     SaveData(expandedMeatKey@domain, expandedMeatKey@dataset, data = .)
 
@@ -133,6 +133,7 @@ step1Data %>%
 ##         slaughtered/carcass weight) following the logic from the
 ##         production imputation module.
 ##
+
 ## NOTE (Michael): The imputed data for meat triplet is also saved
 ##                 back in this step.
 
@@ -140,11 +141,14 @@ cat("Imputing the meat commodity...\n")
 selectedMeatCode =
     getSessionMeatSelection(key = expandedMeatKey,
                             selectedMeatTable = selectedMeatTable)
+
+
 result = NULL
 for(iter in seq(selectedMeatCode)){
     currentMeat = selectedMeatCode[iter]
     subKey = expandedMeatKey
     subKey@dimensions$measuredItemCPC@keys = currentMeat
+
     print(paste0("Imputation for item: ", currentMeat, " (",  iter, " out of ",
                  length(selectedMeatCode),")"))
 
@@ -175,8 +179,9 @@ for(iter in seq(selectedMeatCode)){
     ## TODO (Michael): Need to restructure the get formula
     formulaTuples =
         getYieldFormula(slot(slot(subKey,
-                                  "dimensions")$measuredItemCPC, "keys"))
-    formulaTuples = formulaTuples[nchar(input) == 4, ]
+                                  "dimensions")$measuredItemCPC, "keys")) %>%
+        removeIndigenousBiologicalMeat(formula = .)
+
     slaughteredAnimal =
         getSlaughteredAnimal(data = imputed,
                              formulaTuples = formulaTuples)
@@ -187,7 +192,7 @@ if(!is.null(result)){
     cat("Saving back the updated animal numbers...\n")
     ## Step 3. Copy the slaughtered animal numbers in meat back to the
     ##         animal commodity.
-    step1Data %>%
+    animalTransferredData %>%
         transferSlaughteredNumber(preUpdatedData = .,
                                   imputationResult = slaughteredAnimal,
                                   selectedMeatTable = selectedMeatTable) %>%
@@ -207,7 +212,8 @@ if(!is.null(result)){
         ##                 number is saved back to the animal commdotiy.
         SaveData(domain = subKey@domain, dataset = subKey@dataset,
                  data = .)
+    message("Imputation Module Executed Successfully!")
 }
 
 
-message("Imputation Module Executed Successfully!")
+
