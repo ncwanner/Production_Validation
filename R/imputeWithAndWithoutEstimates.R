@@ -151,14 +151,14 @@ imputeWithAndWithoutEstimates = function(meatKey, minObsForEst = 5){
 
             ## The hack of switching between imputation with/without manual 'E'
             ## stimates will eventually be removed.
-            unbalancedImputation =
+            imputation =
                 denormalise(valuesImputed, denormaliseKey = "measuredElement")
 
-            setkeyv(unbalancedImputation,
+            setkeyv(imputation,
                     cols = c("geographicAreaM49", "measuredItemCPC",
                              "timePointYears"))
 
-            finalData = merge(finalData, unbalancedImputation, by = key(finalData),
+            finalData = merge(finalData, imputation, by = key(finalData),
                               all.x = TRUE)
         } ## close item type for loop
     } else {
