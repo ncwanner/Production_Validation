@@ -133,6 +133,7 @@ animalTransferredData %>%
 ##         slaughtered/carcass weight) following the logic from the
 ##         production imputation module.
 ##
+
 ## NOTE (Michael): The imputed data for meat triplet is also saved
 ##                 back in this step.
 
@@ -141,11 +142,13 @@ selectedMeatCode =
     getSessionMeatSelection(key = expandedMeatKey,
                             selectedMeatTable = selectedMeatTable)
 
+
 result = NULL
 for(iter in seq(selectedMeatCode)){
     currentMeat = selectedMeatCode[iter]
     subKey = expandedMeatKey
     subKey@dimensions$measuredItemCPC@keys = currentMeat
+
     print(paste0("Imputation for item: ", currentMeat, " (",  iter, " out of ",
                  length(selectedMeatCode),")"))
 
@@ -177,7 +180,7 @@ for(iter in seq(selectedMeatCode)){
     formulaTuples =
         getYieldFormula(slot(slot(subKey,
                                   "dimensions")$measuredItemCPC, "keys")) %>%
-        removeIndigenousBiologicalMeat(formua = .)
+        removeIndigenousBiologicalMeat(formula = .)
 
     slaughteredAnimal =
         getSlaughteredAnimal(data = imputed,
