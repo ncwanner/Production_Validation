@@ -4,30 +4,23 @@
 ##' @param processingParameters A list of the parameters for the production
 ##'   processing algorithms.  See defaultProductionParameters() for a starting
 ##'   point.
-##' @param newMethodFlag The flag to be used to update the yield method flag
-##'   when imputation occurs.
 ##' @param flagTable see data(faoswsFlagTable) in \pkg{faoswsFlag}
-##' @param unitConversion Yield is computed as (production) / (area) and
-##'   multiplied by unitConversion.  This parameter defaults to 1.
-##' @param normalized Is the input data normalised.
 ##'
-##' @return The updated data.table.  This is important in the case where the
-##'   data is normalized, as the data.table must be cast and reshaped (and thus
-##'   can't be modified by reference).
+##' @return The updated data.table.
 ##'
 ##' @export
 ##'
 ##' @import faoswsFlag
 ##'
 
-computeYield = function(data, processingParameters, normalized = FALSE,
-                        newMethodFlag = "i",
-                        flagTable = faoswsFlagTable, unitConversion = 1){
+computeYield = function(data,
+                        processingParameters,
+                        flagTable = faoswsFlagTable){
 
     if(!exists("ensuredProductionData") || !ensuredProductionData)
         ensureProductionInputs(data = data,
                                processingParameters = processingParameters)
-    stopifnot(faoswsUtil::checkMethodFlag(newMethodFlag))
+    stopifnot(faoswsUtil::checkMethodFlag(processingParameters$balanceMethodFlag))
 
     ## Abbreviate processingParameters since it is used alot
     param = processingParameters
@@ -66,7 +59,7 @@ computeYield = function(data, processingParameters, normalized = FALSE,
     data[feasibleFilter, `:=`(c(param$yieldValue),
                               computeRatio(get(param$productionValue),
                                            get(param$areaHarvestedValue)) *
-                              unitConversion)]
+                              param$unitConversion)]
 
     ## Assign observation flag.
     ##
@@ -82,6 +75,6 @@ computeYield = function(data, processingParameters, normalized = FALSE,
 
     ## Assign method flag
     data[feasibleFilter, `:=`(c(param$yieldMethodFlag),
-                              param$imputationMethodFlag)]
+                              param$balanceMethodFlag)]
     return(data)
 }
