@@ -143,20 +143,6 @@ processProductionDomain = function(data, processingParameters){
                                        param$manualEstimationMethodFlag)
     }
 
-    ## Assign NA's when the flag is missing
-    dataCopy = remove0M(data = dataCopy,
-                        valueVars = param$areaHarvestedValue,
-                        flagVars = param$areaHarvestedObservationFlag,
-                        missingFlag = param$missingValueObservationFlag)
-    dataCopy = remove0M(data = dataCopy,
-                        valueVars = param$yieldValue,
-                        flagVars = param$yieldObservationFlag,
-                        missingFlag = param$missingValueObservationFlag)
-    dataCopy = remove0M(data = dataCopy,
-                        valueVars = param$productionValue,
-                        flagVars = param$productionObservationFlag,
-                        missingFlag = param$missingValueObservationFlag)
-
     ## Remove yield that are zero
     dataCopy = removeZeroYield(data = dataCopy,
                         yieldValue = param$yieldValue,
