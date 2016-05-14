@@ -75,6 +75,14 @@ imputeProductionDomain = function(data,
 
         imputeVariable(data = dataCopy,
                        imputationParameters = yieldImputationParameters)
+        ## TODO (Michael): Remove imputed zero yield as yield can not be zero by
+        ##                 definition. This probably should be handled in the
+        ##                 imputation parameter.
+        dataCopy =
+            removeZeroYield(dataCopy,
+                            yieldValue = processingParameters$yieldValue,
+                            yieldObsFlag = processingParameters$yieldObservationFlag,
+                            yieldMethodFlag = processingParameters$yieldMethodFlag)
         n.missYield2 = length(which(is.na(
             dataCopy[[processingParameters$yieldValue]])))
         cat("Number of values imputed: ", n.missYield - n.missYield2, "\n")

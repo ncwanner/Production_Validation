@@ -157,5 +157,11 @@ processProductionDomain = function(data, processingParameters){
                         flagVars = param$productionObservationFlag,
                         missingFlag = param$missingValueObservationFlag)
 
+    ## Remove yield that are zero
+    dataCopy = removeZeroYield(data = dataCopy,
+                        yieldValue = param$yieldValue,
+                        yieldObsFlag = param$yieldObservationFlag,
+                        yieldMethodFlag = param$yieldMethodFlag)
+
     return(dataCopy)
 }
