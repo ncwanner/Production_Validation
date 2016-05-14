@@ -24,24 +24,41 @@ balanceProduction = function(data,
     param = processingParameters
 
     ## Impute only when area and yield are available and production isn't
-    filter = data[,!is.na(get(param$areaHarvestedValue)) & # area is available
-                   is.na(get(param$productionValue)) &    # production is missing
-                   !is.na(get(param$yieldValue))]          # yield is missing
-    filter2 = data[,get(param$areaHarvestedObservationFlag) !=
-                    param$missingValueObservationFlag &
-                    get(param$yieldObservationFlag) !=
-                    param$missingValueObservationFlag]
-    filter = filter & filter2
+    missingProduction =
+        is.na(data[[param$productionValue]]) |
+        data[[param$productionObservationFlag]] == param$missingValueObservationFlag
+    nonMissingAreaHarvested =
+        !is.na(data[[param$areaHarvestedValue]]) &
+        data[[param$areaHarvestedObservationFlag]] != param$missingValueObservationFlag
+    nonMissingYield =
+        !is.na(data[[param$yieldValue]]) &
+        data[[param$yieldObservationFlag]] != param$missingValueObservationFlag
 
-    data[filter, `:=`(c(param$productionValue),
-                      sapply(get(param$areaHarvestedValue) *
-                             get(param$yieldValue) /
-                             unitConversion, FUN = roundResults))]
-    data[filter,
+    feasibleFilter =
+        missingProduction &
+        nonMissingAreaHarvested &
+        nonMissingYield
+
+    ## TODO (Michael): The yield can not be zero by definition. This should be
+    ##                 removed or return an error. The input data can not
+    ##                 contain zero yield.
+    nonZeroYieldFilter =
+        (data[[param$yieldValue]] != 0)
+
+    ## Calculate production
+    data[feasibleFilter & nonZeroYieldFilter,
+         `:=`(c(param$productionValue),
+              sapply(get(param$areaHarvestedValue) *
+                     get(param$yieldValue) /
+                     unitConversion, FUN = roundResults))]
+    ## Assign observation flag
+    data[feasibleFilter & nonZeroYieldFilter,
          `:=`(c(param$productionObservationFlag),
               aggregateObservationFlag(get(param$areaHarvestedObservationFlag),
                                        get(param$yieldObservationFlag)))]
-    ## Wrap last call in invisible() so no data.table is returned
-    invisible(data[filter, `:=`(c(param$productionMethodFlag),
-                                param$imputationMethodFlag)])
+
+    ## Assign method flag
+    data[feasibleFilter, `:=`(c(param$productionMethodFlag),
+                              param$imputationMethodFlag)]
+    return(data)
 }

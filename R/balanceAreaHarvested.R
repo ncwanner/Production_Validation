@@ -23,33 +23,46 @@ balanceAreaHarvested = function(data,
     param = processingParameters
 
     ## Impute only when area and yield are available and production isn't
-    filter = data[,is.na(get(param$areaHarvestedValue)) & # area is missing
-                   !is.na(get(param$yieldValue)) &        # yield is available
-                   !is.na(get(param$productionValue))]    # production is available
-    filter2 = data[,get(param$productionObservationFlag) != param$missingValueObservationFlag &
-                    get(param$yieldObservationFlag) != param$missingValueObservationFlag]
-    filter = filter & filter2
+    missingAreaHarvested =
+        is.na(data[[param$areaHarvestedValue]]) |
+        data[[param$areaHarvestedObservationFlag]] == param$missingValueObservationFlag
+    nonMissingProduction =
+        !is.na(data[[param$productionValue]]) &
+        data[[param$productionObservationFlag]] != param$missingValueObservationFlag
+    nonMissingYield =
+        !is.na(data[[param$yieldValue]]) &
+        data[[param$yieldObservationFlag]] != param$missingValueObservationFlag
 
-    data[filter, `:=`(c(param$areaHarvestedValue),
-                      sapply(computeRatio(get(param$productionValue),
-                                          get(param$yieldValue)) *
-                             unitConversion, roundResults))]
+    feasibleFilter =
+        missingAreaHarvested &
+        nonMissingProduction &
+        nonMissingYield
 
-    data[filter,
+    nonZeroYieldFilter =
+        (data[[param$yieldValue]] != 0)
+
+    ## Balance area harvested
+    data[feasibleFilter, `:=`(c(param$areaHarvestedValue),
+                              sapply(computeRatio(get(param$productionValue),
+                                                  get(param$yieldValue)) *
+                                     unitConversion, roundResults))]
+    ## Assign observation flag.
+    ##
+    ## NOTE (Michael): If the denominator (yield is non-zero) then
+    ##                 perform flag aggregation, if the denominator is zero,
+    ##                 then assign the missing flag as the computed yield is NA.
+    ##
+    ## NOTE (Michael): Although the yield should never be zero by definition.
+    data[feasibleFilter & nonZeroYieldFilter,
          `:=`(c(param$areaHarvestedObservationFlag),
               aggregateObservationFlag(get(param$productionObservationFlag),
                                        get(param$yieldObservationFlag)))]
-    ## If production is zero, then the area harvested should be
-    ## zero. Sometimes this is not calculated as yield can be missing.
-    data[get(param$productionValue) == 0 &
-         get(param$productionObservationFlag) != param$missingValueObservationFlag &
-         !(get(param$areaHarvestedMethodFlag) %in% param$protectedMethodFlag),
-         `:=`(c(param$areaHarvestedValue, param$areaHarvestedObservationFlag,
-                param$areaHarvestedMethodFlag),
-              list(0, param$imputationObservationFlag, param$balanceMethodFlag))]
+    data[feasibleFilter & !nonZeroYieldFilter,
+         `:=`(c(param$areaHarvestedObservationFlag),
+              param$missingValueObservationFlag)]
 
-
-    ## Wrap last call in invisible() so no data.table is returned
-    invisible(data[filter, `:=`(c(param$areaHarvestedMethodFlag),
-                                param$imputationMethodFlag)])
+    ## Assign method flag
+    data[feasibleFilter, `:=`(c(param$areaHarvestedMethodFlag),
+                           param$imputationMethodFlag)]
+    return(data)
 }
