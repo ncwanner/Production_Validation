@@ -1,9 +1,13 @@
-########################################################################
-## Module to balance the production domain identity. That is the equation
-## Production = Area * yield
-## Author: Michael C. J. Kao
-########################################################################
+##' # Balance Production Identity
+##'
+##' Module to balance the production domain identity. That is the equation
+##' Production = Area x yield
+##'
+##' Author: Michael C. J. Kao
+##'
+##' ---
 
+##' Load required libraries
 suppressMessages({
     library(faosws)
     library(faoswsFlag)
@@ -13,11 +17,11 @@ suppressMessages({
     library(dplyr)
 })
 
-## set up for the test environment and parameters
+##' Set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 
 
-## This return FALSE if on the Statistical Working System
+##' This return FALSE if on the Statistical Working System
 if(CheckDebug()){
 
     library(faoswsModules)
@@ -36,23 +40,23 @@ if(CheckDebug()){
 
 startTime = Sys.time()
 
-## Variable to determine if all yield data should be computed (across entire
-## database) or just local session.
+##' Variable to determine if all yield data should be computed (across entire
+##' database) or just local session.
 updateAllData =
     !is.null(swsContext.computationParams$computation_selection) &&
     swsContext.computationParams$computation_selection == "all"
 
 newKey = swsContext.datasets[[1]]
-## If all yields should be updated, extend the key
+##' If all yields should be updated, extend the key
 if(updateAllData){
     newKey = getAllYieldKey()
 }
 
-## Create the formula table
-##
-## NOTE (Michael): There are differemt formulas for different
-##                 commodities, so we loop through multiple formulas
-##                 to ensure all formulas are computed.
+##' Create the formula table
+##'
+##' NOTE (Michael): There are differemt formulas for different
+##'                 commodities, so we loop through multiple formulas
+##'                 to ensure all formulas are computed.
 formulaTuples =
     getYieldFormula(slot(slot(swsContext.datasets[[1]],
                               "dimensions")$measuredItemCPC, "keys"),
@@ -60,7 +64,7 @@ formulaTuples =
 unique_formulas = unique(formulaTuples[, list(input, productivity, output,
                                               unitConversion)])
 
-## Loop through the formulas
+##' Loop through the formulas
 for(i in 1:nrow(unique_formulas)){
     ## Subset the formula table
     current_formula = unique_formulas[i, ]
@@ -139,6 +143,6 @@ for(i in 1:nrow(unique_formulas)){
 
 }
 
-
+##' Return results
 paste("Module completed in",
       round(difftime(Sys.time(), startTime, units = "min"), 2), "minutes.")
