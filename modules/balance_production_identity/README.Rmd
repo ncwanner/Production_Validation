@@ -1,8 +1,7 @@
-########################################################################
-## Module to balance the production domain identity. That is the equation
-## Production = Area * yield
-## Author: Michael C. J. Kao
-########################################################################
+Module to balance the production domain identity. That is the equation
+Production = Area * yield
+
+Author: Michael C. J. Kao
 
 Lets load the required libraries
 
@@ -17,12 +16,12 @@ suppressMessages({
 })
 ```
 
-## set up for the test environment and parameters
+Set up for the test environment and parameters
 ```{r}
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 ```
 
-## This return FALSE if on the Statistical Working System
+This return FALSE if on the Statistical Working System
 ```{r}
 if(CheckDebug()){
 
@@ -41,14 +40,13 @@ if(CheckDebug()){
 }
 ```
 
-## Start the timeer
+Start the timer
 ```{r}
 startTime = Sys.time()
 ```
 
-## Variable to determine if all yield data should be computed (across entire
-## database) or just local session. If all yields should be updated, extend the
-## key
+Variable to determine if all yield data should be computed (across entire
+database) or just local session. If all yields should be updated, extend the key
 
 ```{r}
 updateAllData =
@@ -62,16 +60,12 @@ if(updateAllData){
 
 ```
 
-## Extract the session key
+Extract the session key
 ```{r}
 newKey = swsContext.datasets[[1]]
 ```
 
-## Create the formula table
-##
-## NOTE (Michael): There are differemt formulas for different
-##                 commodities, so we loop through multiple formulas
-##                 to ensure all formulas are computed.
+Create the formula table
 
 ```{r}
 formulaTuples =
@@ -82,7 +76,9 @@ unique_formulas = unique(formulaTuples[, list(input, productivity, output,
                                               unitConversion)])
 ```
 
-## Loop through the formulas
+There are different formulas for various commodities, to account for this, we
+loop through all the formulas where possible for each commodity.
+
 ```{r}
 for(i in 1:nrow(unique_formulas)){
     ## Subset the formula table
