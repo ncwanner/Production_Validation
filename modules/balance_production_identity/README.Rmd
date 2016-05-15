@@ -1,22 +1,9 @@
 # Balance Production Identity Module
-
 Module to balance the production domain identity. That is the equation
 Production = Area * yield
-
 Author: Michael C. J. Kao
 
-To compile this file and generate the `main.R` for the module please run:
-
-```
-library(knitr)
-purl("README.Rmd")
-```
-
----
-
-Lets load the required libraries
-
-```{r}
+```{r }
 suppressMessages({
     library(faosws)
     library(faoswsFlag)
@@ -27,13 +14,15 @@ suppressMessages({
 })
 ```
 
-Set up for the test environment and parameters
-```{r}
+set up for the test environment and parameters
+
+```{r }
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 ```
 
 This return FALSE if on the Statistical Working System
-```{r}
+
+```{r }
 if(CheckDebug()){
 
     library(faoswsModules)
@@ -49,36 +38,36 @@ if(CheckDebug()){
     GetTestEnvironment(baseUrl = SETTINGS[["server"]],
                        token = SETTINGS[["token"]])
 }
-```
 
-Start the timer
-```{r}
 startTime = Sys.time()
 ```
 
 Variable to determine if all yield data should be computed (across entire
-database) or just local session. If all yields should be updated, extend the key
+database) or just local session.
 
-```{r}
+```{r }
 updateAllData =
     !is.null(swsContext.computationParams$computation_selection) &&
     swsContext.computationParams$computation_selection == "all"
 
+newKey = swsContext.datasets[[1]]
+```
 
+If all yields should be updated, extend the key
+
+```{r }
 if(updateAllData){
     newKey = getAllYieldKey()
 }
-
-```
-
-Extract the session key
-```{r}
-newKey = swsContext.datasets[[1]]
 ```
 
 Create the formula table
 
-```{r}
+NOTE (Michael): There are differemt formulas for different
+                commodities, so we loop through multiple formulas
+                to ensure all formulas are computed.
+
+```{r }
 formulaTuples =
     getYieldFormula(slot(slot(swsContext.datasets[[1]],
                               "dimensions")$measuredItemCPC, "keys"),
@@ -87,10 +76,9 @@ unique_formulas = unique(formulaTuples[, list(input, productivity, output,
                                               unitConversion)])
 ```
 
-There are different formulas for various commodities, to account for this, we
-loop through all the formulas where possible for each commodity.
+Loop through the formulas
 
-```{r}
+```{r }
 for(i in 1:nrow(unique_formulas)){
     ## Subset the formula table
     current_formula = unique_formulas[i, ]
@@ -170,9 +158,10 @@ for(i in 1:nrow(unique_formulas)){
 }
 ```
 
-## Return the result
-```{r}
+Return results
+
+```{r }
 paste("Module completed in",
       round(difftime(Sys.time(), startTime, units = "min"), 2), "minutes.")
-
 ```
+
