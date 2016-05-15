@@ -1,10 +1,11 @@
-#' Balance Production Identity Module
+# Balance Production Identity
 
 Module to balance the production domain identity. That is the equation
-Production = Area * yield
+Production = Area x yield
 
 Author: Michael C. J. Kao
-
+---
+Load required libraries
 
 ```{r }
 suppressMessages({
@@ -17,7 +18,7 @@ suppressMessages({
 })
 ```
 
-set up for the test environment and parameters
+Set up for the test environment and parameters
 
 ```{r }
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
