@@ -1,7 +1,10 @@
-# Balance Production Identity Module
+#' Balance Production Identity Module
+
 Module to balance the production domain identity. That is the equation
 Production = Area * yield
+
 Author: Michael C. J. Kao
+
 
 ```{r }
 suppressMessages({
