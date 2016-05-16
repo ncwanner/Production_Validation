@@ -7,19 +7,28 @@
 ##' the processing algorithms.  See ?defaultProcessingParameters for a starting
 ##' point.
 ##' @param returnData logical, whether the data should be returned
+##' @param normalised logical, whether the data is normalised
 ##'
 ##' @return The original data if all tests are passed
 ##'
 ##' @export
 ##'
 
-checkProductionInputs = function(data, processingParameters, returnData = TRUE){
+checkProductionInputs = function(data,
+                                 processingParameters,
+                                 returnData = TRUE,
+                                 normalised = TRUE){
 
-    ### Basic checks
-    stopifnot(is(data, "data.table"))
+    dataCopy = copy(data)
+    ## Basic checks
+    stopifnot(is(dataCopy, "data.table"))
     stopifnot(is(processingParameters, "list"))
 
-    ### Check for parameters
+    if(normalised){
+        dataCopy = denormalise(dataCopy, "measuredElement")
+    }
+
+    ## Check for parameters
     param = processingParameters
     stopifnot(is.character(c(param$productionValue,
                              param$productionObservationFlag,
@@ -38,7 +47,7 @@ checkProductionInputs = function(data, processingParameters, returnData = TRUE){
                              param$missingValueObservationFlag,
                              param$imputationMethodFlag)))
 
-    ### Make sure all column name variables exist in data
+    ## Make sure all column name variables exist in data
     columnNames = c(processingParameters$productionValue,
                     processingParameters$productionObservationFlag,
                     processingParameters$productionMethodFlag,
@@ -50,7 +59,7 @@ checkProductionInputs = function(data, processingParameters, returnData = TRUE){
                     processingParameters$areaHarvestedMethodFlag,
                     processingParameters$yearValue,
                     processingParameters$areaVar)
-    missingColumns = ! columnNames %in% colnames(data)
+    missingColumns = ! columnNames %in% colnames(dataCopy)
     if(any(missingColumns))
         stop("The following columns do not exist in data but should (or the",
              "parameters in the global environment should be corrected):\n\t",
@@ -58,14 +67,14 @@ checkProductionInputs = function(data, processingParameters, returnData = TRUE){
 
     ## Conflict values
     productionAreaHarvestedNotMissing =
-        !is.na(data[[processingParameters$productionValue]]) &
-        !is.na(data[[processingParameters$areaHarvestedValue]])
+        !is.na(dataCopy[[processingParameters$productionValue]]) &
+        !is.na(dataCopy[[processingParameters$areaHarvestedValue]])
     productionZeroAreaNonZero =
-        data[[processingParameters$productionValue]] == 0 &
-        data[[processingParameters$areaHarvestedValue]] != 0
+        dataCopy[[processingParameters$productionValue]] == 0 &
+        dataCopy[[processingParameters$areaHarvestedValue]] != 0
     productionNonZeroAreaHarvestedZero =
-        data[[processingParameters$productionValue]] != 0 &
-        data[[processingParameters$areaHarvestedValue]] == 0
+        dataCopy[[processingParameters$productionValue]] != 0 &
+        dataCopy[[processingParameters$areaHarvestedValue]] == 0
 
     conflictProductionAreaHarvested =
         which(productionAreaHarvestedNotMissing &
@@ -76,9 +85,13 @@ checkProductionInputs = function(data, processingParameters, returnData = TRUE){
 
 
     ## Zero yield
-    if(any(data[[processingParameters$yieldValue]] == 0))
+    if(any(dataCopy[[processingParameters$yieldValue]] == 0))
         stop("Yield can not be zero by definition")
 
+    if(normalised){
+        dataCopy = normalise(dataCopy)
+    }
+
     if(returnData)
-        return(data)
+        return(dataCopy)
 }

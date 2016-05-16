@@ -6,6 +6,7 @@
 ##' @param yieldVar The column name corresponding to the yield.
 ##' @param prodVar The column name corresponding to produciton.
 ##' @param returnData logical, whether the data should be returned.
+##' @param normalised logical, whether the data is normalised
 ##' @return If the data satisfy the production identity, then the
 ##'     original data to be tested is returned. Otherwise, an error is
 ##'     raised.
@@ -17,8 +18,17 @@ checkIdentityCalculated = function(dataToBeSaved,
                                    areaVar,
                                    yieldVar,
                                    prodVar,
-                                   returnData = TRUE){
+                                   returnData = TRUE,
+                                   normalised = TRUE){
 
+    dataCopy = copy(data)
+    ## Basic checks
+    stopifnot(is(dataCopy, "data.table"))
+    stopifnot(is(processingParameters, "list"))
+
+    if(normalised){
+        dataCopy = denormalise(dataCopy, "measuredElement")
+    }
     stopifnot(all(c(areaVar, yieldVar, prodVar) %in% colnames(dataToBeSaved)))
 
     for(i in seq(areaVar)){
@@ -42,6 +52,9 @@ checkIdentityCalculated = function(dataToBeSaved,
             print(identityNotCalculated)
             stop("Not all entries are calculated")
         }
+    }
+    if(normalised){
+        dataCopy = normalise(dataCopy)
     }
     if(returnData)
         return(dataToBeSaved)
