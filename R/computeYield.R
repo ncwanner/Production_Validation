@@ -17,9 +17,11 @@ computeYield = function(data,
                         processingParameters,
                         flagTable = faoswsFlagTable){
 
-    if(!exists("ensuredProductionData") || !ensuredProductionData)
-        ensureProductionInputs(data = data,
-                               processingParameters = processingParameters)
+    ## Data quality check
+    checkProductionImputs(dataCopy,
+                          processingParameters = processingParameters,
+                          returnData = FALSE)
+
     stopifnot(faoswsUtil::checkMethodFlag(processingParameters$balanceMethodFlag))
 
     ## Abbreviate processingParameters since it is used alot

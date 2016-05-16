@@ -17,10 +17,10 @@
 processProductionDomain = function(data, processingParameters){
     dataCopy = copy(data)
 
-    ## Data Quality Checks
-    if(!exists("ensuredProductionData") || !ensuredProductionData)
-        ensureProductionInputs(data = dataCopy,
-                               processingParameters = processingParameters)
+    ## Data quality check
+    checkProductionImputs(dataCopy,
+                          processingParameters = processingParameters,
+                          returnData = FALSE)
 
     ## processingParameters will be referenced alot, so rename to param
     param = processingParameters

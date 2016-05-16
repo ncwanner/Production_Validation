@@ -11,11 +11,10 @@
 balanceAreaHarvested = function(data,
                                 processingParameters){
 
-    ## Data Quality Checks
-    if(!exists("ensuredProductionData") || !ensuredProductionData)
-        ensureProductionInputs(data = data,
-                               processingParameters = processingParameters)
-
+    ## Data quality check
+    checkProductionImputs(data,
+                          processingParameters = processingParameters,
+                          returnData = FALSE)
     ## Save clutter by renaming "processingParameters" to "p" locally.
     param = processingParameters
 

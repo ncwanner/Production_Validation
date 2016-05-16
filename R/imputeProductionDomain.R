@@ -39,8 +39,10 @@ imputeProductionDomain = function(data,
                            imputationParameters = yieldImputationParameters)
     ensureImputationInputs(data = dataCopy,
                            imputationParameters = productionImputationParameters)
-    ensureProductionInputs(data = dataCopy,
-                           processingParameters = processingParameters)
+
+    checkProductionImputs(dataCopy,
+                          processingParameters = processingParameters,
+                          returnData = FALSE)
 
     setkeyv(x = dataCopy, cols = c(processingParameters$areaVar,
                                    processingParameters$yearValue))
