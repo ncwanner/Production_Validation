@@ -6,7 +6,7 @@
 calculated whereever possible.}
 \usage{
 checkIdentityCalculated(dataToBeSaved, areaVar, yieldVar, prodVar,
-  returnData = TRUE)
+  returnData = TRUE, normalised = TRUE)
 }
 \arguments{
 \item{dataToBeSaved}{The data.table to be saved back to the SWS.}
@@ -18,6 +18,8 @@ checkIdentityCalculated(dataToBeSaved, areaVar, yieldVar, prodVar,
 \item{prodVar}{The column name corresponding to produciton.}
 
 \item{returnData}{logical, whether the data should be returned.}
+
+\item{normalised}{logical, whether the data is normalised}
 }
 \value{
 If the data satisfy the production identity, then the
