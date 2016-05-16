@@ -5,7 +5,7 @@
 ##' @param areaVar The column name corresponding to the area harvested.
 ##' @param yieldVar The column name corresponding to the yield.
 ##' @param prodVar The column name corresponding to produciton.
-##'
+##' @param returnData logical, whether the data should be returned.
 ##' @return If the data satisfy the production identity, then the
 ##'     original data to be tested is returned. Otherwise, an error is
 ##'     raised.
@@ -16,7 +16,8 @@
 checkIdentityCalculated = function(dataToBeSaved,
                                    areaVar,
                                    yieldVar,
-                                   prodVar){
+                                   prodVar,
+                                   returnData = TRUE){
 
     stopifnot(all(c(areaVar, yieldVar, prodVar) %in% colnames(dataToBeSaved)))
 
@@ -42,5 +43,6 @@ checkIdentityCalculated = function(dataToBeSaved,
             stop("Not all entries are calculated")
         }
     }
-    dataToBeSaved
+    if(returnData)
+        return(dataToBeSaved)
 }

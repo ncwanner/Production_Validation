@@ -6,13 +6,14 @@
 ##' @param processingParameters A list containing the parameters to be used in
 ##' the processing algorithms.  See ?defaultProcessingParameters for a starting
 ##' point.
+##' @param returnData logical, whether the data should be returned
 ##'
 ##' @return The original data if all tests are passed
 ##'
 ##' @export
 ##'
 
-checkProductionInputs = function(data, processingParameters){
+checkProductionInputs = function(data, processingParameters, returnData = TRUE){
 
     ### Basic checks
     stopifnot(is(data, "data.table"))
@@ -78,5 +79,6 @@ checkProductionInputs = function(data, processingParameters){
     if(any(data[[processingParameters$yieldValue]] == 0))
         stop("Yield can not be zero by definition")
 
-    data
+    if(returnData)
+        return(data)
 }

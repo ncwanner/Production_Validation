@@ -5,7 +5,7 @@
 ##' @param yieldVar The column name corresponding to the yield.
 ##' @param prodVar The column name corresponding to produciton.
 ##' @param conversion The conversion factor for calculating production.
-##'
+##' @param returnData logical, whether the data should be returned.
 ##' @return If the data satisfy the production identity, then the
 ##'     original data to be tested is returned. Otherwise, an error is
 ##'     raised.
@@ -16,7 +16,8 @@ checkProductionBalanced = function(dataToBeSaved,
                                    areaVar,
                                    yieldVar,
                                    prodVar,
-                                   conversion){
+                                   conversion,
+                                   returnData = TRUE){
     stopifnot(all(c(areaVar, yieldVar, prodVar) %in% colnames(dataToBeSaved)))
 
     for(i in seq(areaVar)){
@@ -33,5 +34,6 @@ checkProductionBalanced = function(dataToBeSaved,
             stop("Production is not balanced, the A * Y = P identity is not satisfied")
         }
     }
-    dataToBeSaved
+    if(returnData)
+        return(dataToBeSaved)
 }
