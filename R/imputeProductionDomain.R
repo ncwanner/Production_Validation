@@ -18,8 +18,6 @@
 ##' @param areaHarvestedImputationParameters A list of the parameters for the
 ##'     area harvested imputation. See defaultImputationParameters() for a
 ##'     starting point.
-##' @param unitConversion The multiplicative factor used for the particular
-##'     commodity in calculating the yield.
 ##'
 ##' @export
 ##'
@@ -31,8 +29,7 @@ imputeProductionDomain = function(data,
                                   processingParameters,
                                   areaHarvestedImputationParameters,
                                   yieldImputationParameters,
-                                  productionImputationParameters,
-                                  unitConversion){
+                                  productionImputationParameters){
     originDataType = sapply(data, FUN = typeof)
 
     cat("Initializing ... \n")
@@ -51,9 +48,7 @@ imputeProductionDomain = function(data,
                                        processingParameters = processingParameters)
 
 
-    computeYield(dataCopy, newMethodFlag = "i",
-                 processingParameters = processingParameters,
-                 unitConversion = unitConversion)
+    computeYield(dataCopy, processingParameters = processingParameters)
     ## Check whether all values are missing
     ##
     ## NOTE (Michael): The imputation module fails if all yield are
@@ -90,8 +85,7 @@ imputeProductionDomain = function(data,
 
         ## Balance production now using imputed yield
         balanceProduction(data = dataCopy,
-                          processingParameters = processingParameters,
-                          unitConversion = unitConversion)
+                          processingParameters = processingParameters)
 
         ## NOTE (Michael): Check again whether production is available
         ##                 now after it is balanced.
@@ -124,8 +118,7 @@ imputeProductionDomain = function(data,
             dataCopy[[processingParameters$areaHarvestedValue]])))
 
     balanceAreaHarvested(data = dataCopy,
-                         processingParameters = processingParameters,
-                         unitConversion = unitConversion)
+                         processingParameters = processingParameters)
     allAreaMissing = all(is.na(dataCopy[[processingParameters$areaHarvestedValue]]))
 
     if(!all(allAreaMissing)){
@@ -150,9 +143,7 @@ imputeProductionDomain = function(data,
                         processingParameters$yieldMethodFlag),
                       list(NA, "M", "u"))]
         computeYield(dataCopy,
-                     newMethodFlag = "i",
-                     processingParameters = processingParameters,
-                     unitConversion = unitConversion)
+                     processingParameters = processingParameters)
         imputeVariable(data = dataCopy,
                        imputationParameters = yieldImputationParameters)
     } ## End of HACK.

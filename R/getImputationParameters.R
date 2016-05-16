@@ -15,14 +15,15 @@
 ##' @return A list with the yield and production imputation parameters.
 ##' @export
 
-getImputationParameters = function(datasets, i = 1,
+getImputationParameters = function(productionCode,
+                                   areaHarvestedCode,
+                                   yieldCode,
                                    areaVar = "geographicAreaM49",
                                    itemVar = "measuredItemCPC",
                                    elementVar = "measuredElement",
                                    yearVar = "timePointYears"){
 
     ## Impute yield
-    yieldCode = datasets$formulaTuples[, productivity][i]
     yieldParams =
         defaultImputationParameters(variable = as.numeric(yieldCode))
     ## Change the model formula to use a hierarchical mixed model.  The
@@ -42,7 +43,6 @@ getImputationParameters = function(datasets, i = 1,
     names(yieldParams$ensembleModels)[[length(yieldParams$ensembleModels)]] =
         "defaultMovingAverage"
     ## Impute production
-    productionCode = datasets$formulaTuples[, output][i]
     productionParams =
         defaultImputationParameters(variable = as.numeric(productionCode))
     productionParams$estimateNoData = TRUE
@@ -55,7 +55,6 @@ getImputationParameters = function(datasets, i = 1,
         "defaultMovingAverage"
 
     ## Impute area harvested
-    areaHarvestedCode = datasets$formulaTuples[, input][i]
     areaHarvestedParams =
         defaultImputationParameters(variable = as.numeric(areaHarvestedCode))
     areaHarvestedParams$estimateNoData = TRUE

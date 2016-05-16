@@ -35,6 +35,9 @@ if(CheckDebug()){
 
 ## Get user specified imputation selection
 imputationSelection = swsContext.computationParams$imputation_selection
+sessionKey = swsContext.datasets[[1]]
+datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
+                                 datasetCode = sessionKey@dataset)
 
 
 ## NOTE (Michael): The imputation and all modules should now have a base year of
@@ -73,7 +76,7 @@ completeImputationItems =
 
 ## These are the items selected by the users
 sessionItems =
-    intersect(swsContext.datasets[[1]]@dimensions[["measuredItemCPC"]]@keys,
+    intersect(sessionKey@dimensions[["measuredItemCPC"]]@keys,
               completeImputationItems)
 
 ## This returns the list of items current does not have an imputed dataset.
@@ -95,88 +98,66 @@ for(iter in seq(selectedItemCode)){
     subKey = completeImputationKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
 
+    cat("Imputation for item: ", currentMeat, " (",  iter, " out of ",
+        length(selectedMeatCode),")\n")
+
     ## Obtain the formula and remove indigenous and biological meat.
     ##
     ## NOTE (Michael): Biological and indigenous meat are currently removed, as
     ##                 they have incorrect data specification. They should be
     ##                 separate item with different item code rather than under
     ##                 different element under the meat code.
-    currentFormula =
-        getYieldFormula(currentItem) %>%
+    allFormula =
+        getYieldFormula(itemCode = currentMeat) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
-    ## Update the element corresponding to the current item
-    subKey@dimensions$measuredElement@keys =
-        currentFormula[, unlist(.(input, productivity, output))]
+    for(j in 1:nrow(allFormula)){
+        currentFormula = allFormula[j, ]
+        with(currentFormula,
+             cat("Imputation for formula: ", output, " = ", input, " x ",
+                 productivity, " (", j, " out of ", nrow(allFormula), ")\n"))
 
-    ## Create processing parameters
-    processingParams =
-        productionProcessingParameters(
-            datasetConfig = GetDatasetConfig("agriculture", "aproduction"),
-            productionCode = currentFormula$output,
-                                       areaHarvestedCode = currentFormula$input,
-                                       yieldCode = currentFormula$productivity)
+        ## Update the element code according to the current formula
+        subKey@dimensions$measuredElement@keys =
+            currentFormula[, unlist(.(input, productivity, output))]
 
-    print(paste0("Ensuring data consistency for item: ", currentItem, " (",
-                 iter, " out of ", length(selectedItemCode),")"))
+        ## Build processing parameters
+        ##
+        ## TODO (Michael): Split this into general processing parameters, and
+        ##                 yield formula parameters (or can put into the
+        ##                 imputation parameters)
+        processingParameters =
+            productionProcessingParameters(
+                datasetConfig = datasetConfig,
+                productionCode = currentFormula$output,
+                areaHarvestedCode = currentFormula$input,
+                yieldCode = currentFormula$productivity,
+                unitConversion = currentFormula$unitConversion)
 
-    ## NOTE (Michael): This is the data cleaning step, and official/semi-official
-    ##                 flags can be over-written when in conflict are inconsistent.
-    ##
-    ## TODO (Michael): This should be probably be splitted into a seperate
-    ##                 module.
-    currentData =
-        subKey %>%
-        GetData(.)
+        saveFileName = createImputationObjectName(item = currentItem)
 
-    if(NROW(currentData) > 0){
-        currentData %>%
-            preProcessing(data = .) %>%
-            denormalise(normalisedData = .,
-                        denormaliseKey = "measuredElement") %>%
-            removeZeroYield(data = .,
-                            yieldValue = processingParams$yieldValue,
-                            yieldObsFlag = processingParams$yieldObservationFlag,
-                            yieldMethodFlag = processingParams$yieldMethodFlag) %>%
-            removeZeroConflict(data = .,
-                               value1 = processingParams$productionValue,
-                               value2 = processingParams$areaHarvestedValue,
-                               observationFlag1 =
-                                   processingParams$productionObservationFlag,
-                               observationFlag2 =
-                                   processingParams$areaHarvestedObservationFlag,
-                               methodFlag1 = processingParams$productionMethodFlag,
-                               methodFlag2 =
-                                   processingParams$areaHarvestedMethodFlag) %>%
-            normalise(denormalisedData = .) %>%
-            postProcessing(data = .) %>%
-            SaveData(domain = "agriculture",
-                     dataset = "aproduction",
-                     data = .)
-    }
+        ## NOTE (Michael): We now impute the full triplet rather than
+        ##                 just production for non-primary
+        ##                 products. However, in the imputeModel
+        ##                 module, only the production will be
+        ##                 selected and imputed for non-primary
+        ##                 products.
+        ##
+        ##                 Nevertheless, we hope to change this and
+        ##                 impute the full triplet, for all the
+        ##                 commodity. We will need to transfer and
+        ##                 sync the inputs just like in the meat
+        ##                 case. This will allow us to merge the two
+        ##                 components.
+        ##
 
-
-    ## Print message, initialise the save name and start the imputation.
-    print(paste0("Imputation for item: ", currentItem, " (",  iter, " out of ",
-                 length(selectedItemCode),")"))
-    saveFileName = createImputationObjectName(item = currentItem)
-
-    ## NOTE (Michael): We now impute the full triplet rather than
-    ##                 just production for non-primary
-    ##                 products. However, in the imputeModel
-    ##                 module, only the production will be
-    ##                 selected and imputed for non-primary
-    ##                 products.
-    ##
-    ##                 Nevertheless, we hope to change this and
-    ##                 impute the full triplet, for all the
-    ##                 commodity. We will need to transfer and
-    ##                 sync the inputs just like in the meat
-    ##                 case. This will allow us to merge the two
-    ##                 components.
-    ##
-    imputation = try({
-        imputed = imputeWithAndWithoutEstimates(meatKey = subKey)
+        ## Perform imputation
+        imputed =
+            imputeWithAndWithoutEstimates(
+                data = processedData,
+                processingParameters = processingParameters,
+                imputationParameters = imputationParameters,
+                minObsForEst = 5)
 
         ## Check the imputation before saving.
         imputed %>%
@@ -199,7 +180,7 @@ for(iter in seq(selectedItemCode)){
                 ##                 determine what is considered 'protected'
                 ##
                 ## Check whether protected data are being over-written
-                ## filter(.data = ., flagMethod %in% c("i", "e")) %>%
+                ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
                 ##     checkProtectedData(dataToBeSaved = .) %>%
                 ##     print(.)
 
@@ -207,14 +188,6 @@ for(iter in seq(selectedItemCode)){
                 saveRDS(object = ., file = paste0(savePath, saveFileName))
             }
 
-    })
-
-    if(!inherits(imputation, "try-error")){
-        message("Imputation module completed successfully")
-    } else {
-        stop(paste0("Imputation moduled failed at item ", currentItem,
-                    " with the following error:\n", imputation[1]))
     }
 }
-
 

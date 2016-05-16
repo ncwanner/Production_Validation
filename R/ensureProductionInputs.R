@@ -24,8 +24,10 @@ ensureProductionInputs = function(data, processingParameters){
     param = processingParameters
     stopifnot(is.character(c(param$productionValue,
                              param$productionObservationFlag,
-                             param$productionMethodFlag, param$yieldValue,
-                             param$yieldObservationFlag, param$yieldMethodFlag,
+                             param$productionMethodFlag,
+                             param$yieldValue,
+                             param$yieldObservationFlag,
+                             param$yieldMethodFlag,
                              param$areaHarvestedValue,
                              param$areaHarvestedObservationFlag,
                              param$areaHarvestedMethodFlag,
@@ -48,30 +50,21 @@ ensureProductionInputs = function(data, processingParameters){
                     processingParameters$areaHarvestedObservationFlag,
                     processingParameters$areaHarvestedMethodFlag,
                     processingParameters$yearValue,
-                    processingParameters$byKey)
+                    processingParameters$areaVar)
     missingColumns = ! columnNames %in% colnames(data)
-    if( any(missingColumns) )
+    if(any(missingColumns))
         stop("The following columns do not exist in data but should (or the",
              "parameters in the global environment should be corrected):\n\t",
              paste(columnNames[missingColumns], collapse="\n\t"))
 
-    ### Coerce columns to appropriate type:
-    for(name in c(processingParameters$productionValue,
-                  processingParameters$areaHarvestedValue,
-                  processingParameters$yieldValue)){
-        ## warning("This coercion is no longer necessary upon resolution of SWS-797")
-        ## data[, c(name) := as.numeric(get(name))]
-    }
-    for(name in c(processingParameters$productionObservationFlag,
-                  processingParameters$areaHarvestedObservationFlag,
-                  processingParameters$yieldObservationFlag,
-                  processingParameters$productionMethodFlag,
-                  processingParameters$areaHarvestedMethodFlag,
-                  processingParameters$yieldMethodFlag)){
-         ## warning("This coercion is no longer necessary upon resolution of SWS-797")
-         ## data[, c(name) := as.character(get(name))]
-    }
 
-    ### Globally assign ensuredData so data will not need to be ensured again
-    ensuredProductionData <<- TRUE
+    ## TODO (Michael): Adding in additional tests
+
+    ## Conflict values
+
+    ## Zero yield
+
+    ## Inconsistent flags
+
+
 }

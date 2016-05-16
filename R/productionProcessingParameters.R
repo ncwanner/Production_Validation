@@ -12,6 +12,7 @@
 ##' @param yieldCode The element code corresponding to the yield variable.
 ##' @param areaHarvestedCode The element code corresponding to the area
 ##'     harvested variable.
+##' @param unitConversion The unit conversion between the triplet code provided.
 ##' @param removePriorImputation logical, whether previous imputation values
 ##'     should be removed.
 ##' @param removeManualEstimation logical, whether previous manual estimation
@@ -43,6 +44,7 @@
 ##' \item productionMethodFlag: The column name of the method flag corresponding
 ##'   to the production variable.
 ##' \item yieldValue: The column name of the yield variable.
+##' \item unitConversion: The unit conversion between the triplet code provided.
 ##' \item yieldObservationFlag: The column name of the observation flag
 ##'   corresponding to the yield variable.
 ##' \item yieldMethodFlag: The column
@@ -78,6 +80,7 @@ productionProcessingParameters = function(datasetConfig,
                                           productionCode = "5510",
                                           areaHarvestedCode = "5312",
                                           yieldCode = "5416",
+                                          unitConversion = 1,
                                           removePriorImputation = TRUE,
                                           removeManualEstimation = TRUE,
                                           imputationObservationFlag = "I",
@@ -120,6 +123,7 @@ productionProcessingParameters = function(datasetConfig,
                     collapse = "_"),
          yieldMethodFlag =
              paste0(c(flagMethodVar, elementVar, yieldCode), collapse = "_"),
+         unitConversion = unitConversion,
          areaVar = areaVar,
          yearVar = yearVar,
          itemVar = itemVar,

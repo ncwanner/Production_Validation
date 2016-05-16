@@ -4,15 +4,12 @@
 ##' @param processingParameters A list of the parameters for the production
 ##'     processing algorithms. See \code{productionProcessingParameters} for a
 ##'     starting point.
-##' @param unitConversion Yield is computed as (production) / (area) and
-##'     multiplied by unitConversion. This parameter defaults to 1.
 ##'
 ##' @export
 ##'
 
 balanceAreaHarvested = function(data,
-                                processingParameters,
-                                unitConversion = 1){
+                                processingParameters){
 
     ## Data Quality Checks
     if(!exists("ensuredProductionData") || !ensuredProductionData)
@@ -45,7 +42,7 @@ balanceAreaHarvested = function(data,
     data[feasibleFilter, `:=`(c(param$areaHarvestedValue),
                               sapply(computeRatio(get(param$productionValue),
                                                   get(param$yieldValue)) *
-                                     unitConversion, roundResults))]
+                                     param$unitConversion, roundResults))]
     ## Assign observation flag.
     ##
     ## NOTE (Michael): If the denominator (yield is non-zero) then
@@ -63,6 +60,6 @@ balanceAreaHarvested = function(data,
 
     ## Assign method flag
     data[feasibleFilter, `:=`(c(param$areaHarvestedMethodFlag),
-                           param$imputationMethodFlag)]
+                              param$balanceMethodFlag)]
     return(data)
 }
