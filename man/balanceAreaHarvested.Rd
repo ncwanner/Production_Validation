@@ -4,7 +4,7 @@
 \alias{balanceAreaHarvested}
 \title{Function to compute area harvested when new production and yield are given.}
 \usage{
-balanceAreaHarvested(data, processingParameters, unitConversion = 1)
+balanceAreaHarvested(data, processingParameters)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
@@ -12,9 +12,6 @@ balanceAreaHarvested(data, processingParameters, unitConversion = 1)
 \item{processingParameters}{A list of the parameters for the production
 processing algorithms. See \code{productionProcessingParameters} for a
 starting point.}
-
-\item{unitConversion}{Yield is computed as (production) / (area) and
-multiplied by unitConversion. This parameter defaults to 1.}
 }
 \description{
 Function to compute area harvested when new production and yield are given.

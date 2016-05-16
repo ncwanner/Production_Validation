@@ -4,7 +4,8 @@
 \alias{checkProductionBalanced}
 \title{Function to check whether the production itdentity is satisfied.}
 \usage{
-checkProductionBalanced(dataToBeSaved, areaVar, yieldVar, prodVar, conversion)
+checkProductionBalanced(dataToBeSaved, areaVar, yieldVar, prodVar, conversion,
+  returnData = TRUE)
 }
 \arguments{
 \item{dataToBeSaved}{The data.table to be saved back to the SWS.}
@@ -16,6 +17,8 @@ checkProductionBalanced(dataToBeSaved, areaVar, yieldVar, prodVar, conversion)
 \item{prodVar}{The column name corresponding to produciton.}
 
 \item{conversion}{The conversion factor for calculating production.}
+
+\item{returnData}{logical, whether the data should be returned.}
 }
 \value{
 If the data satisfy the production identity, then the

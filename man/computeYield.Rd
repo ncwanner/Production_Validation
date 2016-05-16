@@ -4,8 +4,7 @@
 \alias{computeYield}
 \title{Function to compute and update yield}
 \usage{
-computeYield(data, processingParameters, normalized = FALSE,
-  newMethodFlag = "i", flagTable = faoswsFlagTable, unitConversion = 1)
+computeYield(data, processingParameters, flagTable = faoswsFlagTable)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
@@ -14,20 +13,10 @@ computeYield(data, processingParameters, normalized = FALSE,
 processing algorithms.  See defaultProductionParameters() for a starting
 point.}
 
-\item{normalized}{Is the input data normalised.}
-
-\item{newMethodFlag}{The flag to be used to update the yield method flag
-when imputation occurs.}
-
 \item{flagTable}{see data(faoswsFlagTable) in \pkg{faoswsFlag}}
-
-\item{unitConversion}{Yield is computed as (production) / (area) and
-multiplied by unitConversion.  This parameter defaults to 1.}
 }
 \value{
-The updated data.table.  This is important in the case where the
-  data is normalized, as the data.table must be cast and reshaped (and thus
-  can't be modified by reference).
+The updated data.table.
 }
 \description{
 Function to compute and update yield

@@ -5,7 +5,7 @@
 \title{Default Processing Parameters}
 \usage{
 productionProcessingParameters(datasetConfig, productionCode = "5510",
-  areaHarvestedCode = "5312", yieldCode = "5416",
+  areaHarvestedCode = "5312", yieldCode = "5416", unitConversion = 1,
   removePriorImputation = TRUE, removeManualEstimation = TRUE,
   imputationObservationFlag = "I", imputationMethodFlag = "e",
   balanceMethodFlag = "i", manualEstimationObservationFlag = "E",
@@ -24,6 +24,8 @@ variable.}
 harvested variable.}
 
 \item{yieldCode}{The element code corresponding to the yield variable.}
+
+\item{unitConversion}{The unit conversion between the triplet code provided.}
 
 \item{removePriorImputation}{logical, whether previous imputation values
 should be removed.}
@@ -73,6 +75,7 @@ Below is a description of the parameters: \itemize{
 \item productionMethodFlag: The column name of the method flag corresponding
   to the production variable.
 \item yieldValue: The column name of the yield variable.
+\item unitConversion: The unit conversion between the triplet code provided.
 \item yieldObservationFlag: The column name of the observation flag
   corresponding to the yield variable.
 \item yieldMethodFlag: The column

@@ -8,24 +8,25 @@ meat commodity (child).}
 \usage{
 checkSlaughteredSynced(commodityTree = getCommodityTree,
   animalNumbers = getAllAnimalNumber(),
-  slaughteredNumbers = getAllSlaughteredNumber())
+  slaughteredNumbers = getAllSlaughteredNumber(), returnData = TRUE)
 }
 \arguments{
-\item{commodityTree}{The mapping table which contains the
-relationship between the animal commodity and the meat
-commodity. Can be retrieved from \code{getCommodityTree}
-function.}
+\item{commodityTree}{The mapping table which contains the relationship
+between the animal commodity and the meat commodity. Can be retrieved
+from \code{getCommodityTree} function.}
 
-\item{animalNumbers}{The data.table object which contains the
-animal number of the animal commodity.}
+\item{animalNumbers}{The data.table object which contains the animal number
+of the animal commodity.}
 
 \item{slaughteredNumbers}{The data.table object which contains the
 slaughtered animal number of the meat commodity.}
+
+\item{returnData}{logical, whether the data should be returned.}
 }
 \value{
-All three input dataset will be returned as a list if all
-    the the animal number matches the slaughtered
-    number. Otherwise an error will be raised.
+All three input dataset will be returned as a list if all the the
+    animal number matches the slaughtered number. Otherwise an error will be
+    raised.
 }
 \description{
 This function checks whether the animal number in the animal

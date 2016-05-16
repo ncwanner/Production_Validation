@@ -4,17 +4,14 @@
 \alias{balanceProduction}
 \title{Function to compute production when new area harvested and yield are given.}
 \usage{
-balanceProduction(data, processingParameters, unitConversion = 1)
+balanceProduction(data, processingParameters)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
 
 \item{processingParameters}{A list of the parameters for the
 production processing algorithms.  See
-\code{productionProcessingParameters} for a starting point.}
-
-\item{unitConversion}{Yield is computed as (production) / (area)
-and multiplied by unitConversion.  This parameter defaults to
+\code{productionProcessingParameters} for a starting point.
 1.}
 }
 \description{

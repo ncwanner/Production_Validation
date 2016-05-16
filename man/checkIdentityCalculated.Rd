@@ -5,7 +5,8 @@
 \title{Function to check whether the triplet (area harvested/production/yield) are
 calculated whereever possible.}
 \usage{
-checkIdentityCalculated(dataToBeSaved, areaVar, yieldVar, prodVar)
+checkIdentityCalculated(dataToBeSaved, areaVar, yieldVar, prodVar,
+  returnData = TRUE)
 }
 \arguments{
 \item{dataToBeSaved}{The data.table to be saved back to the SWS.}
@@ -15,6 +16,8 @@ checkIdentityCalculated(dataToBeSaved, areaVar, yieldVar, prodVar)
 \item{yieldVar}{The column name corresponding to the yield.}
 
 \item{prodVar}{The column name corresponding to produciton.}
+
+\item{returnData}{logical, whether the data should be returned.}
 }
 \value{
 If the data satisfy the production identity, then the

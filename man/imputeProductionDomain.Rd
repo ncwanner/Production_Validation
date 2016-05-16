@@ -6,7 +6,7 @@
 \usage{
 imputeProductionDomain(data, processingParameters,
   areaHarvestedImputationParameters, yieldImputationParameters,
-  productionImputationParameters, unitConversion)
+  productionImputationParameters)
 }
 \arguments{
 \item{data}{The data}
@@ -25,9 +25,6 @@ imputation. See defaultImputationParameters() for a starting point.}
 \item{productionImputationParameters}{A list of the parameters for the
 production imputation. See defaultImputationParameters() for a starting
 point.}
-
-\item{unitConversion}{The multiplicative factor used for the particular
-commodity in calculating the yield.}
 }
 \description{
 The function will impute production, area harvested and yield at the same

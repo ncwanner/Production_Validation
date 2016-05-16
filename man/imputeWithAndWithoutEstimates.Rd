@@ -6,20 +6,20 @@
 implementation from Josh to account to exclude estimates when sufficient
 data is available or use estimates when they are not.}
 \usage{
-imputeWithAndWithoutEstimates(meatKey, minObsForEst = 5)
+imputeWithAndWithoutEstimates(data, processingParameters, imputationParameters,
+  minObsForEst = 5)
 }
 \arguments{
-\item{meatKey}{The Datakey object}
-
 \item{minObsForEst}{The minimum number of observation required to keep
 'E'stimated values.}
+
+\item{meatKey}{The Datakey object}
 }
 \value{
 Imputed time series
 }
 \description{
-NOTE (Michael): This function should ultimately be removed, it contains a
-                lot of hacks and manual estimated values with method flag
-                'f' should not be imputed.
+NOTE (Michael): This switching between imputation with/without manual 'E'
+                stimates will eventually be removed.
 }
 
