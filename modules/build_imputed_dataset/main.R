@@ -98,8 +98,8 @@ for(iter in seq(selectedItemCode)){
     subKey = completeImputationKey
     subKey@dimensions$measuredItemCPC@keys = currentItem
 
-    cat("Imputation for item: ", currentMeat, " (",  iter, " out of ",
-        length(selectedMeatCode),")\n")
+    cat("Imputation for item: ", currentItem, " (",  iter, " out of ",
+        length(selectedItemCode),")\n")
 
     ## Obtain the formula and remove indigenous and biological meat.
     ##
@@ -108,7 +108,7 @@ for(iter in seq(selectedItemCode)){
     ##                 separate item with different item code rather than under
     ##                 different element under the meat code.
     allFormula =
-        getYieldFormula(itemCode = currentMeat) %>%
+        getYieldFormula(itemCode = currentItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
     for(j in 1:nrow(allFormula)){
@@ -160,9 +160,9 @@ for(iter in seq(selectedItemCode)){
         ## Process the data.
         processedData =
             GetData(subKey) %>%
-            checkFlagValidty(data = .) %>%
-            checkProductionInputs(data = .) %>%
             fillRecord(data = .) %>%
+            checkFlagValidity(data = .) %>%
+            checkProductionInputs(data = .) %>%
             preProcessing(data = .) %>%
             denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
             processProductionDomain(data = .,

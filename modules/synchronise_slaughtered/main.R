@@ -82,9 +82,12 @@ cat("Pulling the data ... \n")
 
 newParentData =
     GetData(key = expandedMeatKey) %>%
-    checkFlagValidty(data = .) %>%
-    checkProductionInputs(data = .) %>%
     fillRecord(data = .) %>%
+    checkFlagValidity(data = .) %>%
+    denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+    checkProductionInputs(data = .,
+                          processingParam = processingParams) %>%
+    normalise(denormalisedData = .) %>%
     preProcessing(data = .) %>%
     ## Remove missing values, as we don't want to copy those.
     removeMissingEntry(data = .) %>%
