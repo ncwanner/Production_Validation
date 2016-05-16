@@ -84,10 +84,10 @@ newParentData =
     GetData(key = expandedMeatKey) %>%
     fillRecord(data = .) %>%
     checkFlagValidity(data = .) %>%
-    denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-    checkProductionInputs(data = .,
-                          processingParam = processingParams) %>%
-    normalise(denormalisedData = .) %>%
+    ## TODO (Michael): Add in the check for production input, however, have to
+    ##                 account for multiple formulas
+    ## checkProductionInputs(data = .,
+    ##                       processingParam = processingParams) %>%
     preProcessing(data = .) %>%
     ## Remove missing values, as we don't want to copy those.
     removeMissingEntry(data = .) %>%

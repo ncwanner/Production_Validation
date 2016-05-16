@@ -99,14 +99,15 @@ for(i in 1:nrow(unique_formulas)){
         getYieldData(subKey) %>%
         .$query %>%
         fillRecord(data = .) %>%
+        checkFlagValidity(data = .,
+                          normalised = FALSE) %>%
+        checkProductionInputs(data = .,
+                              processingParam = processingParams) %>%
         normalise(denormalisedData = .) %>%
-        checkFlagValidity(data = .) %>%
         preProcessing(data = .) %>%
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
                     fillEmptyRecords = TRUE) %>%
-        checkProductionInputs(data = .,
-                              processingParam = processingParams) %>%
         removeZeroYield(data = .,
                         yieldValue = processingParams$yieldValue,
                         yieldObsFlag =

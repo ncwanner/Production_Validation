@@ -120,7 +120,10 @@ animalTransferredData =
     GetData(key = .) %>%
     fillRecord(data = .) %>%
     checkFlagValidity(data = .) %>%
-    checkProductionInputs(data = .) %>%
+    ## TODO (Michael): Add in the check for production input, however, have to
+    ##                 account for multiple formulas
+    ## checkProductionInputs(data = .,
+    ##                       processingParam = processingParams) %>%
     preProcessing(data = .) %>%
     transferAnimalNumber(data = ., selectedMeatTable)
 
@@ -201,11 +204,11 @@ for(iter in seq(selectedMeatCode)){
         processedData =
             GetData(subKey) %>%
             fillRecord(data = .) %>%
-            checkFlagValidity(data = .) %>%
+            ## checkFlagValidity(data = .) %>%
+            checkProductionInputs(data = .,
+                                  processingParam = processingParameters) %>%
             preProcessing(data = .) %>%
             denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-            checkProductionInputs(data = .,
-                                  processingParam = processingParams) %>%
             processProductionDomain(data = .,
                                     processingParameters = processingParameters)
 
@@ -220,13 +223,14 @@ for(iter in seq(selectedMeatCode)){
         ## Perform module testing and save back to the database
 
         imputed %>%
+            normalise(.) %>%
+            postProcessing(data = .) %>%
             checkProductionBalanced(dataToBeSaved = .,
                                     areaVar = processingParams$areaHarvestedValue,
                                     yieldVar = processingParams$yieldValue,
                                     prodVar = processingParams$productionValue,
-                                    conversion = currentFormula$unitConversion) %>%
-            normalise(.) %>%
-            postProcessing(data = .) %>%
+                                    conversion = processingParams$unitConversion,
+                                    normalised = TRUE) %>%
             checkTimeSeriesImputed(dataToBeSaved = .,
                                    key = c("geographicAreaM49",
                                            "measuredItemCPC",

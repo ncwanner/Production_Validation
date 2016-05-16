@@ -109,10 +109,9 @@ for(i in seq(selectedImputationItems)){
         GetData(subKey) %>%
         fillRecord(data = .) %>%
         checkFlagValidity(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         checkProductionInputs(data = .,
-                              processingParam = processingParams) %>%
-        normalise(denormalisedData = .) %>%
+                              processingParam = processingParams,
+                              normalised = TRUE) %>%
         preProcessing(data = .) %>%
         setkeyv(x = , col = c("geographicAreaM49", "measuredItemCPC",
                               "timePointYears", "measuredElement"))

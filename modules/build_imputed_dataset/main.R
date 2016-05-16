@@ -162,7 +162,9 @@ for(iter in seq(selectedItemCode)){
             GetData(subKey) %>%
             fillRecord(data = .) %>%
             checkFlagValidity(data = .) %>%
-            checkProductionInputs(data = .) %>%
+            checkProductionInputs(data = .,
+                                  processingParam = processingParams,
+                                  normalised = TRUE) %>%
             preProcessing(data = .) %>%
             denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
             processProductionDomain(data = .,
