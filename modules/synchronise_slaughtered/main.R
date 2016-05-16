@@ -82,6 +82,8 @@ cat("Pulling the data ... \n")
 
 newParentData =
     GetData(key = expandedMeatKey) %>%
+    checkFlagValidty(data = .) %>%
+    checkProductionInputs(data = .) %>%
     fillRecord(data = .) %>%
     preProcessing(data = .) %>%
     ## Remove missing values, as we don't want to copy those.

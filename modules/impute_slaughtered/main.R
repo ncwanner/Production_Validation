@@ -118,6 +118,8 @@ cat("Pulling the complete data...\n")
 animalTransferredData =
     expandedMeatKey %>%
     GetData(key = .) %>%
+    checkFlagValidty(data = .) %>%
+    checkProductionInputs(data = .) %>%
     fillRecord(data = .) %>%
     preProcessing(data = .) %>%
     transferAnimalNumber(data = ., selectedMeatTable)
@@ -198,6 +200,8 @@ for(iter in seq(selectedMeatCode)){
         ## Process the data.
         processedData =
             GetData(subKey) %>%
+            checkFlagValidty(data = .) %>%
+            checkProductionInputs(data = .) %>%
             fillRecord(data = .) %>%
             preProcessing(data = .) %>%
             denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%

@@ -151,6 +151,23 @@ for(iter in seq(selectedItemCode)){
         ##                 components.
         ##
 
+        ## Build imputation parameter
+        imputationParameters =
+            getImputationParameters(productionCode = currentFormula$output,
+                                    areaHarvestedCode = currentFormula$input,
+                                    yieldCode = currentFormula$productivity)
+
+        ## Process the data.
+        processedData =
+            GetData(subKey) %>%
+            checkFlagValidty(data = .) %>%
+            checkProductionInputs(data = .) %>%
+            fillRecord(data = .) %>%
+            preProcessing(data = .) %>%
+            denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+            processProductionDomain(data = .,
+                                    processingParameters = processingParameters)
+
         ## Perform imputation
         imputed =
             imputeWithAndWithoutEstimates(
