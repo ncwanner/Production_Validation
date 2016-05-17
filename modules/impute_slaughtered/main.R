@@ -36,6 +36,7 @@ suppressMessages({
     library(faoswsUtil)
     library(faoswsImputation)
     library(faoswsProduction)
+    library(faoswsProcessing)
     library(magrittr)
     library(dplyr)
 })
@@ -204,7 +205,7 @@ for(iter in seq(selectedMeatCode)){
         processedData =
             GetData(subKey) %>%
             fillRecord(data = .) %>%
-            ## checkFlagValidity(data = .) %>%
+            checkFlagValidity(data = .) %>%
             checkProductionInputs(data = .,
                                   processingParam = processingParameters) %>%
             preProcessing(data = .) %>%
@@ -224,12 +225,11 @@ for(iter in seq(selectedMeatCode)){
 
         imputed %>%
             normalise(.) %>%
-            postProcessing(data = .) %>%
             checkProductionBalanced(dataToBeSaved = .,
-                                    areaVar = processingParams$areaHarvestedValue,
-                                    yieldVar = processingParams$yieldValue,
-                                    prodVar = processingParams$productionValue,
-                                    conversion = processingParams$unitConversion,
+                                    areaVar = processingParameters$areaHarvestedValue,
+                                    yieldVar = processingParameters$yieldValue,
+                                    prodVar = processingParameters$productionValue,
+                                    conversion = processingParameters$unitConversion,
                                     normalised = TRUE) %>%
             checkTimeSeriesImputed(dataToBeSaved = .,
                                    key = c("geographicAreaM49",
@@ -243,6 +243,7 @@ for(iter in seq(selectedMeatCode)){
             ##                 This is an error in the system as the flag
             ##                 ('I', '-') should be replaced with ('E', 'e')
             ##                 which can be over-written.
+            postProcessing(data = .) %>%
             checkProtectedData(dataToBeSaved = .) %>%
             SaveData(domain = subKey@domain,
                      dataset = subKey@dataset,
