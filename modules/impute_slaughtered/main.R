@@ -37,6 +37,7 @@ suppressMessages({
     library(faoswsImputation)
     library(faoswsProduction)
     library(faoswsProcessing)
+    library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
 })
@@ -120,11 +121,9 @@ animalTransferredData =
     expandedMeatKey %>%
     GetData(key = .) %>%
     fillRecord(data = .) %>%
-    checkFlagValidity(data = .) %>%
+    ## checkFlagValidity(data = .) %>%
     ## TODO (Michael): Add in the check for production input, however, have to
     ##                 account for multiple formulas
-    ## checkProductionInputs(data = .,
-    ##                       processingParam = processingParams) %>%
     preProcessing(data = .) %>%
     transferAnimalNumber(data = ., selectedMeatTable)
 
@@ -135,6 +134,8 @@ animalTransferredData =
 ##                 module.
 cat("Saving the transferred animal to meat data back...\n")
 animalTransferredData %>%
+    ## TODO (Michael): Add in the check for production output, however, have to
+    ##                 account for multiple formulas.
     postProcessing(data = .) %>%
     SaveData(expandedMeatKey@domain, expandedMeatKey@dataset, data = .)
 
@@ -205,9 +206,8 @@ for(iter in seq(selectedMeatCode)){
         processedData =
             GetData(subKey) %>%
             fillRecord(data = .) %>%
-            checkFlagValidity(data = .) %>%
-            checkProductionInputs(data = .,
-                                  processingParam = processingParameters) %>%
+            ensureProductionInputs(data = .,
+                                   processingParameters = processingParameters) %>%
             preProcessing(data = .) %>%
             denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
             processProductionDomain(data = .,
@@ -225,26 +225,16 @@ for(iter in seq(selectedMeatCode)){
 
         imputed %>%
             normalise(.) %>%
-            checkProductionBalanced(dataToBeSaved = .,
-                                    areaVar = processingParameters$areaHarvestedValue,
-                                    yieldVar = processingParameters$yieldValue,
-                                    prodVar = processingParameters$productionValue,
-                                    conversion = processingParameters$unitConversion,
-                                    normalised = TRUE) %>%
-            checkTimeSeriesImputed(dataToBeSaved = .,
-                                   key = c("geographicAreaM49",
-                                           "measuredItemCPC",
-                                           "measuredElement"),
-                                   valueColumn = "Value") %>%
-            filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
             ## NOTE (Michael): This test currently fails occasionally
             ##                 because it can not overwrite the ('I', '-')
             ##                 flag for imputed value from the old system.
             ##                 This is an error in the system as the flag
             ##                 ('I', '-') should be replaced with ('E', 'e')
             ##                 which can be over-written.
+            ensureProductionOutput(data = .,
+                                   processingParameters = processingParameters) %>%
+            filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
             postProcessing(data = .) %>%
-            checkProtectedData(dataToBeSaved = .) %>%
             SaveData(domain = subKey@domain,
                      dataset = subKey@dataset,
                      data = .)
@@ -271,11 +261,9 @@ if(!is.null(updatedSlaughteredAnimal)){
         ## Post process the data
         postProcessing(data = .) %>%
         ## Module Testing before saving the data back to the database
-        checkTimeSeriesImputed(dataToBeSaved = .,
-                               key = c("geographicAreaM49",
-                                       "measuredItemCPC", "measuredElement"),
-                               valueColumn = "Value") %>%
-        checkProtectedData(dataToBeSaved = .) %>%
+        ## TODO (Michael): Add in the check for production input, however, have to
+        ##                 account for multiple formulas
+
         ## Step 4. Save all three variables for meat (production/animals
         ##         slaughterd/carcass weight) and the animals slaughtered
         ##         for the animal.
