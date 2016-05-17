@@ -13,6 +13,7 @@ suppressMessages({
     library(faoswsFlag)
     library(faoswsUtil)
     library(faoswsProduction)
+    library(faoswsProcessing)
     library(magrittr)
     library(dplyr)
 })
@@ -99,15 +100,12 @@ for(i in 1:nrow(unique_formulas)){
         getYieldData(subKey) %>%
         .$query %>%
         fillRecord(data = .) %>%
-        checkFlagValidity(data = .,
-                          normalised = FALSE) %>%
+        checkFlagValidity(data = .) %>%
         checkProductionInputs(data = .,
-                              processingParam = processingParams) %>%
-        normalise(denormalisedData = .) %>%
-        preProcessing(data = .) %>%
-        denormalise(normalisedData = .,
-                    denormaliseKey = "measuredElement",
-                    fillEmptyRecords = TRUE) %>%
+                              processingParam = processingParams,
+                              normalised = FALSE) %>%
+        preProcessing(data = .,
+                      normalised = FALSE) %>%
         removeZeroYield(data = .,
                         yieldValue = processingParams$yieldValue,
                         yieldObsFlag =
@@ -116,14 +114,11 @@ for(i in 1:nrow(unique_formulas)){
 
     ## Perform the yield module.
     computeYield(data = yieldData,
-                 processingParameters = processingParams,
-                 unitConversion = current_formula$unitConversion)
+                 processingParameters = processingParams)
     balanceProduction(data = yieldData,
-                      processingParameters = processingParams,
-                      unitConversion = current_formula$unitConversion)
+                      processingParameters = processingParams)
     balanceAreaHarvested(data = yieldData,
-                         processingParameters = processingParams,
-                         unitConversion = current_formula$unitConversion)
+                         processingParameters = processingParams)
     ## Module testing
     cat("Module Testing and saving data back ... \n")
 
@@ -132,11 +127,13 @@ for(i in 1:nrow(unique_formulas)){
                                 areaVar = processingParams$areaHarvestedValue,
                                 yieldVar = processingParams$yieldValue,
                                 prodVar = processingParams$productionValue,
-                                conversion = processingParams$unitConversion) %>%
+                                conversion = processingParams$unitConversion,
+                                normalised = FALSE) %>%
         checkIdentityCalculated(dataToBeSaved = .,
                                 areaVar = processingParams$areaHarvestedValue,
                                 yieldVar = processingParams$yieldValue,
-                                prodVar = processingParams$productionValue) %>%
+                                prodVar = processingParams$productionValue,
+                                normalised = FALSE) %>%
         normalise(.) %>%
         postProcessing(.) %>%
         filter(filter = flagMethod %in% c("i", "t", "e", "n", "u")) %>%
