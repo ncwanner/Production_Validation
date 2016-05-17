@@ -40,7 +40,7 @@ ensureProductionOutputs = function(data,
                                            areaHarvestedValue,
                                            areaHarvestedObservationFlag,
                                            areaHarvestedMethodFlag,
-                                           yearValue,
+                                           yearVar,
                                            areaVar),
                         returnData = FALSE)
 
@@ -53,10 +53,22 @@ ensureProductionOutputs = function(data,
                                 returnData = FALSE,
                                 normalised = FALSE)
 
-        ## Ensure yield contains no zero
-        ensureNoZeroValue(data = dataCopy,
-                          noZeroValueColumn = yieldValue,
-                          returnData = FALSE)
+        ## Ensure the range of values are correct
+        ##
+        ## NOTE (Michael): Yield can not be equal to zero
+        ensureValueRange(data = dataCopy
+                         ensureColumn = yieldValue,
+                         min = 0,
+                         max = Inf,
+                         includeEndPoint = FALSE)
+        ensureValueRange(data = dataCopy
+                         ensureColumn = areaHarvestedValue,
+                         min = 0,
+                         max = Inf)
+        ensureValueRange(data = dataCopy
+                         ensureColumn = productionValue,
+                         min = 0,
+                         max = Inf)
 
         ## Ensure flags are valid
         ensureFlagValidity(data = dataCopy,
