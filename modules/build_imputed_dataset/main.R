@@ -5,6 +5,7 @@ suppressMessages({
     library(faoswsFlag)
     library(faoswsImputation)
     library(faoswsProduction)
+    library(faoswsProcessing)
     library(magrittr)
     library(dplyr)
 })
@@ -163,8 +164,7 @@ for(iter in seq(selectedItemCode)){
             fillRecord(data = .) %>%
             checkFlagValidity(data = .) %>%
             checkProductionInputs(data = .,
-                                  processingParam = processingParams,
-                                  normalised = TRUE) %>%
+                                  processingParam = processingParameters) %>%
             preProcessing(data = .) %>%
             denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
             processProductionDomain(data = .,
@@ -181,12 +181,12 @@ for(iter in seq(selectedItemCode)){
         ## Check the imputation before saving.
         imputed %>%
             checkProductionBalanced(dataToBeSaved = .,
-                                    areaVar = processingParams$areaHarvestedValue,
-                                    yieldVar = processingParams$yieldValue,
-                                    prodVar = processingParams$productionValue,
-                                    conversion = currentFormula$unitConversion) %>%
+                                    areaVar = processingParameters$areaHarvestedValue,
+                                    yieldVar = processingParameters$yieldValue,
+                                    prodVar = processingParameters$productionValue,
+                                    conversion = currentFormula$unitConversion,
+                                    normalised = FALSE) %>%
             normalise(.) %>%
-            postProcessing(data = .) %>%
             checkTimeSeriesImputed(dataToBeSaved = .,
                                    key = c("geographicAreaM49",
                                            "measuredItemCPC",
