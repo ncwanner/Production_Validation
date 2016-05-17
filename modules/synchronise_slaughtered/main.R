@@ -25,6 +25,7 @@ suppressMessages({
     library(faosws)
     library(faoswsUtil)
     library(faoswsProduction)
+    library(faoswsProcessing)
     library(dplyr)
     library(magrittr)
 })
