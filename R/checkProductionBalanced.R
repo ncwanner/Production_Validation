@@ -21,10 +21,9 @@ checkProductionBalanced = function(dataToBeSaved,
                                    returnData = TRUE,
                                    normalised = TRUE){
 
-    dataCopy = copy(data)
+    dataCopy = copy(dataToBeSaved)
     ## Basic checks
     stopifnot(is(dataCopy, "data.table"))
-    stopifnot(is(processingParameters, "list"))
 
     if(normalised){
         dataCopy = denormalise(dataCopy, "measuredElement")
@@ -40,7 +39,9 @@ checkProductionBalanced = function(dataToBeSaved,
         ##                 rounding. The upper bound of the 1e-6 is the
         ##                 rounding performed by the system.
         allowedDifference = max(dataCopy[[areaVar[i]]] * 1e-6, 1)
-        if(any(na.omit(productionDifference > allowedDifference))){
+        imbalance = which(productionDifference > allowedDifference)
+        if(length(imbalance) > 0){
+            print(dataCopy[imbalance, ])
             ## if(!all(na.omit(productionDifference < 2))){
             stop("Production is not balanced, the A * Y = P identity is not satisfied")
         }

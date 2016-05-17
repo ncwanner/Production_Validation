@@ -11,12 +11,21 @@
 balanceAreaHarvested = function(data,
                                 processingParameters){
 
-    ## Data quality check
-    checkProductionImputs(data,
-                          processingParameters = processingParameters,
-                          returnData = FALSE)
     ## Save clutter by renaming "processingParameters" to "p" locally.
     param = processingParameters
+
+    ## Data quality check
+    if(!all(c(param$productionValue,
+              param$areaHarvestedValue,
+              param$yieldValue) %in%
+       colnames(data)))
+        stop("Data not denormalised by measured element")
+
+    checkProductionInputs(data,
+                          processingParameters = param,
+                          returnData = FALSE,
+                          normalised = FALSE)
+
 
     ## Impute only when area and yield are available and production isn't
     missingAreaHarvested =

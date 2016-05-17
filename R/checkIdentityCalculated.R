@@ -21,10 +21,9 @@ checkIdentityCalculated = function(dataToBeSaved,
                                    returnData = TRUE,
                                    normalised = TRUE){
 
-    dataCopy = copy(data)
+    dataCopy = copy(dataToBeSaved)
     ## Basic checks
     stopifnot(is(dataCopy, "data.table"))
-    stopifnot(is(processingParameters, "list"))
 
     if(normalised){
         dataCopy = denormalise(dataCopy, "measuredElement")

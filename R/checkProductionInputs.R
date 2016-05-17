@@ -85,7 +85,7 @@ checkProductionInputs = function(data,
 
 
     ## Zero yield
-    if(any(dataCopy[[processingParameters$yieldValue]] == 0))
+    if(any(na.omit(dataCopy[[processingParameters$yieldValue]] == 0)))
         stop("Yield can not be zero by definition")
 
     if(normalised){

@@ -17,13 +17,22 @@
 processProductionDomain = function(data, processingParameters){
     dataCopy = copy(data)
 
-    ## Data quality check
-    checkProductionImputs(dataCopy,
-                          processingParameters = processingParameters,
-                          returnData = FALSE)
-
     ## processingParameters will be referenced alot, so rename to param
     param = processingParameters
+
+    ## Data quality check
+    if(!all(c(param$productionValue,
+              param$areaHarvestedValue,
+              param$yieldValue) %in%
+       colnames(dataCopy)))
+        stop("Data not denormalised by measured element")
+
+    checkProductionInputs(dataCopy,
+                          processingParameters = processingParameters,
+                          returnData = FALSE,
+                          normalised = FALSE)
+
+
     ## Remove prior imputations
     if(param$removePriorImputation){
         ## Remove current imputation (flag = I, e)

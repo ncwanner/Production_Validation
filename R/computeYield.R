@@ -17,10 +17,22 @@ computeYield = function(data,
                         processingParameters,
                         flagTable = faoswsFlagTable){
 
+
+    ## Save clutter by renaming "processingParameters" to "p" locally.
+    param = processingParameters
+
     ## Data quality check
-    checkProductionImputs(dataCopy,
+    if(!all(c(param$productionValue,
+              param$areaHarvestedValue,
+              param$yieldValue) %in%
+       colnames(data)))
+        stop("Data not denormalised by measured element")
+
+    ## Data quality check
+    checkProductionInputs(data,
                           processingParameters = processingParameters,
-                          returnData = FALSE)
+                          returnData = FALSE,
+                          normalised = FALSE)
 
     stopifnot(faoswsUtil::checkMethodFlag(processingParameters$balanceMethodFlag))
 
