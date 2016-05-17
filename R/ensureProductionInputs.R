@@ -15,9 +15,9 @@
 ##'
 
 ensureProductionInputs = function(data,
-                                 processingParameters,
-                                 returnData = TRUE,
-                                 normalised = TRUE){
+                                  processingParameters,
+                                  returnData = TRUE,
+                                  normalised = TRUE){
 
     dataCopy = copy(data)
 
@@ -46,51 +46,53 @@ ensureProductionInputs = function(data,
                              param$imputationMethodFlag)))
 
     with(processingParameters,
-         ## Check data inputs
-         ensureDataInput(data = dataCopy,
-                         requiredColumn = c(productionValue,
-                                            productionObservationFlag,
-                                            productionMethodFlag,
-                                            yieldValue,
-                                            yieldObservationFlag,
-                                            yieldMethodFlag,
-                                            areaHarvestedValue,
-                                            areaHarvestedObservationFlag,
-                                            areaHarvestedMethodFlag,
-                                            yearValue,
-                                            areaVar),
-                         returnData = FALSE)
+    {
+
+        ## Check data inputs
+        ensureDataInput(data = dataCopy,
+                        requiredColumn = c(productionValue,
+                                           productionObservationFlag,
+                                           productionMethodFlag,
+                                           yieldValue,
+                                           yieldObservationFlag,
+                                           yieldMethodFlag,
+                                           areaHarvestedValue,
+                                           areaHarvestedObservationFlag,
+                                           areaHarvestedMethodFlag,
+                                           yearValue,
+                                           areaVar),
+                        returnData = FALSE)
 
 
-         ## Ensure there is no production is zero while area harvested is non
-         ## zero, vice versa.
-         ensureNoConflictingZero(data = dataCopy,
-                                 valueColumn1 = productionValue,
-                                 valueColumn2 = areaHarvestedValue,
+        ## Ensure there is no production is zero while area harvested is non
+        ## zero, vice versa.
+        ensureNoConflictingZero(data = dataCopy,
+                                valueColumn1 = productionValue,
+                                valueColumn2 = areaHarvestedValue,
+                                returnData = FALSE,
+                                normalised = FALSE)
+
+        ## Ensure yield contains no zero
+        ensureNoZeroValue(data = dataCopy,
+                          noZeroValueColumn = yieldValue,
+                          returnData = FALSE)
+
+        ## Ensure flags are valid
+        ensureFlagValidity(data = dataCopy,
+                           normalised = FALSE)
+
+        ## Ensure production is balanced
+        ##
+        ## NOTE (Michael): This may be optional in input, but mandatory in
+        ##                 output
+        ensureProductionBalanced(dataToBeSaved = dataCopy,
+                                 areaVar = areaHarvestedValue,
+                                 yieldVar = yieldValue,
+                                 prodVar = productionValue,
+                                 conversion,
                                  returnData = FALSE,
                                  normalised = FALSE)
-
-         ## Ensure yield contains no zero
-         ensureNoZeroValue(data = dataCopy,
-                           noZeroValueColumn = yieldValue,
-                           returnData = FALSE)
-
-         ## Ensure flags are valid
-         ensureFlagValidity(data = dataCopy,
-                            normalised = FALSE)
-
-         ## Ensure production is balanced
-         ##
-         ## NOTE (Michael): This may be optional in input, but mandatory in
-         ##                 output
-         ensureProductionBalanced(dataToBeSaved = dataCopy,
-                                  areaVar = areaHarvestedValue,
-                                  yieldVar = yieldValue,
-                                  prodVar = productionValue,
-                                  conversion,
-                                  returnData = FALSE,
-                                  normalised = FALSE)
-         )
+    })
 
     if(normalised){
         dataCopy = normalise(dataCopy)
