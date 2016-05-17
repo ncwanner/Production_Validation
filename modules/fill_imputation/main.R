@@ -2,6 +2,7 @@ suppressMessages({
     library(faosws)
     library(faoswsUtil)
     library(faoswsProduction)
+    library(faoswsProcessing)
     library(magrittr)
     library(dplyr)
 })
@@ -155,7 +156,6 @@ for(i in seq(selectedImputationItems)){
                flagMethod = i.flagMethod) %>%
         ## Remove imputation column
         select(.data = ., select = -starts_with("i.")) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         ## NOTE (Michael): This test might fail because the data may have been
         ##                 updated since the production imputation module was
         ##                 performed.
@@ -164,14 +164,13 @@ for(i in seq(selectedImputationItems)){
                                 yieldVar = processingParams$yieldValue,
                                 prodVar = processingParams$productionValue,
                                 conversion = currentFormula[, unitConversion]) %>%
-        normalise(.) %>%
         postProcessing(data = .) %>%
         checkProtectedData(dataToBeSaved = .) %>%
         ## NOTE (Michael): flagMethod can be 'i' or 'e' since yield
         ##                 can be computed as an identity during the
         ##                 imputation stage.
         checkOutputFlags(data = .,
-                         flagObservationStatusExpected = "I",
+                         flagObservationExpected = "I",
                          flagMethodExpected = c("i", "e")) %>%
         ## Save data back
         SaveData(domain = "agriculture", dataset = "aproduction", data = .)
