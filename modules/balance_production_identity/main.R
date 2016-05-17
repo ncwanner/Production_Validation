@@ -14,6 +14,7 @@ suppressMessages({
     library(faoswsUtil)
     library(faoswsProduction)
     library(faoswsProcessing)
+    library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
 })
@@ -100,10 +101,9 @@ for(i in 1:nrow(unique_formulas)){
         getYieldData(subKey) %>%
         .$query %>%
         fillRecord(data = .) %>%
-        checkFlagValidity(data = .) %>%
-        checkProductionInputs(data = .,
-                              processingParam = processingParams,
-                              normalised = FALSE) %>%
+        ensureProductionInputs(data = .,
+                               processingParam = processingParams,
+                               normalised = FALSE) %>%
         preProcessing(data = .,
                       normalised = FALSE) %>%
         removeZeroYield(data = .,
@@ -123,21 +123,11 @@ for(i in 1:nrow(unique_formulas)){
     cat("Module Testing and saving data back ... \n")
 
     yieldData %>%
-        checkProductionBalanced(dataToBeSaved = .,
-                                areaVar = processingParams$areaHarvestedValue,
-                                yieldVar = processingParams$yieldValue,
-                                prodVar = processingParams$productionValue,
-                                conversion = processingParams$unitConversion,
-                                normalised = FALSE) %>%
-        checkIdentityCalculated(dataToBeSaved = .,
-                                areaVar = processingParams$areaHarvestedValue,
-                                yieldVar = processingParams$yieldValue,
-                                prodVar = processingParams$productionValue,
-                                normalised = FALSE) %>%
         normalise(.) %>%
         postProcessing(.) %>%
         filter(filter = flagMethod %in% c("i", "t", "e", "n", "u")) %>%
-        checkProtectedData(dataToBeSaved = .) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParams) %>%
         SaveData(domain = "agriculture",
                  dataset = "aproduction",
                  data = .)
