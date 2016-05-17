@@ -4,8 +4,10 @@
 ##'
 ##' @param data A data.table containing the data.
 ##' @param processingParameters A list containing the parameters to be used in
-##' the processing algorithms.  See ?defaultProcessingParameters for a starting
-##' point.
+##'     the processing algorithms. See ?defaultProcessingParameters for a
+##'     starting point.
+##' @param testImputed logical, whether to test imputation result
+##' @param testCalculated logical, whether to test calculated result.
 ##' @param domain The domain to be saved back
 ##' @param dataset The dataset to be saved back
 ##' @param returnData logical, whether the data should be returned
@@ -18,6 +20,8 @@
 
 ensureProductionOutputs = function(data,
                                    processingParameters,
+                                   testImputed = TRUE,
+                                   testCalculated = TRUE,
                                    domain = "agriculture",
                                    dataset = "aproduction",
                                    returnData = TRUE,
@@ -56,16 +60,16 @@ ensureProductionOutputs = function(data,
         ## Ensure the range of values are correct
         ##
         ## NOTE (Michael): Yield can not be equal to zero
-        ensureValueRange(data = dataCopy
+        ensureValueRange(data = dataCopy,
                          ensureColumn = yieldValue,
                          min = 0,
                          max = Inf,
                          includeEndPoint = FALSE)
-        ensureValueRange(data = dataCopy
+        ensureValueRange(data = dataCopy,
                          ensureColumn = areaHarvestedValue,
                          min = 0,
                          max = Inf)
-        ensureValueRange(data = dataCopy
+        ensureValueRange(data = dataCopy,
                          ensureColumn = productionValue,
                          min = 0,
                          max = Inf)
@@ -86,14 +90,28 @@ ensureProductionOutputs = function(data,
                                  returnData = FALSE,
                                  normalised = FALSE)
 
-        ## Ensure time series are imputed
-        ensureTimeSeriesImputed(dataToBeSaved = dataCopy,
-                                key = c(areaVar, itemVar, elementVar),
-                                returnData = FALSE,
-                                normalised = FALSE)
+        if(testImputed){
+            ## Ensure time series are imputed
+            ensureTimeSeriesImputed(dataToBeSaved = dataCopy,
+                                    key = c(areaVar, itemVar, elementVar),
+                                    returnData = FALSE,
+                                    normalised = FALSE)
+        }
+
+        if(testCalculated){
+            ## Ensure the identity is calculated.
+            ensureIdentityCalculated(dataToBeSaved = dataCopy,
+                                     areaVar = areaHarvestedValue,
+                                     yieldVar = yieldValue,
+                                     prodVar = productionValue,
+                                     returnData = FALSE,
+                                     normalised = FALSE)
+        }
 
         ## Ensure protected data are not over-written
         ensureProtectedData(dataToBeSaved = dataCopy,
+                            domain = domain,
+                            dataset = dataset,
                             areaVar = areaVar,
                             itemVar = itemVar,
                             elementVar = elementVar,
@@ -103,13 +121,6 @@ ensureProductionOutputs = function(data,
                             returnData = FALSE,
                             normalised = FALSE)
 
-        ## Ensure the identity is calculated.
-        ensureIdentityCalculated(dataToBeSaved = dataCopy,
-                                 areaVar = areaHarvestedValue,
-                                 yieldVar = yieldValue,
-                                 prodVar = productionValue,
-                                 returnData = FALSE,
-                                 normalised = FALSE)
     })
 
     if(normalised){

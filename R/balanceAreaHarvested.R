@@ -18,13 +18,13 @@ balanceAreaHarvested = function(data,
     if(!all(c(param$productionValue,
               param$areaHarvestedValue,
               param$yieldValue) %in%
-       colnames(data)))
+            colnames(data)))
         stop("Data not denormalised by measured element")
 
-    checkProductionInputs(data,
-                          processingParameters = param,
-                          returnData = FALSE,
-                          normalised = FALSE)
+    ensureProductionInputs(data,
+                           processingParameters = param,
+                           returnData = FALSE,
+                           normalised = FALSE)
 
 
     ## Impute only when area and yield are available and production isn't

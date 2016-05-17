@@ -40,10 +40,10 @@ imputeProductionDomain = function(data,
     ensureImputationInputs(data = dataCopy,
                            imputationParameters = productionImputationParameters)
 
-    checkProductionInputs(dataCopy,
-                          processingParameters = processingParameters,
-                          returnData = FALSE,
-                          normalised = FALSE)
+    ensureProductionInputs(dataCopy,
+                           processingParameters = processingParameters,
+                           returnData = FALSE,
+                           normalised = FALSE)
 
     setkeyv(x = dataCopy, cols = c(processingParameters$areaVar,
                                    processingParameters$yearValue))
@@ -163,11 +163,11 @@ imputeProductionDomain = function(data,
     dataCopy[, `:=`(colnames(dataCopy),
                     lapply(colnames(dataCopy),
                            FUN = function(x){
-                               if(x %in% names(originDataType)){
-                                   as(.SD[[x]], originDataType[[x]])
-                               } else {
-                                   .SD[[x]]
-                               }
-                           }))]
+                        if(x %in% names(originDataType)){
+                            as(.SD[[x]], originDataType[[x]])
+                        } else {
+                            .SD[[x]]
+                        }
+                    }))]
     dataCopy
 }

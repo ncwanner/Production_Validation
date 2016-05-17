@@ -75,16 +75,16 @@ ensureProductionInputs = function(data,
         ## Ensure the range of values are correct
         ##
         ## NOTE (Michael): Yield can not be equal to zero
-        ensureValueRange(data = dataCopy
+        ensureValueRange(data = dataCopy,
                          ensureColumn = yieldValue,
                          min = 0,
                          max = Inf,
                          includeEndPoint = FALSE)
-        ensureValueRange(data = dataCopy
+        ensureValueRange(data = dataCopy,
                          ensureColumn = areaHarvestedValue,
                          min = 0,
                          max = Inf)
-        ensureValueRange(data = dataCopy
+        ensureValueRange(data = dataCopy,
                          ensureColumn = productionValue,
                          min = 0,
                          max = Inf)

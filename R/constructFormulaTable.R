@@ -1,8 +1,5 @@
 ##' This function construct a formula table
 ##'
-##' The formula table is used by the \code{checkAllProductionBalanced}
-##' function.
-##'
 ##' @param formulaTuples The containing the formula relationship, this
 ##'     can be obtained from the \code{getYieldFormula} function.
 ##' @param formulaPrefix This table contains the prefix which is used

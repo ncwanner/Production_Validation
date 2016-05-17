@@ -21,16 +21,19 @@ processProductionDomain = function(data, processingParameters){
     param = processingParameters
 
     ## Data quality check
-    if(!all(c(param$productionValue,
-              param$areaHarvestedValue,
-              param$yieldValue) %in%
-       colnames(dataCopy)))
-        stop("Data not denormalised by measured element")
-
-    checkProductionInputs(dataCopy,
-                          processingParameters = processingParameters,
-                          returnData = FALSE,
-                          normalised = FALSE)
+    with(param,
+         ensureDataInput(dataCopy,
+                         requiredColumn = c(areaHarvestedValue,
+                                            areaHarvestedObservationFlag,
+                                            areaHarvestedMethodFlag,
+                                            yieldValue,
+                                            yieldObservationFlag,
+                                            yieldMethodFlag,
+                                            productionValue,
+                                            productionObservationFlag,
+                                            productionMethodFlag),
+                         returnData = FALSE)
+         )
 
 
     ## Remove prior imputations
@@ -154,9 +157,9 @@ processProductionDomain = function(data, processingParameters){
 
     ## Remove yield that are zero
     dataCopy = removeZeroYield(data = dataCopy,
-                        yieldValue = param$yieldValue,
-                        yieldObsFlag = param$yieldObservationFlag,
-                        yieldMethodFlag = param$yieldMethodFlag)
+                               yieldValue = param$yieldValue,
+                               yieldObsFlag = param$yieldObservationFlag,
+                               yieldMethodFlag = param$yieldMethodFlag)
 
     return(dataCopy)
 }
