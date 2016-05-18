@@ -6,8 +6,8 @@
 implementation from Josh to account to exclude estimates when sufficient
 data is available or use estimates when they are not.}
 \usage{
-imputeWithAndWithoutEstimates(data, processingParameters, imputationParameters,
-  minObsForEst = 5)
+imputeWithAndWithoutEstimates(data, processingParameters, formulaParameters,
+  imputationParameters, minObsForEst = 5)
 }
 \arguments{
 \item{minObsForEst}{The minimum number of observation required to keep

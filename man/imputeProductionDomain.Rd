@@ -4,7 +4,7 @@
 \alias{imputeProductionDomain}
 \title{This function imputes the whole production domain.}
 \usage{
-imputeProductionDomain(data, processingParameters,
+imputeProductionDomain(data, processingParameters, formulaParameters,
   areaHarvestedImputationParameters, yieldImputationParameters,
   productionImputationParameters)
 }
@@ -25,6 +25,9 @@ imputation. See defaultImputationParameters() for a starting point.}
 \item{productionImputationParameters}{A list of the parameters for the
 production imputation. See defaultImputationParameters() for a starting
 point.}
+
+\item{formulaParameter}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
 }
 \description{
 The function will impute production, area harvested and yield at the same

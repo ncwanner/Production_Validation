@@ -4,39 +4,34 @@
 ##' @param processingParameters A list of the parameters for the production
 ##'     processing algorithms. See \code{productionProcessingParameters} for a
 ##'     starting point.
+##' @param formulaParameter A list holding the names and parmater of formulas.
+##'     See \code{productionFormulaParameters}.
 ##'
 ##' @export
 ##'
 
 balanceAreaHarvested = function(data,
-                                processingParameters){
+                                processingParameters,
+                                formulaParameters){
 
-    ## Save clutter by renaming "processingParameters" to "p" locally.
-    param = processingParameters
 
     ## Data quality check
-    if(!all(c(param$productionValue,
-              param$areaHarvestedValue,
-              param$yieldValue) %in%
-            colnames(data)))
-        stop("Data not denormalised by measured element")
-
     ensureProductionInputs(data,
-                           processingParameters = param,
+                           formulaParameters = formulaParameters,
                            returnData = FALSE,
                            normalised = FALSE)
 
 
     ## Impute only when area and yield are available and production isn't
     missingAreaHarvested =
-        is.na(data[[param$areaHarvestedValue]]) |
-        data[[param$areaHarvestedObservationFlag]] == param$missingValueObservationFlag
+        is.na(data[[formulaParameters$areaHarvestedValue]]) |
+        data[[formulaParameters$areaHarvestedObservationFlag]] == formulaParameters$missingValueObservationFlag
     nonMissingProduction =
-        !is.na(data[[param$productionValue]]) &
-        data[[param$productionObservationFlag]] != param$missingValueObservationFlag
+        !is.na(data[[formulaParameters$productionValue]]) &
+        data[[formulaParameters$productionObservationFlag]] != formulaParameters$missingValueObservationFlag
     nonMissingYield =
-        !is.na(data[[param$yieldValue]]) &
-        data[[param$yieldObservationFlag]] != param$missingValueObservationFlag
+        !is.na(data[[formulaParameters$yieldValue]]) &
+        data[[formulaParameters$yieldObservationFlag]] != formulaParameters$missingValueObservationFlag
 
     feasibleFilter =
         missingAreaHarvested &
@@ -44,13 +39,13 @@ balanceAreaHarvested = function(data,
         nonMissingYield
 
     nonZeroYieldFilter =
-        (data[[param$yieldValue]] != 0)
+        (data[[formulaParameters$yieldValue]] != 0)
 
     ## Balance area harvested
-    data[feasibleFilter, `:=`(c(param$areaHarvestedValue),
-                              sapply(computeRatio(get(param$productionValue),
-                                                  get(param$yieldValue)) *
-                                     param$unitConversion, roundResults))]
+    data[feasibleFilter, `:=`(c(formulaParameters$areaHarvestedValue),
+                              sapply(computeRatio(get(formulaParameters$productionValue),
+                                                  get(formulaParameters$yieldValue)) *
+                                     formulaParameters$unitConversion, roundResults))]
     ## Assign observation flag.
     ##
     ## NOTE (Michael): If the denominator (yield is non-zero) then
@@ -59,15 +54,15 @@ balanceAreaHarvested = function(data,
     ##
     ## NOTE (Michael): Although the yield should never be zero by definition.
     data[feasibleFilter & nonZeroYieldFilter,
-         `:=`(c(param$areaHarvestedObservationFlag),
-              aggregateObservationFlag(get(param$productionObservationFlag),
-                                       get(param$yieldObservationFlag)))]
+         `:=`(c(formulaParameters$areaHarvestedObservationFlag),
+              aggregateObservationFlag(get(formulaParameters$productionObservationFlag),
+                                       get(formulaParameters$yieldObservationFlag)))]
     data[feasibleFilter & !nonZeroYieldFilter,
-         `:=`(c(param$areaHarvestedObservationFlag),
-              param$missingValueObservationFlag)]
+         `:=`(c(formulaParameters$areaHarvestedObservationFlag),
+              processingParameters$missingValueObservationFlag)]
 
     ## Assign method flag
-    data[feasibleFilter, `:=`(c(param$areaHarvestedMethodFlag),
-                              param$balanceMethodFlag)]
+    data[feasibleFilter, `:=`(c(formulaParameters$areaHarvestedMethodFlag),
+                              processingParameters$balanceMethodFlag)]
     return(data)
 }

@@ -13,6 +13,7 @@
 
 imputeWithAndWithoutEstimates = function(data,
                                          processingParameters,
+                                         formulaParameters,
                                          imputationParameters,
                                          minObsForEst = 5){
     ## NOTE (Michael): Sometimes there are no data in the database,
@@ -45,11 +46,11 @@ imputeWithAndWithoutEstimates = function(data,
             useEstimateForTimeSeriesImputation(
                 data = processedData,
                 areaObsFlagVar =
-                    processingParameters$areaHarvestedObservationFlag,
+                    formulaParameters$areaHarvestedObservationFlag,
                 yieldObsFlagVar =
-                    processingParameters$yieldObservationFlag,
+                    formulaParameters$yieldObservationFlag,
                 prodObsFlagVar =
-                    processingParameters$productionObservationFlag,
+                    formulaParameters$productionObservationFlag,
                 minObsForEst = minObsForEst)
 
         ## For the actual imputation, we must pass all the data
@@ -62,6 +63,7 @@ imputeWithAndWithoutEstimates = function(data,
         imputation1 =
             imputeProductionDomain(copy(dataCopy),
                                    processingParameters = processingParameters,
+                                   formulaParameters = formulaParameters,
                                    areaHarvestedImputationParameters =
                                        areaHarvestedParams,
                                    yieldImputationParameters = yieldParams,
@@ -81,6 +83,7 @@ imputeWithAndWithoutEstimates = function(data,
         imputation2 =
             imputeProductionDomain(copy(dataCopy),
                                    processingParameters = processingParameters,
+                                   formulaParameters = formulaParameters,
                                    areaHarvestedImputationParameters =
                                        areaHarvestedParams,
                                    yieldImputationParameters = yieldParams,

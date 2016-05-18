@@ -4,28 +4,17 @@
 \alias{productionProcessingParameters}
 \title{Default Processing Parameters}
 \usage{
-productionProcessingParameters(datasetConfig, productionCode = "5510",
-  areaHarvestedCode = "5312", yieldCode = "5416", unitConversion = 1,
-  removePriorImputation = TRUE, removeManualEstimation = TRUE,
-  imputationObservationFlag = "I", imputationMethodFlag = "e",
-  balanceMethodFlag = "i", manualEstimationObservationFlag = "E",
-  manualEstimationMethodFlag = "f", missingValueObservationFlag = "M",
-  missingValueMethodFlag = "u", protectedMethodFlag = c("-", "q", "p", "h",
-  "c"))
+productionProcessingParameters(datasetConfig, removePriorImputation = TRUE,
+  removeManualEstimation = TRUE, imputationObservationFlag = "I",
+  imputationMethodFlag = "e", balanceMethodFlag = "i",
+  manualEstimationObservationFlag = "E", manualEstimationMethodFlag = "f",
+  missingValueObservationFlag = "M", missingValueMethodFlag = "u",
+  protectedMethodFlag = c("-", "q", "p", "h", "c"), startingYear = 1999,
+  endYear = year(Sys.Date()))
 }
 \arguments{
 \item{datasetConfig}{The dataset configuration returned by the function
 \code{GetDatasetConfig}}
-
-\item{productionCode}{The element code corresponding to the production
-variable.}
-
-\item{areaHarvestedCode}{The element code corresponding to the area
-harvested variable.}
-
-\item{yieldCode}{The element code corresponding to the yield variable.}
-
-\item{unitConversion}{The unit conversion between the triplet code provided.}
 
 \item{removePriorImputation}{logical, whether previous imputation values
 should be removed.}
@@ -69,22 +58,7 @@ configuration.
 }
 \details{
 Below is a description of the parameters: \itemize{
-\item productionValue: The column name of the production variable.
-\item productionObservationFlag: The column name of the observation flag
-  corresponding to the production variable.
-\item productionMethodFlag: The column name of the method flag corresponding
-  to the production variable.
-\item yieldValue: The column name of the yield variable.
-\item unitConversion: The unit conversion between the triplet code provided.
-\item yieldObservationFlag: The column name of the observation flag
-  corresponding to the yield variable.
-\item yieldMethodFlag: The column
-  name of the method flag corresponding to the yield variable.
-\item areaHarvestedValue: The column name of the area harvested variable.
-\item areaHarvestedObservationFlag: The column name of the observation flag
-  corresponding to the area harvested variable.
-\item areaHarvestedMethodFlag: The column name of the method flag
-  corresponding to the area harvested variable.
+
 \item areaVar: The column corresponding to the geographic area.
 \item yearVar: The column corresponding to the time dimension.
 \item itemVar: The column corresponding to the item/commodity.
@@ -102,6 +76,8 @@ Below is a description of the parameters: \itemize{
 \item missingValueObservationFlag: The observation flag corresponding to missing values.
 \item missingValueMethodFlag: The method flag corresponding to missing values.
 \item protectedMethodFlag: The list of method flag that are considered as protected and should not be over-written.
+\item startingYear: The starting year of the processing/imputation
+\item endYear: The end year of the processing/imputation.
 }
 }
 

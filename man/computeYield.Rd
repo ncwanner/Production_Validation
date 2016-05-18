@@ -4,7 +4,8 @@
 \alias{computeYield}
 \title{Function to compute and update yield}
 \usage{
-computeYield(data, processingParameters, flagTable = faoswsFlagTable)
+computeYield(data, processingParameters, formulaParameters,
+  flagTable = faoswsFlagTable)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
@@ -14,6 +15,9 @@ processing algorithms.  See defaultProductionParameters() for a starting
 point.}
 
 \item{flagTable}{see data(faoswsFlagTable) in \pkg{faoswsFlag}}
+
+\item{formulaParameter}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
 }
 \value{
 The updated data.table.

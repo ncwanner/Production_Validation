@@ -7,12 +7,6 @@
 ##'
 ##' @param datasetConfig The dataset configuration returned by the function
 ##'     \code{GetDatasetConfig}
-##' @param productionCode The element code corresponding to the production
-##'     variable.
-##' @param yieldCode The element code corresponding to the yield variable.
-##' @param areaHarvestedCode The element code corresponding to the area
-##'     harvested variable.
-##' @param unitConversion The unit conversion between the triplet code provided.
 ##' @param removePriorImputation logical, whether previous imputation values
 ##'     should be removed.
 ##' @param removeManualEstimation logical, whether previous manual estimation
@@ -38,22 +32,7 @@
 ##'   pre-processing algorithm.
 ##'
 ##' @details Below is a description of the parameters: \itemize{
-##' \item productionValue: The column name of the production variable.
-##' \item productionObservationFlag: The column name of the observation flag
-##'   corresponding to the production variable.
-##' \item productionMethodFlag: The column name of the method flag corresponding
-##'   to the production variable.
-##' \item yieldValue: The column name of the yield variable.
-##' \item unitConversion: The unit conversion between the triplet code provided.
-##' \item yieldObservationFlag: The column name of the observation flag
-##'   corresponding to the yield variable.
-##' \item yieldMethodFlag: The column
-##'   name of the method flag corresponding to the yield variable.
-##' \item areaHarvestedValue: The column name of the area harvested variable.
-##' \item areaHarvestedObservationFlag: The column name of the observation flag
-##'   corresponding to the area harvested variable.
-##' \item areaHarvestedMethodFlag: The column name of the method flag
-##'   corresponding to the area harvested variable.
+##'
 ##' \item areaVar: The column corresponding to the geographic area.
 ##' \item yearVar: The column corresponding to the time dimension.
 ##' \item itemVar: The column corresponding to the item/commodity.
@@ -71,16 +50,14 @@
 ##' \item missingValueObservationFlag: The observation flag corresponding to missing values.
 ##' \item missingValueMethodFlag: The method flag corresponding to missing values.
 ##' \item protectedMethodFlag: The list of method flag that are considered as protected and should not be over-written.
+##' \item startingYear: The starting year of the processing/imputation
+##' \item endYear: The end year of the processing/imputation.
 ##' }
 ##'
 ##' @export
 ##'
 
 productionProcessingParameters = function(datasetConfig,
-                                          productionCode = "5510",
-                                          areaHarvestedCode = "5312",
-                                          yieldCode = "5416",
-                                          unitConversion = 1,
                                           removePriorImputation = TRUE,
                                           removeManualEstimation = TRUE,
                                           imputationObservationFlag = "I",
@@ -90,7 +67,9 @@ productionProcessingParameters = function(datasetConfig,
                                           manualEstimationMethodFlag = "f",
                                           missingValueObservationFlag = "M",
                                           missingValueMethodFlag = "u",
-                                          protectedMethodFlag = c("-", "q", "p", "h", "c")){
+                                          protectedMethodFlag = c("-", "q", "p", "h", "c"),
+                                          startingYear = 1999,
+                                          endYear = year(Sys.Date())){
     ## HACK (Michael): There is no information on how to configure this, and
     ##                 thus it is hard coded.
     areaVar = datasetConfig$dimensions[1]
@@ -101,48 +80,28 @@ productionProcessingParameters = function(datasetConfig,
     flagMethodVar = datasetConfig$flags[2]
     valueVar = "Value"
 
-    ## Return the list of parameters
-    list(productionValue =
-             paste0(c(valueVar, elementVar, productionCode), collapse = "_"),
-         areaHarvestedValue =
-             paste0(c(valueVar, elementVar, areaHarvestedCode), collapse = "_"),
-         yieldValue =
-             paste0(c(valueVar, elementVar, yieldCode), collapse = "_"),
-         productionObservationFlag =
-             paste0(c(flagObservationVar, elementVar, productionCode),
-                    collapse = "_"),
-         areaHarvestedObservationFlag =
-             paste0(c(flagObservationVar, elementVar, areaHarvestedCode),
-                    collapse = "_"),
-         yieldObservationFlag =
-             paste0(c(flagObservationVar, elementVar, yieldCode), collapse = "_"),
-         productionMethodFlag =
-             paste0(c(flagMethodVar, elementVar, productionCode), collapse = "_"),
-         areaHarvestedMethodFlag =
-             paste0(c(flagMethodVar, elementVar, areaHarvestedCode),
-                    collapse = "_"),
-         yieldMethodFlag =
-             paste0(c(flagMethodVar, elementVar, yieldCode), collapse = "_"),
-         unitConversion = unitConversion,
-         areaVar = areaVar,
-         yearVar = yearVar,
-         itemVar = itemVar,
-         elementVar = elementVar,
-         flagObservationVar = flagObservationVar,
-         flagMethodVar = flagMethodVar,
-         valueVar = valueVar,
-         removePriorImputation = removePriorImputation,
-         removeManualEstimation = removeManualEstimation,
-         imputationObservationFlag = imputationObservationFlag,
-         imputationMethodFlag = imputationMethodFlag,
-         ## NOTE (Michael): balanceMethod should not have an observation flag,
-         ##                 it uses flag aggregation.
-         balanceMethodFlag = balanceMethodFlag,
-         manualEstimationObservationFlag = manualEstimationObservationFlag,
-         manualEstimationMethodFlag = manualEstimationMethodFlag,
-         missingValueObservationFlag = missingValueObservationFlag,
-         missingValueMethodFlag = missingValueMethodFlag,
-         protectedMethodFlag = protectedMethodFlag
-         )
+    list(
+        areaVar = areaVar,
+        yearVar = yearVar,
+        itemVar = itemVar,
+        elementVar = elementVar,
+        flagObservationVar = flagObservationVar,
+        flagMethodVar = flagMethodVar,
+        valueVar = valueVar,
+        removePriorImputation = removePriorImputation,
+        removeManualEstimation = removeManualEstimation,
+        imputationObservationFlag = imputationObservationFlag,
+        imputationMethodFlag = imputationMethodFlag,
+        ## NOTE (Michael): balanceMethod should not have an observation flag,
+        ##                 it uses flag aggregation.
+        balanceMethodFlag = balanceMethodFlag,
+        manualEstimationObservationFlag = manualEstimationObservationFlag,
+        manualEstimationMethodFlag = manualEstimationMethodFlag,
+        missingValueObservationFlag = missingValueObservationFlag,
+        missingValueMethodFlag = missingValueMethodFlag,
+        protectedMethodFlag = protectedMethodFlag,
+        startingYear = startingYear,
+        endYear = endYear
+    )
 
 }

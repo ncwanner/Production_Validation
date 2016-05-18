@@ -4,15 +4,17 @@
 \alias{balanceProduction}
 \title{Function to compute production when new area harvested and yield are given.}
 \usage{
-balanceProduction(data, processingParameters)
+balanceProduction(data, processingParameters, formulaParameters)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
 
 \item{processingParameters}{A list of the parameters for the
 production processing algorithms.  See
-\code{productionProcessingParameters} for a starting point.
-1.}
+\code{productionProcessingParameters} for a starting point.}
+
+\item{formulaParameter}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
 }
 \description{
 Function to compute production when new area harvested and yield are given.

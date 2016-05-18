@@ -5,7 +5,7 @@
 \title{This is a wrapper for all the data manipulation steps before the preparation
 of the imputation.}
 \usage{
-processProductionDomain(data, processingParameters)
+processProductionDomain(data, processingParameters, formulaParameters)
 }
 \arguments{
 \item{data}{The data}
@@ -13,6 +13,9 @@ processProductionDomain(data, processingParameters)
 \item{processingParameters}{A list of the parameters for the production
 processing algorithms.  See defaultProductionParameters() for a starting
 point.}
+
+\item{formulaParameter}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
 }
 \value{
 Currently it returns the passed data.table after performing some

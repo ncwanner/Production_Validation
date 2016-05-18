@@ -15,7 +15,7 @@
 ##'
 
 ensureProductionInputs = function(data,
-                                  processingParameters,
+                                  formulaParameters,
                                   returnData = TRUE,
                                   normalised = TRUE){
 
@@ -25,27 +25,27 @@ ensureProductionInputs = function(data,
         dataCopy = denormalise(dataCopy, "measuredElement")
     }
 
-    ## Check for parameters
-    stopifnot(is(processingParameters, "list"))
-    param = processingParameters
-    stopifnot(is.character(c(param$productionValue,
-                             param$productionObservationFlag,
-                             param$productionMethodFlag,
-                             param$yieldValue,
-                             param$yieldObservationFlag,
-                             param$yieldMethodFlag,
-                             param$areaHarvestedValue,
-                             param$areaHarvestedObservationFlag,
-                             param$areaHarvestedMethodFlag,
-                             param$yearValue,
-                             param$areaVar)))
-    stopifnot(is.logical(c(param$removePriorImputation,
-                           param$removeConflictValues)))
-    stopifnot(is.character(c(param$imputationObservationFlag,
-                             param$missingValueObservationFlag,
-                             param$imputationMethodFlag)))
+    ## ## Check for parameters
+    ## stopifnot(is(processingParameters, "list"))
+    ## param = processingParameters
+    ## stopifnot(is.character(c(param$productionValue,
+    ##                          param$productionObservationFlag,
+    ##                          param$productionMethodFlag,
+    ##                          param$yieldValue,
+    ##                          param$yieldObservationFlag,
+    ##                          param$yieldMethodFlag,
+    ##                          param$areaHarvestedValue,
+    ##                          param$areaHarvestedObservationFlag,
+    ##                          param$areaHarvestedMethodFlag,
+    ##                          param$yearValue,
+    ##                          param$areaVar)))
+    ## stopifnot(is.logical(c(param$removePriorImputation,
+    ##                        param$removeConflictValues)))
+    ## stopifnot(is.character(c(param$imputationObservationFlag,
+    ##                          param$missingValueObservationFlag,
+    ##                          param$imputationMethodFlag)))
 
-    with(processingParameters,
+    with(formulaParameters,
     {
 
         ## Check data inputs
@@ -101,7 +101,7 @@ ensureProductionInputs = function(data,
                                  areaVar = areaHarvestedValue,
                                  yieldVar = yieldValue,
                                  prodVar = productionValue,
-                                 conversion,
+                                 conversion = unitConversion,
                                  returnData = FALSE,
                                  normalised = FALSE)
     })

@@ -4,15 +4,20 @@
 \alias{ensureProductionOutputs}
 \title{Check Production Inputs}
 \usage{
-ensureProductionOutputs(data, processingParameters, domain = "agriculture",
-  dataset = "aproduction", returnData = TRUE, normalised = TRUE)
+ensureProductionOutputs(data, processingParameters, testImputed = TRUE,
+  testCalculated = TRUE, domain = "agriculture", dataset = "aproduction",
+  returnData = TRUE, normalised = TRUE)
 }
 \arguments{
 \item{data}{A data.table containing the data.}
 
 \item{processingParameters}{A list containing the parameters to be used in
-the processing algorithms.  See ?defaultProcessingParameters for a starting
-point.}
+the processing algorithms. See ?defaultProcessingParameters for a
+starting point.}
+
+\item{testImputed}{logical, whether to test imputation result}
+
+\item{testCalculated}{logical, whether to test calculated result.}
 
 \item{domain}{The domain to be saved back}
 

@@ -4,7 +4,7 @@
 \alias{balanceAreaHarvested}
 \title{Function to compute area harvested when new production and yield are given.}
 \usage{
-balanceAreaHarvested(data, processingParameters)
+balanceAreaHarvested(data, processingParameters, formulaParameters)
 }
 \arguments{
 \item{data}{The data.table object containing the data.}
@@ -12,6 +12,9 @@ balanceAreaHarvested(data, processingParameters)
 \item{processingParameters}{A list of the parameters for the production
 processing algorithms. See \code{productionProcessingParameters} for a
 starting point.}
+
+\item{formulaParameter}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
 }
 \description{
 Function to compute area harvested when new production and yield are given.

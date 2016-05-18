@@ -23,7 +23,6 @@ the name.}
 A formula table
 }
 \description{
-The formula table is used by the \code{checkAllProductionBalanced}
-function.
+This function construct a formula table
 }
 
