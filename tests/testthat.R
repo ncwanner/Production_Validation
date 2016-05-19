@@ -1,5 +1,5 @@
 library(testthat)
 library(faoswsProduction)
 
-test_check("faoswsProduction")
+## test_check("faoswsProduction")
 
