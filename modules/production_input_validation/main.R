@@ -81,8 +81,27 @@ autoFlagCorrection = function(data,
 }
 
 
-autoValueCorrection = function(data){
-    data
+autoValueCorrection = function(data,
+                               processingParameters,
+                               formulaParameters){
+    correctedData =
+        with(formulaParameters,
+             with(processingParameters,
+                  data %>%
+                  removeZeroConflict(data = .,
+                                     value1 = productionValue,
+                                     value2 = areaHarvestedValue,
+                                     observationFlag1 = productionObservationFlag,
+                                     observationFlag2 =
+                                         areaHarvestedObservationFlag,
+                                     methodFlag1 = productionMethodFlag,
+                                     methodFlag2 = areaHarvestedMethodFlag,
+                                     missingObservationFlag =
+                                         missingValueObservationFlag,
+                                     missingMethodFlag = missingValueMethodFlag)
+                  )
+             )
+    correctedData
 }
 
 
@@ -90,7 +109,7 @@ autoValueCorrection = function(data){
 ##                 production value.
 
 selectedItem =
-    unique(slot(slot(sessionKey, "dimensions")[[processingParameters$itemVar]],
+    unique(slot(slot(selectedKey, "dimensions")[[processingParameters$itemVar]],
            "keys"))
 
 ##' Perform input validation item by item
@@ -105,14 +124,7 @@ for(iter in seq(selectedItem)){
         with(currentFormula,
              c(input, productivity, output))
 
-    currentData =
-        currentKey %>%
-        GetData(key = .) %>%
-        preProcessing(data = .) %>%
-        autoFlagCorrection(data = .) %>%
-        autoValueCorrection(data = .)
-
-
+    ## Create the formula parameter list
     formulaParameters =
         with(currentFormula,
              productionFormulaParameters(datasetConfig = datasetConfig,
@@ -121,7 +133,23 @@ for(iter in seq(selectedItem)){
                                          yieldCode = productivity,
                                          unitConversion = unitConversion))
 
+    ## Extract the current data
+    currentData =
+        currentKey %>%
+        GetData(key = .) %>%
+        fillRecord(data = .) %>%
+        preProcessing(data = .) %>%
+        autoFlagCorrection(data = .) %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = processingParameters$elementVar) %>%
+        autoValueCorrection(data = .,
+                            processingParameters = processingParameters,
+                            formulaParameters = formulaParameters)
+
+
+    ## Ensure the inputs are valid
     currentData %>%
+        normalise(denormalisedData = .) %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = formulaParameters) %>%
