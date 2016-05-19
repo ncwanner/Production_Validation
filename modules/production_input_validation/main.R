@@ -53,14 +53,65 @@ processingParameters =
 
 ##' Extract the data from the Statistical Working System
 
-selectedData = GetData(selectedKey)
-selectedItem = unique(selectedData$measuredItemCPC)
+
+
+##' Perform autocorrection, certain incorrectly specified flag can be
+##' automatically corrected as per agreement with team B/C.
+autoFlagCorrection = function(data,
+                              flagObservationStatusVar = "flagObservationtatus",
+                              flagMethodVar = "flagMethod"){
+    dataCopy = copy(data)
+
+    ## Correction (1): (M, -) --> (M, u)
+    correctionFilter =
+        dataCopy[[flagObservationStatusVar]] == "M" &
+        dataCopy[[flagMethodVar]] == "-"
+    dataCopy[correctionFilter,
+         `:=`(c(flagObservationStatusVar, flagMethodVar),
+              c("M", "u"))]
+
+    ## Correction (2): (E, t) --> (E, -)
+    correctionFilter =
+        dataCopy[[flagObservationStatusVar]] == "E" &
+        dataCopy[[flagMethodVar]] == "t"
+    dataCopy[correctionFilter,
+         `:=`(c(flagObservationStatusVar, flagMethodVar),
+              c("E", "-"))]
+    dataCopy
+}
+
+
+autoValueCorrection = function(data){
+    data
+}
+
+
+## TODO (Michael): Need to auto correct values. (e.g. conflict area harvested
+##                 production value.
+
+selectedItem =
+    unique(slot(slot(sessionKey, "dimensions")[[processingParameters$itemVar]],
+           "keys"))
 
 ##' Perform input validation item by item
 for(iter in seq(selectedItem)){
     currentItem = selectedItem[iter]
     message("Performing input validation for item: ", currentItem)
     currentFormula = getYieldFormula(currentItem)
+    currentKey = selectedKey
+    ## Update the item and element key to for current item
+    currentKey@dimensions$measuredItemCPC@keys = currentItem
+    currentKey@dimensions$measuredElement@keys =
+        with(currentFormula,
+             c(input, productivity, output))
+
+    currentData =
+        currentKey %>%
+        GetData(key = .) %>%
+        preProcessing(data = .) %>%
+        autoFlagCorrection(data = .) %>%
+        autoValueCorrection(data = .)
+
 
     formulaParameters =
         with(currentFormula,
@@ -70,12 +121,12 @@ for(iter in seq(selectedItem)){
                                          yieldCode = productivity,
                                          unitConversion = unitConversion))
 
-    selectedData %>%
-        filter(measuredItemCPC == currentItem) %>%
-        preProcessing(data = .) %>%
+    currentData %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
-                               formulaParameters = formulaParameters)
-
+                               formulaParameters = formulaParameters) %>%
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
+                 data = .)
 }
 message("Production Input Validation passed without any error!")
