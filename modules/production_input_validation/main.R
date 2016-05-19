@@ -6,6 +6,7 @@ suppressMessages({
     library(faoswsImputation)
     library(faoswsProduction)
     library(faoswsProcessing)
+    library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
 })
@@ -35,19 +36,8 @@ datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
 
 
-## NOTE (Michael): The imputation and all modules should now have a base year of
-##                 1999, this is the result of a discussion with Pietro.
-defaultYear = 1999
-imputationYears =
-    GetCodeList(domain = sessionKey@domain,
-                dataset = sessionKey@dataset,
-                dimension = "timePointYears") %>%
-    filter(description != "wildcard" & as.numeric(code) >= defaultYear) %>%
-    select(code) %>%
-    unlist(use.names = FALSE)
-
 ##' Obtain the complete imputation Datakey
-completeImputationKey = getMainKey(years = imputationYears)
+completeImputationKey = getCompleteImputationKey()
 
 ##' Selected the key based on the input parameter
 selectedKey =
@@ -55,29 +45,37 @@ selectedKey =
            "session" = sessionKey,
            "all" = completeImputationKey)
 
-##' Get the data from the Statistical Working System
+
+##' Build processing parameters
+processingParameters =
+    productionProcessingParameters(datasetConfig = datasetConfig)
+
+
+##' Extract the data from the Statistical Working System
 
 selectedData = GetData(selectedKey)
+selectedItem = unique(selectedData$measuredItemCPC)
 
-## Build processing parameters
-##
-## TODO (Michael): Split this into general processing parameters, and
-##                 yield formula parameters (or can put into the
-##                 imputation parameters)
-processingParameters =
-    productionProcessingParameters(
-        datasetConfig = datasetConfig,
-        productionCode = currentFormula$output,
-        areaHarvestedCode = currentFormula$input,
-        yieldCode = currentFormula$productivity,
-        unitConversion = currentFormula$unitConversion)
+##' Perform input validation item by item
+for(iter in seq(selectedItem)){
+    currentItem = selectedItem[iter]
+    message("Performing input validation for item: ", currentItem)
+    currentFormula = getYieldFormula(currentItem)
 
-##' Perform the validation
-##
-## NOTE (Michael): Need to loop through difference formulas
+    formulaParameters =
+        with(currentFormula,
+             productionFormulaParameters(datasetConfig = datasetConfig,
+                                         productionCode = output,
+                                         areaHarvestedCode = input,
+                                         yieldCode = productivity,
+                                         unitConversion = unitConversion))
 
-selectedData %>%
-    ensureProductionInputs(data = .,
-                           processingParameters = processingParameters)
+    selectedData %>%
+        filter(measuredItemCPC == currentItem) %>%
+        preProcessing(data = .) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = formulaParameters)
 
+}
 message("Production Input Validation passed without any error!")
