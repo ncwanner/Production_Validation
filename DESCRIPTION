@@ -14,6 +14,8 @@ Depends:
     faoswsFlag (>= 0.1.0),
     faoswsImputation,
     faoswsUtil,
+    faoswsProcessing,
+    faoswsEnsure,
     data.table (>= 1.9.2)
 swsDatasetDepends: agriculture:aproduction,
     item_type_yield_elements

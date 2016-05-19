@@ -14,6 +14,7 @@
 ##'   data.table in place, but this will require an update to data.table (see
 ##'   comment by the return statement).
 ##'
+##' @import faoswsProcessing
 
 processProductionDomain = function(data,
                                    processingParameters,

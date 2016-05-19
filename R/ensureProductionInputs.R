@@ -13,6 +13,7 @@
 ##'
 ##' @export
 ##'
+##' @import faoswsEnsure
 
 ensureProductionInputs = function(data,
                                   processingParameters,
