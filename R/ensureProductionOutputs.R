@@ -20,108 +20,112 @@
 
 ensureProductionOutputs = function(data,
                                    processingParameters,
+                                   formulaParameters,
                                    testImputed = TRUE,
                                    testCalculated = TRUE,
                                    domain = "agriculture",
                                    dataset = "aproduction",
                                    returnData = TRUE,
                                    normalised = TRUE){
+    dataCopy = copy(data)
+
     if(normalised){
         dataCopy = denormalise(dataCopy, "measuredElement")
     }
 
-    with(processingParameters,
-    {
+    with(formulaParameters,
+         with(processingParameters,
+         {
 
-        ## Check data inputs
-        ensureDataInput(data = dataCopy,
-                        requiredColumn = c(productionValue,
-                                           productionObservationFlag,
-                                           productionMethodFlag,
-                                           yieldValue,
-                                           yieldObservationFlag,
-                                           yieldMethodFlag,
-                                           areaHarvestedValue,
-                                           areaHarvestedObservationFlag,
-                                           areaHarvestedMethodFlag,
-                                           yearVar,
-                                           areaVar),
-                        returnData = FALSE)
+             ## Check data inputs
+             ensureDataInput(data = dataCopy,
+                             requiredColumn = c(productionValue,
+                                                productionObservationFlag,
+                                                productionMethodFlag,
+                                                yieldValue,
+                                                yieldObservationFlag,
+                                                yieldMethodFlag,
+                                                areaHarvestedValue,
+                                                areaHarvestedObservationFlag,
+                                                areaHarvestedMethodFlag,
+                                                itemVar,
+                                                yearVar,
+                                                areaVar),
+                             returnData = FALSE)
 
 
-        ## Ensure there is no production is zero while area harvested is non
-        ## zero, vice versa.
-        ensureNoConflictingZero(data = dataCopy,
-                                valueColumn1 = productionValue,
-                                valueColumn2 = areaHarvestedValue,
-                                returnData = FALSE,
-                                normalised = FALSE)
-
-        ## Ensure the range of values are correct
-        ##
-        ## NOTE (Michael): Yield can not be equal to zero
-        ensureValueRange(data = dataCopy,
-                         ensureColumn = yieldValue,
-                         min = 0,
-                         max = Inf,
-                         includeEndPoint = FALSE)
-        ensureValueRange(data = dataCopy,
-                         ensureColumn = areaHarvestedValue,
-                         min = 0,
-                         max = Inf)
-        ensureValueRange(data = dataCopy,
-                         ensureColumn = productionValue,
-                         min = 0,
-                         max = Inf)
-
-        ## Ensure flags are valid
-        ensureFlagValidity(data = dataCopy,
-                           normalised = FALSE)
-
-        ## Ensure production is balanced
-        ##
-        ## NOTE (Michael): This may be optional in input, but mandatory in
-        ##                 output
-        ensureProductionBalanced(dataToBeSaved = dataCopy,
-                                 areaVar = areaHarvestedValue,
-                                 yieldVar = yieldValue,
-                                 prodVar = productionValue,
-                                 conversion,
-                                 returnData = FALSE,
-                                 normalised = FALSE)
-
-        if(testImputed){
-            ## Ensure time series are imputed
-            ensureTimeSeriesImputed(dataToBeSaved = dataCopy,
-                                    key = c(areaVar, itemVar, elementVar),
-                                    returnData = FALSE,
-                                    normalised = FALSE)
-        }
-
-        if(testCalculated){
-            ## Ensure the identity is calculated.
-            ensureIdentityCalculated(dataToBeSaved = dataCopy,
-                                     areaVar = areaHarvestedValue,
-                                     yieldVar = yieldValue,
-                                     prodVar = productionValue,
+             ## Ensure there is no production is zero while area harvested is non
+             ## zero, vice versa.
+             ensureNoConflictingZero(data = dataCopy,
+                                     valueColumn1 = productionValue,
+                                     valueColumn2 = areaHarvestedValue,
                                      returnData = FALSE,
                                      normalised = FALSE)
-        }
 
-        ## Ensure protected data are not over-written
-        ensureProtectedData(dataToBeSaved = dataCopy,
-                            domain = domain,
-                            dataset = dataset,
-                            areaVar = areaVar,
-                            itemVar = itemVar,
-                            elementVar = elementVar,
-                            yearVar = yearVar,
-                            flagObservationVar = flagObsservationVar,
-                            flagMethodVar = flagMethodVar,
-                            returnData = FALSE,
-                            normalised = FALSE)
+             ## Ensure the range of values are correct
+             ##
+             ## NOTE (Michael): Yield can not be equal to zero
+             ensureValueRange(data = dataCopy,
+                              ensureColumn = yieldValue,
+                              min = 0,
+                              max = Inf,
+                              includeEndPoint = FALSE)
+             ensureValueRange(data = dataCopy,
+                              ensureColumn = areaHarvestedValue,
+                              min = 0,
+                              max = Inf)
+             ensureValueRange(data = dataCopy,
+                              ensureColumn = productionValue,
+                              min = 0,
+                              max = Inf)
 
-    })
+             ## Ensure flags are valid
+             ensureFlagValidity(data = dataCopy,
+                                normalised = FALSE)
+
+             ## Ensure production is balanced
+             ##
+             ## NOTE (Michael): This may be optional in input, but mandatory in
+             ##                 output
+             ensureProductionBalanced(data = dataCopy,
+                                      areaVar = areaHarvestedValue,
+                                      yieldVar = yieldValue,
+                                      prodVar = productionValue,
+                                      conversion,
+                                      returnData = FALSE,
+                                      normalised = FALSE)
+
+             if(testImputed){
+                 ## Ensure time series are imputed
+                 ensureTimeSeriesImputed(data = dataCopy,
+                                         key = c(areaVar, itemVar, elementVar),
+                                         returnData = FALSE,
+                                         normalised = FALSE)
+             }
+
+             if(testCalculated){
+                 ## Ensure the identity is calculated.
+                 ensureIdentityCalculated(data = dataCopy,
+                                          areaVar = areaHarvestedValue,
+                                          yieldVar = yieldValue,
+                                          prodVar = productionValue,
+                                          returnData = FALSE,
+                                          normalised = FALSE)
+             }
+
+             ## Ensure protected data are not over-written
+             ensureProtectedData(data = dataCopy,
+                                 domain = domain,
+                                 dataset = dataset,
+                                 areaVar = areaVar,
+                                 itemVar = itemVar,
+                                 elementVar = elementVar,
+                                 yearVar = yearVar,
+                                 flagObservationVar = flagObsservationVar,
+                                 flagMethodVar = flagMethodVar,
+                                 returnData = FALSE,
+                                 normalised = FALSE)
+         }))
 
     if(normalised){
         dataCopy = normalise(dataCopy)

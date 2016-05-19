@@ -44,7 +44,7 @@ imputeWithAndWithoutEstimates = function(data,
 
         validObsCnt =
             useEstimateForTimeSeriesImputation(
-                data = processedData,
+                data = dataCopy,
                 areaObsFlagVar =
                     formulaParameters$areaHarvestedObservationFlag,
                 yieldObsFlagVar =

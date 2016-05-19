@@ -58,6 +58,7 @@
 ##'
 
 productionProcessingParameters = function(datasetConfig,
+                                          dataset = "aproduction",
                                           removePriorImputation = TRUE,
                                           removeManualEstimation = TRUE,
                                           imputationObservationFlag = "I",
@@ -81,6 +82,8 @@ productionProcessingParameters = function(datasetConfig,
     valueVar = "Value"
 
     list(
+        domain = datasetConfig$domain,
+        dataset = dataset,
         areaVar = areaVar,
         yearVar = yearVar,
         itemVar = itemVar,
