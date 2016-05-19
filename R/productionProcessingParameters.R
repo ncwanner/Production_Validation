@@ -7,6 +7,7 @@
 ##'
 ##' @param datasetConfig The dataset configuration returned by the function
 ##'     \code{GetDatasetConfig}
+##' @param dataset The dataset name in the database.
 ##' @param removePriorImputation logical, whether previous imputation values
 ##'     should be removed.
 ##' @param removeManualEstimation logical, whether previous manual estimation
@@ -27,6 +28,8 @@
 ##'     values.
 ##' @param protectedMethodFlag The list of method flag that are considered as
 ##'     protected and should not be over-written.
+##' @param startingYear The starting year of the processing/imputation
+##' @param endYear The end year of the processing/imputation.
 ##'
 ##' @return Returns a list of the default parameters used in the data
 ##'   pre-processing algorithm.

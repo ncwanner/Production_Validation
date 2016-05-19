@@ -6,6 +6,8 @@
 ##' @param processingParameters A list containing the parameters to be used in
 ##'     the processing algorithms. See ?defaultProcessingParameters for a
 ##'     starting point.
+##' @param formulaParameters A list holding the names and parmater of formulas.
+##'     See \code{productionFormulaParameters}.
 ##' @param testImputed logical, whether to test imputation result
 ##' @param testCalculated logical, whether to test calculated result.
 ##' @param domain The domain to be saved back

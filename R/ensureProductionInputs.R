@@ -6,6 +6,8 @@
 ##' @param processingParameters A list containing the parameters to be used in
 ##' the processing algorithms.  See ?defaultProcessingParameters for a starting
 ##' point.
+##' @param formulaParameters A list holding the names and parmater of formulas.
+##'     See \code{productionFormulaParameters}.
 ##' @param returnData logical, whether the data should be returned
 ##' @param normalised logical, whether the data is normalised
 ##'

@@ -2,11 +2,10 @@
 ##'
 ##' This function contains the logic that we'll use to define the imputation
 ##' models and their parameters.
-##'
-##' @param datasets The object being imputed on, typically created by
-##'   getProductionData.
-##' @param i The row number of formulaTuples.  This allows R to produce the
-##'   correct formula tuple/yield codes, and is typically 1.
+##'.
+##' @param productionCode The element code of production
+##' @param areaHarvestedCode The element code of area harvested
+##' @param yieldCode The element code of yield.
 ##' @param areaVar The column name corresponding to the geographic area.
 ##' @param itemVar The column name corresponding to the commodity item.
 ##' @param elementVar The column name corresponding to the measured element.

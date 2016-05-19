@@ -5,7 +5,14 @@
 ##' NOTE (Michael): This switching between imputation with/without manual 'E'
 ##'                 stimates will eventually be removed.
 ##'
-##' @param meatKey The Datakey object
+##' @param data The data to be imputed
+##' @param processingParameters A list of the parameters for the production
+##'     processing algorithms. See \code{productionProcessingParameters} for a
+##'     starting point.
+##' @param formulaParameters A list holding the names and parmater of formulas.
+##'     See \code{productionFormulaParameters}.
+##' @param imputationParameters A list holding the imputation parameters, see
+##'     \code{getImputationParameters}.
 ##' @param minObsForEst The minimum number of observation required to keep
 ##'     'E'stimated values.
 ##' @return Imputed time series

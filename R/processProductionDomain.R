@@ -5,7 +5,7 @@
 ##' @param processingParameters A list of the parameters for the production
 ##'   processing algorithms.  See defaultProductionParameters() for a starting
 ##'   point.
-##' @param formulaParameter A list holding the names and parmater of formulas.
+##' @param formulaParameters A list holding the names and parmater of formulas.
 ##'     See \code{productionFormulaParameters}.
 ##' @export
 ##'
