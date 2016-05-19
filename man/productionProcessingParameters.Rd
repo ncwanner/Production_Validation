@@ -4,13 +4,13 @@
 \alias{productionProcessingParameters}
 \title{Default Processing Parameters}
 \usage{
-productionProcessingParameters(datasetConfig, removePriorImputation = TRUE,
-  removeManualEstimation = TRUE, imputationObservationFlag = "I",
-  imputationMethodFlag = "e", balanceMethodFlag = "i",
-  manualEstimationObservationFlag = "E", manualEstimationMethodFlag = "f",
-  missingValueObservationFlag = "M", missingValueMethodFlag = "u",
-  protectedMethodFlag = c("-", "q", "p", "h", "c"), startingYear = 1999,
-  endYear = year(Sys.Date()))
+productionProcessingParameters(datasetConfig, dataset = "aproduction",
+  removePriorImputation = TRUE, removeManualEstimation = TRUE,
+  imputationObservationFlag = "I", imputationMethodFlag = "e",
+  balanceMethodFlag = "i", manualEstimationObservationFlag = "E",
+  manualEstimationMethodFlag = "f", missingValueObservationFlag = "M",
+  missingValueMethodFlag = "u", protectedMethodFlag = c("-", "q", "p", "h",
+  "c"), startingYear = 1999, endYear = year(Sys.Date()))
 }
 \arguments{
 \item{datasetConfig}{The dataset configuration returned by the function

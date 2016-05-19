@@ -50,7 +50,10 @@ productionFormulaParameters = function(datasetConfig,
     valueVar = "Value"
 
     ## Return the list of parameters
-    list(productionValue =
+    list(productionCode = productionCode,
+         areaHarvestedCode = areaHarvestedCode,
+         yieldCode = yieldCode,
+         productionValue =
              paste0(c(valueVar, elementVar, productionCode), collapse = "_"),
          areaHarvestedValue =
              paste0(c(valueVar, elementVar, areaHarvestedCode), collapse = "_"),

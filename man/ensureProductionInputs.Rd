@@ -4,19 +4,19 @@
 \alias{ensureProductionInputs}
 \title{Check Production Inputs}
 \usage{
-ensureProductionInputs(data, formulaParameters, returnData = TRUE,
-  normalised = TRUE)
+ensureProductionInputs(data, processingParameters, formulaParameters,
+  returnData = TRUE, normalised = TRUE)
 }
 \arguments{
 \item{data}{A data.table containing the data.}
 
-\item{returnData}{logical, whether the data should be returned}
-
-\item{normalised}{logical, whether the data is normalised}
-
 \item{processingParameters}{A list containing the parameters to be used in
 the processing algorithms.  See ?defaultProcessingParameters for a starting
 point.}
+
+\item{returnData}{logical, whether the data should be returned}
+
+\item{normalised}{logical, whether the data is normalised}
 }
 \value{
 The original data if all tests are passed

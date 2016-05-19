@@ -4,9 +4,9 @@
 \alias{ensureProductionOutputs}
 \title{Check Production Inputs}
 \usage{
-ensureProductionOutputs(data, processingParameters, testImputed = TRUE,
-  testCalculated = TRUE, domain = "agriculture", dataset = "aproduction",
-  returnData = TRUE, normalised = TRUE)
+ensureProductionOutputs(data, processingParameters, formulaParameters,
+  testImputed = TRUE, testCalculated = TRUE, domain = "agriculture",
+  dataset = "aproduction", returnData = TRUE, normalised = TRUE)
 }
 \arguments{
 \item{data}{A data.table containing the data.}

@@ -44,6 +44,7 @@ imputeProductionDomain = function(data,
                            imputationParameters = productionImputationParameters)
 
     ensureProductionInputs(dataCopy,
+                           processingParameters = processingParameters,
                            formulaParameters = formulaParameters,
                            returnData = FALSE,
                            normalised = FALSE)

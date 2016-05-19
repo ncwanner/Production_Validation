@@ -17,6 +17,7 @@ balanceAreaHarvested = function(data,
 
     ## Data quality check
     ensureProductionInputs(data,
+                           processingParameters = processingParameters,
                            formulaParameters = formulaParameters,
                            returnData = FALSE,
                            normalised = FALSE)
