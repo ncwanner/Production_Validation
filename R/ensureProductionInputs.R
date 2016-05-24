@@ -26,30 +26,10 @@ ensureProductionInputs = function(data,
         dataCopy = denormalise(dataCopy, "measuredElement")
     }
 
-    ## ## Check for parameters
-    ## stopifnot(is(processingParameters, "list"))
-    ## param = processingParameters
-    ## stopifnot(is.character(c(param$productionValue,
-    ##                          param$productionObservationFlag,
-    ##                          param$productionMethodFlag,
-    ##                          param$yieldValue,
-    ##                          param$yieldObservationFlag,
-    ##                          param$yieldMethodFlag,
-    ##                          param$areaHarvestedValue,
-    ##                          param$areaHarvestedObservationFlag,
-    ##                          param$areaHarvestedMethodFlag,
-    ##                          param$yearValue,
-    ##                          param$areaVar)))
-    ## stopifnot(is.logical(c(param$removePriorImputation,
-    ##                        param$removeConflictValues)))
-    ## stopifnot(is.character(c(param$imputationObservationFlag,
-    ##                          param$missingValueObservationFlag,
-    ##                          param$imputationMethodFlag)))
 
     with(formulaParameters,
          with(processingParameters,
          {
-
              ## Check data inputs
              ensureDataInput(data = dataCopy,
                              requiredColumn = c(productionValue,
