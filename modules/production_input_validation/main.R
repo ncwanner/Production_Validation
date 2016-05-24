@@ -98,7 +98,12 @@ autoValueCorrection = function(data,
                                      methodFlag2 = areaHarvestedMethodFlag,
                                      missingObservationFlag =
                                          missingValueObservationFlag,
-                                     missingMethodFlag = missingValueMethodFlag)
+                                     missingMethodFlag =
+                                         missingValueMethodFlag) %>%
+                  removeZeroYield(data = .,
+                                  yieldValue = yieldValue,
+                                  yieldObsFlag = yieldObservationFlag,
+                                  yieldMethodFlag = yieldMethodFlag)
                   )
              )
     correctedData
@@ -112,11 +117,25 @@ selectedItem =
     unique(slot(slot(selectedKey, "dimensions")[[processingParameters$itemVar]],
            "keys"))
 
+tests = c("flag_validity", "production_range", "areaHarvested_range",
+          "yield_range", "balanced")
+testMessage = c("The following entry contains invalid flag",
+                "The following entry contain invalid production value",
+                "The following entry contain invalid area harvsted value",
+                "The following entry contain invalid yield value",
+                "The following entry is imbalanced, check the values then re-run balance production identity module")
+
+errorList = vector("list", length(tests))
+
+
 ##' Perform input validation item by item
 for(iter in seq(selectedItem)){
+
     currentItem = selectedItem[iter]
     message("Performing input validation for item: ", currentItem)
-    currentFormula = getYieldFormula(currentItem)
+    currentFormula =
+        getYieldFormula(currentItem) %>%
+        removeIndigenousBiologicalMeat
     currentKey = selectedKey
     ## Update the item and element key to for current item
     currentKey@dimensions$measuredItemCPC@keys = currentItem
@@ -136,25 +155,134 @@ for(iter in seq(selectedItem)){
     ## Extract the current data
     currentData =
         currentKey %>%
-        GetData(key = .) %>%
-        fillRecord(data = .) %>%
-        preProcessing(data = .) %>%
-        autoFlagCorrection(data = .) %>%
-        denormalise(normalisedData = .,
-                    denormaliseKey = processingParameters$elementVar) %>%
-        autoValueCorrection(data = .,
-                            processingParameters = processingParameters,
-                            formulaParameters = formulaParameters)
+        GetData(key = .)
+
+    if(nrow(currentData) > 0){
+        autoCorrectedData =
+            currentData %>%
+            fillRecord(data = .) %>%
+            preProcessing(data = .) %>%
+            autoFlagCorrection(data = .) %>%
+            denormalise(normalisedData = .,
+                        denormaliseKey = processingParameters$elementVar) %>%
+            autoValueCorrection(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = formulaParameters) %>%
+            normalise
 
 
-    ## Ensure the inputs are valid
-    currentData %>%
-        normalise(denormalisedData = .) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = formulaParameters) %>%
-        SaveData(domain = sessionKey@domain,
-                 dataset = sessionKey@dataset,
-                 data = .)
+
+        ## Check flag validity
+        errorList[[1]] =
+            autoCorrectedData %>%
+            ensureFlagValidity(data = .,
+                               getInvalidData = TRUE) %>%
+            rbind(errorList[[1]], .)
+
+        ## Check production value
+        errorList[[2]] =
+            with(formulaParameters,
+            {
+                if(productionCode %in% autoCorrectedData[["measuredElement"]]){
+                    autoCorrectedData %>%
+                        denormalise(normalisedData = .,
+                                    denormaliseKey = "measuredElement") %>%
+                        ensureValueRange(data = .,
+                                         ensureColumn = productionValue,
+                                         getInvalidData = TRUE) %>%
+                        normalise %>%
+                        rbind(errorList[[2]], .)
+                } else {
+                    rbind(errorList[[3]], data.table())
+                }
+            }
+            )
+
+
+        ## Check area harvested value
+        errorList[[3]] =
+            with(formulaParameters,
+            {
+                if(areaHarvestedCode %in% autoCorrectedData[["measuredElement"]]){
+                    autoCorrectedData %>%
+                        denormalise(normalisedData = .,
+                                    denormaliseKey = "measuredElement") %>%
+                        ensureValueRange(data = .,
+                                         ensureColumn = areaHarvestedValue,
+                                         getInvalidData = TRUE) %>%
+                        normalise %>%
+                        rbind(errorList[[3]], .)
+                } else {
+                    rbind(errorList[[3]], data.table())
+                }
+            }
+            )
+
+        ## Check yield value
+        errorList[[4]] =
+            with(formulaParameters,
+            {
+                if(yieldCode %in% autoCorrectedData[["measuredElement"]]){
+                    autoCorrectedData %>%
+                        denormalise(normalisedData = .,
+                                    denormaliseKey = "measuredElement") %>%
+                        ensureValueRange(data = .,
+                                         ensureColumn = yieldValue,
+                                         getInvalidData = TRUE,
+                                         includeEndPoint = FALSE) %>%
+                        normalise %>%
+                        rbind(errorList[[4]], .)
+                } else {
+                    rbind(errorList[[3]], data.table())
+                }
+            }
+            )
+
+
+        ## Check production domain balanced.
+        errorList[[5]] =
+            with(formulaParameters,
+            {
+                if(all(c(yieldCode, areaHarvestedCode, productionCode) %in%
+                       autoCorrectedData[["measuredElement"]])){
+                    autoCorrectedData %>%
+                        ensureProductionBalanced(data = .,
+                                                 areaVar = areaHarvestedValue,
+                                                 yieldVar = yieldValue,
+                                                 prodVar = productionValue,
+                                                 conversion = unitConversion,
+                                                 getInvalidData = TRUE) %>%
+                        rbind(errorList[[5]], .)
+                } else {
+                    rbind(errorList[[5]], data.table())
+                }
+            }
+            )
+
+        ## ## Save the auto-corrected data back
+        autoCorrectedData %>%
+            SaveData(domain = sessionKey@domain,
+                     dataset = sessionKey@dataset,
+                     data = .)
+
+    } else {
+        message("Current Item has no data")
+    }
+
 }
-message("Production Input Validation passed without any error!")
+
+
+
+printData = function(x, msg){
+    dataPrint = paste0(msg, "\n\n\n",
+                       paste0(capture.output(print(x, nrow(x))), collapse = "\n"))
+    dataPrint
+}
+
+msg = paste0(mapply(printData, errorList, msg = testMessage), collapse = "\n")
+
+if(max(sapply(errorList, length)) > 0){
+    message(msg)
+} else {
+    message("Production Input Validation passed without any error!")
+}
