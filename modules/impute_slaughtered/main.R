@@ -29,7 +29,7 @@
 
 ## Step 0. Initial set-up
 
-cat("Beginning impute slaughtered script...\n")
+message("Beginning impute slaughtered script...\n")
 suppressMessages({
     library(faosws)
     library(faoswsFlag)
