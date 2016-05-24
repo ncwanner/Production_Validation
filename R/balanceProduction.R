@@ -47,9 +47,9 @@ balanceProduction = function(data,
     ## Calculate production
     data[feasibleFilter & nonZeroYieldFilter,
          `:=`(c(formulaParameters$productionValue),
-              sapply(get(formulaParameters$areaHarvestedValue) *
-                     get(formulaParameters$yieldValue) /
-                     formulaParameters$unitConversion, FUN = roundResults))]
+              get(formulaParameters$areaHarvestedValue) *
+              get(formulaParameters$yieldValue) /
+              formulaParameters$unitConversion)]
     ## Assign observation flag
     data[feasibleFilter & nonZeroYieldFilter,
          `:=`(c(formulaParameters$productionObservationFlag),
