@@ -65,7 +65,7 @@ if(CheckDebug()){
 
 startTime = Sys.time()
 
-message("Setting up configurations and parameters\n")
+message("Setting up configurations and parameters")
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
@@ -124,7 +124,7 @@ for(iter in seq(selectedMeatCode)){
 
 
 ########################################################################
-    message("Extracting production triplet for ", currentMeatItem, "(meat)")
+    message("Extracting production triplet for ", currentMeatItem, " (Meat)")
     ## Get the meat formula
     meatFormulaTable =
         getYieldFormula(itemCode = currentMeatItem) %>%
@@ -163,7 +163,7 @@ for(iter in seq(selectedMeatCode)){
 
 
 ########################################################################
-    message("Extracting production triplet for ", currentAnimalItem, "(Animal)")
+    message("Extracting production triplet for ", currentAnimalItem, " (Animal)")
     ## Get the animal formula
     animalFormulaTable =
         getYieldFormula(itemCode = currentAnimalItem) %>%
@@ -221,8 +221,8 @@ for(iter in seq(selectedMeatCode)){
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters) %>%
         postProcessing %>%
-        SaveData(domain = "agriculture",
-                 dataset = "aproduction",
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
                  data = .)
 
 
@@ -273,6 +273,7 @@ for(iter in seq(selectedMeatCode)){
     ##                 figures as indicated by in the synchronise slaughtered
     ##                 module.
 
+    message("Saving imputed meat data back")
     meatImputed %>%
         normalise(.) %>%
         ## NOTE (Michael): This test currently fails occasionally
@@ -288,8 +289,8 @@ for(iter in seq(selectedMeatCode)){
                                formulaParameters = formulaParameters) %>%
         filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
         postProcessing(data = .) %>%
-        SaveData(domain = subKey@domain,
-                 dataset = subKey@dataset,
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
                  data = .)
 
 ########################################################################
@@ -315,8 +316,8 @@ for(iter in seq(selectedMeatCode)){
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters) %>%
         postProcessing(data = .) %>%
-        SaveData(domain = "agriculture",
-                 dataset = "aproduction",
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
                  data = .)
 
 
