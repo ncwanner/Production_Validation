@@ -1,3 +1,14 @@
+##' Function to transfer animal slaughtered from animal to meat or back from
+##' meat to animals.
+##'
+##' @param meatData The animal slaughtered data from meat commodity.
+##' @param animalData The animal slaughtered data from animal commodity.
+##' @param parentToChild logical, if true, slaughtered animal are transferred
+##'     from animal commodity to meat, otherwise the otherway around.
+##'
+##' @return The transferred data
+##' @export
+
 transferAnimalSlaughtered = function(meatData,
                                      animalData,
                                      parentToChild = TRUE){
