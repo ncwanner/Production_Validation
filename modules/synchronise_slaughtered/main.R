@@ -23,7 +23,7 @@
 
 ## Step 0. Initial set-up
 
-cat("Beginning impute slaughtered script...\n")
+message("Beginning impute slaughtered script...\n")
 suppressMessages({
     library(faosws)
     library(faoswsFlag)
@@ -195,7 +195,7 @@ for(iter in seq(selectedMeatCode)){
 
 
 ########################################################################
-    cat("Pulling the commodity trees ...\n")
+    message("Pulling the commodity trees ...\n")
 
     newCommodityTree =
         animalData %$%
