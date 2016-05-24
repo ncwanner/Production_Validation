@@ -5,12 +5,15 @@
 \title{Function to transfer animal slaughtered from animal to meat or back from
 meat to animals.}
 \usage{
-transferAnimalSlaughtered(meatData, animalData, parentToChild = TRUE)
+transferAnimalSlaughtered(meatData, animalData, mappingTable,
+  parentToChild = TRUE)
 }
 \arguments{
 \item{meatData}{The animal slaughtered data from meat commodity.}
 
 \item{animalData}{The animal slaughtered data from animal commodity.}
+
+\item{mappingTable}{The mapping table between the parent and the child.}
 
 \item{parentToChild}{logical, if true, slaughtered animal are transferred
 from animal commodity to meat, otherwise the otherway around.}

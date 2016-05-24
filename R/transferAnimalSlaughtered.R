@@ -5,12 +5,14 @@
 ##' @param animalData The animal slaughtered data from animal commodity.
 ##' @param parentToChild logical, if true, slaughtered animal are transferred
 ##'     from animal commodity to meat, otherwise the otherway around.
+##' @param mappingTable The mapping table between the parent and the child.
 ##'
 ##' @return The transferred data
 ##' @export
 
 transferAnimalSlaughtered = function(meatData,
                                      animalData,
+                                     mappingTable,
                                      parentToChild = TRUE){
 
     requiredColumn = c("geographicAreaM49",
@@ -45,13 +47,13 @@ transferAnimalSlaughtered = function(meatData,
                             "_parent")))
 
     mergeMeatCol = intersect(colnames(meatDataCopy),
-                             colnames(currentMappingTable))
-    meatDataMapped = merge(meatDataCopy, currentMappingTable,
+                             colnames(mappingTable))
+    meatDataMapped = merge(meatDataCopy, mappingTable,
                            by = mergeMeatCol, all.y = TRUE)
 
     mergeAnimalCol = intersect(colnames(animalDataCopy),
-                               colnames(currentMappingTable))
-    animalDataMapped = merge(animalDataCopy, currentMappingTable,
+                               colnames(mappingTable))
+    animalDataMapped = merge(animalDataCopy, mappingTable,
                              by = mergeAnimalCol, all.y = TRUE)
 
 

@@ -211,6 +211,7 @@ for(iter in seq(selectedMeatCode)){
     slaughteredTransferedToMeat =
         transferAnimalSlaughtered(meatData = meatData,
                                   animalData = animalData,
+                                  mappingTable = currentMappingTable,
                                   parentToChild = TRUE)
     ## Save the transfered data back
     ## NOTE (Michael): Save the data back but no need to check for protected data
@@ -306,6 +307,7 @@ for(iter in seq(selectedMeatCode)){
         normalise(denormalisedData = .) %>%
         transferAnimalSlaughtered(meatData = .,
                                   animalData = animalData,
+                                  mappingTable = currentMappingTable,
                                   parentToChild = FALSE)
 
 
