@@ -15,7 +15,7 @@ the processing algorithms.  See ?defaultProcessingParameters for a starting
 point.}
 
 \item{formulaParameters}{A list holding the names and parmater of formulas.
-See \code{productionFormulaParameters}.}
+  See \code{productionFormulaParameters}.}
 
 \item{returnData}{logical, whether the data should be returned}
 

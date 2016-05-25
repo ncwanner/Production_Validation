@@ -29,25 +29,6 @@ ensureProductionInputs = function(data,
         dataCopy = denormalise(dataCopy, "measuredElement")
     }
 
-    ## ## Check for parameters
-    ## stopifnot(is(processingParameters, "list"))
-    ## param = processingParameters
-    ## stopifnot(is.character(c(param$productionValue,
-    ##                          param$productionObservationFlag,
-    ##                          param$productionMethodFlag,
-    ##                          param$yieldValue,
-    ##                          param$yieldObservationFlag,
-    ##                          param$yieldMethodFlag,
-    ##                          param$areaHarvestedValue,
-    ##                          param$areaHarvestedObservationFlag,
-    ##                          param$areaHarvestedMethodFlag,
-    ##                          param$yearValue,
-    ##                          param$areaVar)))
-    ## stopifnot(is.logical(c(param$removePriorImputation,
-    ##                        param$removeConflictValues)))
-    ## stopifnot(is.character(c(param$imputationObservationFlag,
-    ##                          param$missingValueObservationFlag,
-    ##                          param$imputationMethodFlag)))
 
     with(formulaParameters,
          with(processingParameters,
@@ -69,7 +50,6 @@ ensureProductionInputs = function(data,
                                                 areaVar),
                              returnData = FALSE)
 
-
              ## Ensure there is no production is zero while area harvested is non
              ## zero, vice versa.
              ensureNoConflictingZero(data = dataCopy,
@@ -77,6 +57,7 @@ ensureProductionInputs = function(data,
                                      valueColumn2 = areaHarvestedValue,
                                      returnData = FALSE,
                                      normalised = FALSE)
+
 
              ## Ensure the range of values are correct
              ##
