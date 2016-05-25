@@ -156,9 +156,9 @@ for(iter in seq(selectedItemCode)){
         GetData(subKey) %>%
         fillRecord(data = .) %>%
         preProcessing(data = .) %>%
-        ## ensureProductionInputs(data = .,
-        ##                        processingParam = processingParameters,
-        ##                        formulaParameters = formulaParameters) %>%
+        ensureProductionInputs(data = .,
+                               processingParam = processingParameters,
+                               formulaParameters = formulaParameters) %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
