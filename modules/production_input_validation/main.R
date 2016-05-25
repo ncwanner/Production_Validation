@@ -9,6 +9,7 @@ suppressMessages({
     library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
+    library (sendmailR)
 })
 
 
@@ -67,16 +68,16 @@ autoFlagCorrection = function(data,
         dataCopy[[flagObservationStatusVar]] == "M" &
         dataCopy[[flagMethodVar]] == "-"
     dataCopy[correctionFilter,
-         `:=`(c(flagObservationStatusVar, flagMethodVar),
-              c("M", "u"))]
+             `:=`(c(flagObservationStatusVar, flagMethodVar),
+                  c("M", "u"))]
 
     ## Correction (2): (E, t) --> (E, -)
     correctionFilter =
         dataCopy[[flagObservationStatusVar]] == "E" &
         dataCopy[[flagMethodVar]] == "t"
     dataCopy[correctionFilter,
-         `:=`(c(flagObservationStatusVar, flagMethodVar),
-              c("E", "-"))]
+             `:=`(c(flagObservationStatusVar, flagMethodVar),
+                  c("E", "-"))]
     dataCopy
 }
 
@@ -115,7 +116,7 @@ autoValueCorrection = function(data,
 
 selectedItem =
     unique(slot(slot(selectedKey, "dimensions")[[processingParameters$itemVar]],
-           "keys"))
+                "keys"))
 
 tests = c("flag_validity", "production_range", "areaHarvested_range",
           "yield_range", "balanced")
@@ -260,10 +261,10 @@ for(iter in seq(selectedItem)){
             )
 
         ## ## Save the auto-corrected data back
-        autoCorrectedData %>%
-            SaveData(domain = sessionKey@domain,
-                     dataset = sessionKey@dataset,
-                     data = .)
+        ## autoCorrectedData %>%
+        ##     SaveData(domain = sessionKey@domain,
+        ##              dataset = sessionKey@dataset,
+        ##              data = .)
 
     } else {
         message("Current Item has no data")
@@ -274,15 +275,26 @@ for(iter in seq(selectedItem)){
 
 
 printData = function(x, msg){
+    par = options()
+    options(width = 120)
     dataPrint = paste0(msg, "\n\n\n",
-                       paste0(capture.output(print(x, nrow(x))), collapse = "\n"))
+                       paste0(capture.output(print(x, nrow(x))),
+                              collapse = "\n"))
+    options(par)
     dataPrint
 }
 
-msg = paste0(mapply(printData, errorList, msg = testMessage), collapse = "\n")
-
 if(max(sapply(errorList, length)) > 0){
-    message(msg)
+    from = "I_am_a_magical_unicorn@sebastian_quotes.com"
+    to = swsContext.userEmail
+    subject = "Validation Result"
+    errorPrintOut =
+        paste0(mapply(printData, errorList, msg = testMessage), collapse = "\n")
+    sendmail(from = from, to = to, subject = subject, msg = errorPrintOut)
+    stop("Production Input Invalid, please check follow up email on invalid data")
 } else {
-    message("Production Input Validation passed without any error!")
+    msg = "Production Input Validation passed without any error!"
 }
+msg
+
+
