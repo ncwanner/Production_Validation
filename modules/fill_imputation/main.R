@@ -3,6 +3,7 @@ suppressMessages({
     library(faoswsUtil)
     library(faoswsProduction)
     library(faoswsProcessing)
+    library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
 })
@@ -32,21 +33,8 @@ if(CheckDebug()){
 
 selectedKey = swsContext.datasets[[1]]
 
-
-## NOTE (Michael): The imputation and all modules should now have a base year of
-##                 1999, this is the result of a discussion with Pietro.
-defaultYear = 1999
-imputationYears =
-    GetCodeList(domain = "agriculture",
-                dataset = "aproduction",
-                dimension = "timePointYears") %>%
-    filter(description != "wildcard" & as.numeric(code) >= defaultYear) %>%
-    select(code) %>%
-    unlist(use.names = FALSE)
-
-
-## Get the complete set of keys for imputation
-completeImputationKey = getMainKey(imputationYears)
+## Get the full imputation Datakey
+completeImputationKey = getCompleteImputationKey()
 
 ## Subset the item of the complete key to the selected items. We use the
 ## complete key to subset as the selection may not include the full list of
