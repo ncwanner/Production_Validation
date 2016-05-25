@@ -10,7 +10,8 @@
 ##' @export
 ##'
 
-getAnimalMeatMapping = function(R_SWS_SHARE_PATH, onlyMeatChildren = FALSE,
+getAnimalMeatMapping = function(R_SWS_SHARE_PATH,
+                                onlyMeatChildren = FALSE,
                                 meatPattern = "^211(1|2|7).*"){
     ## fread(paste0(R_SWS_SHARE_PATH,
     ##              "/browningj/production/slaughtered_synchronized.csv"),
@@ -21,6 +22,10 @@ getAnimalMeatMapping = function(R_SWS_SHARE_PATH, onlyMeatChildren = FALSE,
                            "/kao/production/animal_parent_child_mapping.csv"),
                     colClasses = "character")
     if(onlyMeatChildren)
-        mapping = mapping[grepl(meatPattern, measuredItemChildCPC), ]
+        mapping =
+            subset(mapping,
+                   measuredItemChildCPC %in%
+                   selecteMeatCodes(measuredItemChildCPC,
+                                    meatPattern = meatPattern))
     mapping
 }
