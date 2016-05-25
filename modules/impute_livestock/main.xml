@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RScript xmlns="http://www.fao.org/rScript" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	       xsi:schemaLocation="http://www.fao.org/rScript rScript.xsd ">
-	<Name>Impute Livestock</Name>
+	<Name>Livestock Imputation</Name>
 	<Description>
     The module impute and synchronise the livestock tree. The imputation is
     performed at the meat commodity, and then the slaughtered animal is
