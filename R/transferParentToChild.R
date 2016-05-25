@@ -11,13 +11,18 @@
 
 
 transferParentToChild = function(parentData, commodityTree, selectedMeatTable){
+
+    ## Cartesian mapping is allowed as each parent has multiple child.
     parentDataWithMapping =
         merge(parentData, commodityTree,
               by = c("geographicAreaM49", "timePointYears", "measuredItemCPC"),
-              all.x = TRUE)
+              all.x = TRUE,
+              allow.cartesian = TRUE)
     if(any(is.na(parentDataWithMapping$measuredItemChildCPC))){
         ## NOTE (Michael): After checking the validity of the commodity table,
         ##                 we wil change the warning to an error.
+        ##
+        ## TODO (Michael): Check the wild card in the commodity tree.
         ##
         ## missingTable = parentDataWithMapping[is.na(measuredItemChildCPC), ]
         ## stop("Not all child mapped,",
