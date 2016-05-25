@@ -40,20 +40,14 @@ sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
 
+## Select the item list based on user input parameter
+if(!imputationSelection %in% c("session", "all", "missing_items"))
+    stop("Incorrect imputation selection specified")
 
-## NOTE (Michael): The imputation and all modules should now have a base year of
-##                 1999, this is the result of a discussion with Pietro.
-defaultYear = 1999
-imputationYears =
-    GetCodeList(domain = "agriculture",
-                dataset = "aproduction",
-                dimension = "timePointYears") %>%
-    filter(description != "wildcard" & as.numeric(code) >= defaultYear) %>%
-    select(code) %>%
-    unlist(use.names = FALSE)
+
 
 ## Get the full imputation Datakey
-completeImputationKey = getMainKey(years = imputationYears)
+completeImputationKey = getCompleteImputationKey()
 
 
 ## NOTE (Michael): Since the animal/meat are currently imputed by the
@@ -71,27 +65,24 @@ liveStockItems =
 
 
 ## This is the complete list of items that are in the imputation list
-completeImputationItems =
+nonLivestockImputationItems =
     completeImputationKey@dimensions[["measuredItemCPC"]]@keys %>%
     setdiff(., liveStockItems)
 
 ## These are the items selected by the users
 sessionItems =
     intersect(sessionKey@dimensions[["measuredItemCPC"]]@keys,
-              completeImputationItems)
+              nonLivestockImputationItems)
 
 ## This returns the list of items current does not have an imputed dataset.
 missingItems =
-    completeImputationItems[!imputationExist(savePath, completeImputationItems)]
-
-## Select the item list based on user input parameter
-if(!imputationSelection %in% c("session", "all", "missing_items"))
-    stop("Incorrect imputation selection specified")
+    nonLivestockImputationItems[!imputationExist(savePath,
+                                                 nonLivestockImputationItems)]
 
 selectedItemCode =
     switch(imputationSelection,
            session = sessionItems,
-           all = completeImputationItems,
+           all = nonLivestockImputationItems,
            missing_items = missingItems)
 
 for(iter in seq(selectedItemCode)){
