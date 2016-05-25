@@ -93,7 +93,7 @@ ensureProductionOutputs = function(data,
                                       areaVar = areaHarvestedValue,
                                       yieldVar = yieldValue,
                                       prodVar = productionValue,
-                                      conversion,
+                                      conversion = unitConversion,
                                       returnData = FALSE,
                                       normalised = FALSE)
 
