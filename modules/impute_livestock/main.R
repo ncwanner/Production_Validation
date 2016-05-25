@@ -70,9 +70,15 @@ if(CheckDebug()){
 
 
 ##' Load the computation parameters
+imputationSelection = swsContext.computationParams$imputation_selection
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
+
+## Select the item list based on user input parameter
+if(!imputationSelection %in% c("session", "all", "missing_items"))
+    stop("Incorrect imputation selection specified")
+
 
 ##' Build processing parameters
 processingParameters =
@@ -120,7 +126,16 @@ animalMeatMappingTable =
 ##'
 ##' The elements are also expanded
 
-selectedMeatCode =
+livestockImputationItems =
+    completeImputationKey %>%
+    expandMeatSessionSelection(oldKey = .,
+                               selectedMeatTable = animalMeatMappingTable) %>%
+    slot(object = ., "dimensions") %>%
+    .$measuredItemCPC %>%
+    slot(object = ., name = "keys") %>%
+    selectMeatCodes(itemCodes = .)
+
+sessionItems =
     sessionKey %>%
     expandMeatSessionSelection(oldKey = .,
                                selectedMeatTable = animalMeatMappingTable) %>%
@@ -128,6 +143,11 @@ selectedMeatCode =
     .$measuredItemCPC %>%
     slot(object = ., name = "keys") %>%
     selectMeatCodes(itemCodes = .)
+
+selectedMeatCode =
+    switch(imputationSelection,
+           session = sessionItems,
+           all = nonLivestockImputationItems)
 
 
 ##' Iterate through the selected meat items and transfer the the animal
