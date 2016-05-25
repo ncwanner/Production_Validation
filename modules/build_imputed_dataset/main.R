@@ -6,6 +6,7 @@ suppressMessages({
     library(faoswsImputation)
     library(faoswsProduction)
     library(faoswsProcessing)
+    library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
 })
@@ -44,6 +45,9 @@ datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
 if(!imputationSelection %in% c("session", "all", "missing_items"))
     stop("Incorrect imputation selection specified")
 
+##' Build processing parameters
+processingParameters =
+    productionProcessingParameters(datasetConfig = datasetConfig)
 
 
 ## Get the full imputation Datakey
@@ -87,11 +91,6 @@ selectedItemCode =
 
 for(iter in seq(selectedItemCode)){
     currentItem = selectedItemCode[iter]
-    subKey = completeImputationKey
-    subKey@dimensions$measuredItemCPC@keys = currentItem
-
-    cat("Imputation for item: ", currentItem, " (",  iter, " out of ",
-        length(selectedItemCode),")\n")
 
     ## Obtain the formula and remove indigenous and biological meat.
     ##
@@ -99,32 +98,41 @@ for(iter in seq(selectedItemCode)){
     ##                 they have incorrect data specification. They should be
     ##                 separate item with different item code rather than under
     ##                 different element under the meat code.
-    allFormula =
+    formulaTable =
         getYieldFormula(itemCode = currentItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
-    for(j in 1:nrow(allFormula)){
-        currentFormula = allFormula[j, ]
-        with(currentFormula,
-             cat("Imputation for formula: ", output, " = ", input, " x ",
-                 productivity, " (", j, " out of ", nrow(allFormula), ")\n"))
+    if(nrow(formulaTable) > 1)
+        stop("Imputation should only use one formula")
 
-        ## Update the element code according to the current formula
-        subKey@dimensions$measuredElement@keys =
-            currentFormula[, unlist(.(input, productivity, output))]
+    ## Create the formula parameter list
+    formulaParameters =
+        with(formulaTable,
+             productionFormulaParameters(datasetConfig = datasetConfig,
+                                         productionCode = output,
+                                         areaHarvestedCode = input,
+                                         yieldCode = productivity,
+                                         unitConversion = unitConversion)
+             )
 
-        ## Build processing parameters
-        ##
-        ## TODO (Michael): Split this into general processing parameters, and
-        ##                 yield formula parameters (or can put into the
-        ##                 imputation parameters)
-        processingParameters =
-            productionProcessingParameters(
-                datasetConfig = datasetConfig,
-                productionCode = currentFormula$output,
-                areaHarvestedCode = currentFormula$input,
-                yieldCode = currentFormula$productivity,
-                unitConversion = currentFormula$unitConversion)
+    ## Update the item/element key according to the current commodity
+    subKey = completeImputationKey
+    subKey@dimensions$measuredItemCPC@keys = currentItem
+    subKey@dimensions$measuredElement@keys =
+        with(formulaParameters, c(productionCode, areaHarvestedCode, yieldCode))
+
+    cat("Imputation for item: ", currentItem, " (",  iter, " out of ",
+        length(selectedItemCode),")\n")
+
+
+    ## Start the imputation
+    ## Build imputation parameter
+    imputationParameters =
+        with(formulaParameters,
+             getImputationParameters(productionCode = productionCode,
+                                     areaHarvestedCode = areaHarvestedCode,
+                                     yieldCode = yieldCode)
+             )
 
         saveFileName = createImputationObjectName(item = currentItem)
 
@@ -143,61 +151,49 @@ for(iter in seq(selectedItemCode)){
         ##                 components.
         ##
 
-        ## Build imputation parameter
-        imputationParameters =
-            getImputationParameters(productionCode = currentFormula$output,
-                                    areaHarvestedCode = currentFormula$input,
-                                    yieldCode = currentFormula$productivity)
+    ## Process the data.
+    processedData =
+        GetData(subKey) %>%
+        fillRecord(data = .) %>%
+        preProcessing(data = .) %>%
+        ## ensureProductionInputs(data = .,
+        ##                        processingParam = processingParameters,
+        ##                        formulaParameters = formulaParameters) %>%
+        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+        processProductionDomain(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = formulaParameters)
 
-        ## Process the data.
-        processedData =
-            GetData(subKey) %>%
-            fillRecord(data = .) %>%
-            checkFlagValidity(data = .) %>%
-            checkProductionInputs(data = .,
-                                  processingParam = processingParameters) %>%
-            preProcessing(data = .) %>%
-            denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-            processProductionDomain(data = .,
-                                    processingParameters = processingParameters)
+    ## Perform imputation
+    imputed =
+        imputeWithAndWithoutEstimates(
+            data = processedData,
+            processingParameters = processingParameters,
+            formulaParameters = formulaParameters,
+            imputationParameters = imputationParameters,
+            minObsForEst = 5)
 
-        ## Perform imputation
-        imputed =
-            imputeWithAndWithoutEstimates(
-                data = processedData,
-                processingParameters = processingParameters,
-                imputationParameters = imputationParameters,
-                minObsForEst = 5)
+    ## Check the imputation before saving.
+    imputed %>%
+        normalise(.) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = formulaParameters) %>%
+        postProcessing(data = .) %>%
+        {
+            ## HACK (Michael): Before we decide how to deal with the flags,
+            ##                 we will not perform this check as we can not
+            ##                 determine what is considered 'protected'
+            ##
+            ## Check whether protected data are being over-written
+            ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+            ##     checkProtectedData(dataToBeSaved = .) %>%
+            ##     print(.)
 
-        ## Check the imputation before saving.
-        imputed %>%
-            checkProductionBalanced(dataToBeSaved = .,
-                                    areaVar = processingParameters$areaHarvestedValue,
-                                    yieldVar = processingParameters$yieldValue,
-                                    prodVar = processingParameters$productionValue,
-                                    conversion = currentFormula$unitConversion,
-                                    normalised = FALSE) %>%
-            normalise(.) %>%
-            checkTimeSeriesImputed(dataToBeSaved = .,
-                                   key = c("geographicAreaM49",
-                                           "measuredItemCPC",
-                                           "measuredElement"),
-                                   valueColumn = "Value") %>%
-            postProcessing(data = .) %>%
-            {
-                ## HACK (Michael): Before we decide how to deal with the flags,
-                ##                 we will not perform this check as we can not
-                ##                 determine what is considered 'protected'
-                ##
-                ## Check whether protected data are being over-written
-                ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
-                ##     checkProtectedData(dataToBeSaved = .) %>%
-                ##     print(.)
+            ## Save the fitted object for future loading
+            saveRDS(object = ., file = paste0(savePath, saveFileName))
+        }
 
-                ## Save the fitted object for future loading
-                saveRDS(object = ., file = paste0(savePath, saveFileName))
-            }
-
-    }
 }
+
 
