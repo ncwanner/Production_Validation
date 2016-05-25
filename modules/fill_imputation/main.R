@@ -109,11 +109,10 @@ for(i in seq(selectedImputationItems)){
     currentValues =
         GetData(subKey) %>%
         fillRecord(data = .) %>%
-        checkFlagValidity(data = .) %>%
-        checkProductionInputs(data = .,
-                              processingParam = processingParams,
-                              normalised = TRUE) %>%
         preProcessing(data = .) %>%
+        ensureProductionInputs(data = .,
+                               processingParam = processingParameters,
+                               formulaParameters = formulaParameters) %>%
         setkeyv(x = , col = c("geographicAreaM49", "measuredItemCPC",
                               "timePointYears", "measuredElement"))
 
@@ -156,22 +155,15 @@ for(i in seq(selectedImputationItems)){
                flagMethod = i.flagMethod) %>%
         ## Remove imputation column
         select(.data = ., select = -starts_with("i.")) %>%
-        ## NOTE (Michael): This test might fail because the data may have been
-        ##                 updated since the production imputation module was
-        ##                 performed.
-        checkProductionBalanced(data = .,
-                                areaVar = processingParams$areaHarvestedValue,
-                                yieldVar = processingParams$yieldValue,
-                                prodVar = processingParams$productionValue,
-                                conversion = currentFormula[, unitConversion]) %>%
+        ## Module testing
+        ##
+        ## NOTE (Michael): The check production balanced might fail because the
+        ##                 data may have been updated since the production
+        ##                 imputation module was performed.
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = formulaParameters) %>%
         postProcessing(data = .) %>%
-        checkProtectedData(dataToBeSaved = .) %>%
-        ## NOTE (Michael): flagMethod can be 'i' or 'e' since yield
-        ##                 can be computed as an identity during the
-        ##                 imputation stage.
-        checkOutputFlags(data = .,
-                         flagObservationExpected = "I",
-                         flagMethodExpected = c("i", "e")) %>%
         ## Save data back
         SaveData(domain = "agriculture", dataset = "aproduction", data = .)
 
