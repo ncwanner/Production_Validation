@@ -20,19 +20,14 @@
 ##                 figures are old.
 ###############################################################################
 
-
-## Step 0. Initial set-up
-
-message("Beginning impute slaughtered script...\n")
+cat("Beginning slaughtered synchronization script...\n")
 suppressMessages({
     library(faosws)
-    library(faoswsFlag)
     library(faoswsUtil)
     library(faoswsProduction)
     library(faoswsProcessing)
-    library(faoswsEnsure)
-    library(magrittr)
     library(dplyr)
+    library(magrittr)
 })
 
 ## set up for the test environment and parameters
@@ -55,36 +50,9 @@ if(CheckDebug()){
                        token = SETTINGS[["token"]])
 
 }
-
 startTime = Sys.time()
 
-message("Setting up configurations and parameters")
-sessionKey = swsContext.datasets[[1]]
-datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
-                                 datasetCode = sessionKey@dataset)
-
-## Build processing parameters
-processingParameters =
-    productionProcessingParameters(datasetConfig = datasetConfig)
-
-completeImputationKey = getCompleteImputationKey()
-
-getAnimalMeatMapping = function(onlyMeatChildren = FALSE,
-                                meatPattern = "^211(1|2|7).*"){
-    mapping = fread("~/Downloads/animal_parent_child_mapping.csv",
-                    colClasses = "character")
-    if (onlyMeatChildren)
-        mapping = mapping[grepl(meatPattern, measuredItemChildCPC), ]
-    mapping
-}
-
-
-animalMeatMappingTable =
-    getAnimalMeatMapping(onlyMeatChildren = TRUE) %>%
-    select(measuredItemParentCPC, measuredElementParent,
-           measuredItemChildCPC, measuredElementChild)
-
-
+cat("Loading preliminary data and create expanded Datakey...\n")
 ## Read the data.  The years and countries provided in the session are
 ## used, and the commodities in the session are somewhat
 ## considered. For example, if 02111 (Cattle) is in the session, then
@@ -93,153 +61,85 @@ animalMeatMappingTable =
 ## chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01
 ## (raw hides and skins of cattle).  The measured element dimension of
 ## the session is simply ignored.
+##
+## NOTE (Michael): It seems there is no point of pulling the data from
+##                 the children, as the mapping comes from the
+##                 commodity tree and new values are calculated.
 
-selectMeatCodes = function(itemCodes, meatPattern = "^211(1|2|7).*"){
-    itemCodes[grepl(meatPattern, itemCodes)]
-}
+selectedMeatTable =
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
+                         onlyMeatChildren = FALSE) %>%
+    subsetAnimalMeatMapping(animalMeatMapping = .,
+                            context = swsContext.datasets[[1]])
+expandedMeatKey =
+    selectedMeatTable %>%
+    expandMeatSessionSelection(oldKey = swsContext.datasets[[1]],
+                               selectedMeatTable = .)
 
-selectedMeatCode =
-    sessionKey %>%
-    expandMeatSessionSelection(oldKey = .,
-                               selectedMeatTable = animalMeatMappingTable) %>%
-    slot(object = ., "dimensions") %>%
-    .$measuredItemCPC %>%
-    slot(object = ., name = "keys") %>%
-    selectMeatCodes(itemCodes = .)
+## Execute the get data call.
+cat(length(expandedMeatKey@dimensions$measuredItemCPC@keys),
+    "commodities selected to be synchronised \n")
+cat("Pulling the data ... \n")
 
+newParentData =
+    GetData(key = expandedMeatKey) %>%
+    fillRecord(data = .) %>%
+    checkFlagValidity(data = .) %>%
+    ## TODO (Michael): Add in the check for production input, however, have to
+    ##                 account for multiple formulas
+    ## checkProductionInputs(data = .,
+    ##                       processingParam = processingParams) %>%
+    preProcessing(data = .) %>%
+    ## Remove missing values, as we don't want to copy those.
+    removeMissingEntry(data = .) %>%
+    selectParentData(data = ., selectedMeatTable = selectedMeatTable)
 
-for(iter in seq(selectedMeatCode)){
+cat("Pulling the commodity trees ...\n")
 
-    currentMeatItem = selectedMeatCode[iter]
-    currentMappingTable =
-        animalMeatMappingTable[measuredItemChildCPC == currentMeatItem, ]
-    currentAnimalItem = currentMappingTable[, measuredItemParentCPC]
+newCommodityTree =
+    newParentData %$%
+    getCommodityTree(geographicAreaM49 = as.character(unique(.$geographicAreaM49)),
+                     timePointYears = as.character(unique(.$timePointYears))) %>%
+    subset(., share > 0) %>%
+    setnames(.,
+             old = c("measuredItemParentCPC", "timePointYearsSP"),
+             new = c("measuredItemCPC", "timePointYears"))
 
-
-########################################################################
-    message("Extracting production triplet for ", currentMeatItem, " (Meat)")
-    ## Get the meat formula
-    meatFormulaTable =
-        getYieldFormula(itemCode = currentMeatItem) %>%
-        removeIndigenousBiologicalMeat(formula = .)
-
-    if(nrow(meatFormulaTable) > 1)
-        stop("Imputation should only use one formula")
-
-    meatFormulaParameters =
-        with(meatFormulaTable,
-             productionFormulaParameters(datasetConfig = datasetConfig,
-                                         productionCode = output,
-                                         areaHarvestedCode = input,
-                                         yieldCode = productivity,
-                                         unitConversion = unitConversion)
-             )
-
-    ## Get the meat key
-    meatKey = completeImputationKey
-    meatKey@dimensions$measuredItemCPC@keys = currentMeatItem
-    meatKey@dimensions$measuredElement@keys =
-        with(meatFormulaParameters,
-             c(productionCode, areaHarvestedCode, yieldCode,
-               currentMappingTable$measuredElementChild))
-
-    ## Get the meat data
-    meatData =
-        meatKey %>%
-        GetData(key = .) %>%
-        fillRecord(data = .) %>%
-        preProcessing(data = .) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters)
+cat("Transfere the animal number to all the children commodities ... \n")
+transferedData =
+    newCommodityTree %>%
+    mutate(timePointYears = as.numeric(timePointYears)) %>%
+    transferParentToChild(commodityTree = .,
+                          parentData = newParentData,
+                          selectedMeatTable) %>%
+    postProcessing(data = .)
 
 
 
-########################################################################
-    message("Extracting production triplet for ", currentAnimalItem, " (Animal)")
-    ## Get the animal formula
-    animalFormulaTable =
-        getYieldFormula(itemCode = currentAnimalItem) %>%
-        removeIndigenousBiologicalMeat(formula = .)
+cat("Testing module and saving data back ...\n")
 
-    if(nrow(animalFormulaTable) > 1)
-        stop("Imputation should only use one formula")
+animalNumberDB =
+    getAllAnimalNumber(selectedMeatTable)
 
-    animalFormulaParameters =
-        with(animalFormulaTable,
-             productionFormulaParameters(datasetConfig = datasetConfig,
-                                         productionCode = output,
-                                         areaHarvestedCode = input,
-                                         yieldCode = productivity,
-                                         unitConversion = unitConversion)
-             )
-
-    ## Get the animal key
-    animalKey = completeImputationKey
-    animalKey@dimensions$measuredItemCPC@keys = currentAnimalItem
-    animalKey@dimensions$measuredElement@keys =
-        with(animalFormulaParameters,
-             c(productionCode, areaHarvestedCode, yieldCode,
-               currentMappingTable$measuredElementParent))
-
-    ## Get the animal data
-    animalData =
-        animalKey %>%
-        GetData(key = .) %>%
-        fillRecord(data = .) %>%
-        preProcessing(data = .) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = animalFormulaParameters)
-
-
-
-########################################################################
-    message("Pulling the commodity trees ...\n")
-
-    newCommodityTree =
-        animalData %$%
-        getCommodityTree(geographicAreaM49 =
-                             as.character(unique(.$geographicAreaM49)),
-                         timePointYears =
-                             as.character(unique(.$timePointYears))) %>%
-        subset(., share > 0) %>%
-        setnames(.,
-                 old = c("measuredItemParentCPC", "timePointYearsSP"),
-                 new = c("measuredItemCPC", "timePointYears"))
-
-########################################################################
-    message("Transferring animal slaughtered from animal to all child commodity")
-
-    ## NOTE (Michael): The only difference between the synchronisation in the
-    ##                 module and the imputation module is that the mapping
-    ##                 table is different and also a share applies when transfer
-    ##                 parent to child.
-    ##
-    ## TODO (Michael): Need to check whether meat is included in this transfer!
-
-    transferedData =
-        newCommodityTree %>%
-        mutate(timePointYears = as.numeric(timePointYears)) %>%
-        transferParentToChild(commodityTree = .,
-                              parentData = animalData,
-                              selectedMeatTable = animalMeatMappingTable) %>%
-        postProcessing(data = .)
-
-
-########################################################################
-    message("Saving the transferred data back")
-
+saveResult =
     transferedData %>%
-        ## TODO (Michael): Need to check whether the parent/child are
-        ##                 synchronised.
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
-        postProcessing %>%
-        SaveData(domain = sessionKey@domain,
-                 dataset = sessionKey@dataset,
-                 data = .)
-}
+    ## Check whether the values are synced
+    checkSlaughteredSynced(commodityTree = newCommodityTree,
+                           animalNumbers = animalNumberDB,
+                           slaughteredNumbers = .) %>%
+    .$slaughteredNumbers %>%
+    ## NOTE (Michael): This section has been commented out, since the check is
+    ##                 not required as mentioned in the comment in the
+    ##                 beginning. Official and semi-official figures can be
+    ##                 over-written.
+    ## filter(x = ., flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+    ## checkProtectedData(dataToBeSaved = .) %>%
+    SaveData(domain = swsContext.datasets[[1]]@domain,
+             dataset = swsContext.datasets[[1]]@dataset,
+             data = .)
 
-message("Synchronise Module Executed Successfully!")
+result = paste("Module completed with", saveResult$inserted + saveResult$appended,
+               "observations updated and", saveResult$discarded, "problems.\n")
+cat(result)
+
+result

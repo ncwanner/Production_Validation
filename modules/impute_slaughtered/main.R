@@ -1,40 +1,35 @@
-##' # Synchronise and Impute Slaughtered
-##'
-##' ## Author: Josh Browning, Michael C. J. Kao
-##'
-##' ## Description:
-##'
-##' The animals slaughtered for production of meat, offals, fats and hides must
-##' be available before running the production imputation code. These numbers,
-##' however, are not guaranteed to be available, and in the case of missing
-##' data, an imputation method must be applied. The decision was to use the
-##' production figures of meat, if available, to compute the missing animals
-##' slaughtered. If these figures are also missing, they should be imputed using
-##' the production imputation methodology. Of course, in the case of currently
-##' available data in the animal element, that data should be transferred to the
-##' quantity of animals slaughtered for meat and then the imputation ran. We
-##' also decided to save the imputations for meat so as to retain consistency
-##' with the animal figures.
-##'
-##' ## Steps:
-##'
-##' 1. Transfer the animal slaughtered from animal commodity (parent) to the
-##'    meat commodity (child)
-##'
-##' 2. Impute the meat triplet (production/animal slaughtered/carcass weight)
-##'    based on the same logic as all other production imputation procedure.
-##'
-##' 3. Transfer the slaughtered animal from the meat back to the animal, as now
-##'    certain slaughtered animal is imputed in step 2.
-##'
-##' 4. Transfer the slaughtered animal from the animal to all other child
-##'    commodities. This includes items such as offals, fats and hides.
+## ###########################################################################
+## Title: Impute Slaughtered Module for SWS
+##
+## Author: Josh Browning
+## Restructured : Michael C. J. Kao
+##
+## The animals slaughtered for production of meat, offals, fats and hides must
+## be available before running the production imputation code.  These numbers,
+## however, are not guaranteed to be available, and in the case of missing data,
+## an imputation method must be applied.  The decision was to use the production
+## figures of meat, if available, to compute the missing animals slaughtered. If
+## these figures are also missing, they should be imputed using the production
+## imputation methodology.  Of course, in the case of currently available data
+## in the animal element, that data should be transferred to the quantity of
+## animals slaughtered for meat and then the imputation ran.  We also decided to
+## save the imputations for meat so as to retain consistency with the animal
+## figures.
+##
+## The steps are as follows:
+## 0. Transfer down the slaughtered animal numbers from the animal (parent)
+## commodity to the meat (child) commodity.
+## 1. Save the transferred data back to the database
+## 2. Impute the meat data (production/animals slaughtered/carcass weight)
+## following the logic from the production imputation module.
+## 3. Copy the slaughtered animal numbers in meat back to the animal commodity.
+## 4. Save all three variables for meat (production/animals slaughterd/carcass
+## weight) and the animals slaughtered for the animal.
+## #############################################################################
 
+## Step 0. Initial set-up
 
-
-message("Step 0: Setup")
-
-##' Load the libraries
+cat("Beginning impute slaughtered script...\n")
 suppressMessages({
     library(faosws)
     library(faoswsFlag)
@@ -47,10 +42,10 @@ suppressMessages({
     library(dplyr)
 })
 
-##' Get the shared path
+## set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 
-##' Load debugging setting if in debug mode.
+## This return FALSE if on the Statistical Working System
 if(CheckDebug()){
 
     library(faoswsModules)
@@ -68,355 +63,217 @@ if(CheckDebug()){
 
 }
 
+startTime = Sys.time()
 
-##' Load the computation parameters
+("Loading preliminary data...\n")
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
 
-##' Build processing parameters
-processingParameters =
-    productionProcessingParameters(datasetConfig = datasetConfig)
 
-##' Obtain the complete imputation key
-completeImputationKey = getCompleteImputationKey()
+## NOTE (Michael): The imputation and all modules should now have a base year of
+##                 1999, this is the result of a discussion with Pietro.
+defaultYear = 1999
+imputationYears =
+    GetCodeList(domain = "agriculture",
+                dataset = "aproduction",
+                dimension = "timePointYears") %>%
+    filter(description != "wildcard" & as.numeric(code) >= defaultYear) %>%
+    select(code) %>%
+    unlist(use.names = FALSE)
 
-## TODO (Michael): This is to be removed.
-## getAnimalMeatMapping = function(onlyMeatChildren = FALSE,
-##                                 meatPattern = "^211(1|2|7).*"){
-##     mapping = fread("~/Downloads/animal_parent_child_mapping.csv",
-##                     colClasses = "character")
-##     if(onlyMeatChildren)
-##         mapping =
-##             subset(mapping,
-##                    measuredItemChildCPC %in%
-##                    selectMeatCodes(measuredItemChildCPC,
-##                                     meatPattern = meatPattern))
-##     mapping
-## }
-
-##' Extract the animal parent to child commodity mapping table
-##'
-##' This table contains the parent item/element code which maps to the child
-##' item/element code. For example, the slaughtered animal element for cattle is
-##' 5315, while the slaughtered animal for cattle meat is 5320.
-##'
-
-## NOTE (Michael): The two elements should be merged and have a single code.
-##                 This will eliminate the change of code in the transfer
-##                 procedure.
-animalMeatMappingTable =
-    getAnimalMeatMapping(onlyMeatChildren = FALSE) %>%
+## Load the animal/meat mapping table
+selectedMeatTable =
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
+                         onlyMeatChildren = TRUE) %>%
     select(measuredItemParentCPC, measuredElementParent,
            measuredItemChildCPC, measuredElementChild)
 
+## Read the data.  The years and countries provided in the session are
+## used, and the commodities in the session are somewhat
+## considered. For example, if 02111 (Cattle) is in the session, then
+## the session will be expanded to also include 21111.01 (meat of
+## cattle, fresh or chilled), 21151 (edible offal of cattle, fresh,
+## chilled or frozen), 21512 (cattle fat, unrendered), and 02951.01
+## (raw hides and skins of cattle).  The measured element dimension of
+## the session is simply ignored.
 
-##' Here we expand the session to include all the parent and child items.
-##'
-##' For example, if 02111 (Cattle) is in the session, then the session will be
-##' expanded to also include 21111.01 (meat of cattle, freshor chilled), 21151
-##' (edible offal of cattle, fresh, chilled or frozen), 21512 (cattle fat,
-##' unrendered), and 02951.01 (raw hides and skins of cattle).
-##'
-##' The elements are also expanded
+## Expand the session to include missing meats
+expandedMeatKey =
+    expandMeatSessionSelection(oldKey = sessionKey,
+                               selectedMeatTable = selectedMeatTable)
 
+## Adjust the years based on the passed information:
+expandedMeatKey@dimensions[["timePointYears"]]@keys =
+    as.character(imputationYears)
+
+## Include all countries, since all data is required for the imputation
+countryCodes = GetCodeList("agriculture", "aproduction", "geographicAreaM49")
+expandedMeatKey@dimensions[["geographicAreaM49"]]@keys =
+    countryCodes[type == "country", code]
+
+## Execute the get data call.
+cat("Pulling the complete data...\n")
+
+## Transfer the animal number in the animal to the slaughtered animal in the
+## meat.
+animalTransferredData =
+    expandedMeatKey %>%
+    GetData(key = .) %>%
+    fillRecord(data = .) %>%
+    ## checkFlagValidity(data = .) %>%
+    ## TODO (Michael): Add in the check for production input, however, have to
+    ##                 account for multiple formulas
+    preProcessing(data = .) %>%
+    transferAnimalNumber(data = ., selectedMeatTable)
+
+## Module test and save the transferred data back
+##
+## NOTE (Michael): The transfer can over-write official and semi-official
+##                 figures as indicated by in the synchronise slaughtered
+##                 module.
+cat("Saving the transferred animal to meat data back...\n")
+animalTransferredData %>%
+    ## TODO (Michael): Add in the check for production output, however, have to
+    ##                 account for multiple formulas.
+    postProcessing(data = .) %>%
+    SaveData(expandedMeatKey@domain, expandedMeatKey@dataset, data = .)
+
+## Step 2. Impute the meat data (production/animals
+##         slaughtered/carcass weight) following the logic from the
+##         production imputation module.
+##
+
+## NOTE (Michael): The imputed data for meat triplet is also saved
+##                 back in this step.
+
+cat("Imputing the meat commodity...\n")
 selectedMeatCode =
-    sessionKey %>%
-    expandMeatSessionSelection(oldKey = .,
-                               selectedMeatTable = animalMeatMappingTable) %>%
-    slot(object = ., "dimensions") %>%
-    .$measuredItemCPC %>%
-    slot(object = ., name = "keys") %>%
-    selectMeatCodes(itemCodes = .)
+    getSessionMeatSelection(key = expandedMeatKey,
+                            selectedMeatTable = selectedMeatTable)
 
 
-##' Iterate through the selected meat items and transfer the the animal
-##' slaughtered from the animal parent to the child commodity such as offals and
-##' skins.
-
+updatedSlaughteredAnimal = NULL
 for(iter in seq(selectedMeatCode)){
+    currentMeat = selectedMeatCode[iter]
+    subKey = expandedMeatKey
+    subKey@dimensions$measuredItemCPC@keys = currentMeat
 
-    message("Step 1: Extract Transfer Animal Slaughtered from animal commodity to Meat")
-    currentMeatItem = selectedMeatCode[iter]
-    currentMappingTable =
-        animalMeatMappingTable[measuredItemChildCPC == currentMeatItem, ]
-    currentAnimalItem = currentMappingTable[, measuredItemParentCPC]
+    cat("Imputation for item: ", currentMeat, " (",  iter, " out of ",
+        length(selectedMeatCode),")\n")
 
 
-    ## ---------------------------------------------------------------------
-    message("\tExtracting production triplet for item ", currentMeatItem,
-            " (Meat)")
-    ## Get the meat formula
-    meatFormulaTable =
-        getYieldFormula(itemCode = currentMeatItem) %>%
+    ## Get all the formula associated with the item
+    ##
+    ## NOTE (Michael): Biological and indigenous meat are currently removed, as
+    ##                 they have incorrect data specification. They should be
+    ##                 separate item with different item code rather than under
+    ##                 different element under the meat code.
+    allFormula =
+        getYieldFormula(itemCode = currentMeat) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
-    if(nrow(meatFormulaTable) > 1)
-        stop("Imputation should only use one formula")
+    for(j in 1:nrow(allFormula)){
+        currentFormula = allFormula[j, ]
+        with(currentFormula,
+             cat("Imputation for formula: ", output, " = ", input, " x ",
+                 productivity, " (", j, " out of ", nrow(allFormula), ")\n"))
 
-    ## Create the formula parameter list
-    meatFormulaParameters =
-        with(meatFormulaTable,
-             productionFormulaParameters(datasetConfig = datasetConfig,
-                                         productionCode = output,
-                                         areaHarvestedCode = input,
-                                         yieldCode = productivity,
-                                         unitConversion = unitConversion)
-             )
+        ## Update the element code according to the current formula
+        subKey@dimensions$measuredElement@keys =
+            currentFormula[, unlist(.(input, productivity, output))]
 
-    ## Get the meat key, we take the complete key and then modify the element
-    ## and item dimension to extract the current meat item and it's
-    ## corresponding elements.
-    ##
-    ## NOTE (Michael): We extract the triplet so that we can perform the check
-    ##                 on whether the triplet are balanced already. Eventhough
-    ##                 only the animal slaughtered element is transferred.
-    meatKey = completeImputationKey
-    meatKey@dimensions$measuredItemCPC@keys = currentMeatItem
-    meatKey@dimensions$measuredElement@keys =
-        with(meatFormulaParameters,
-             c(productionCode, areaHarvestedCode, yieldCode,
-               currentMappingTable$measuredElementChild))
-
-    ## Get the meat data
-    meatData =
-        meatKey %>%
-        GetData(key = .) %>%
-        fillRecord(data = .) %>%
-        preProcessing(data = .) %>%
-    ensureProductionInputs(data = .,
-                           processingParameters = processingParameters,
-                           formulaParameters = meatFormulaParameters)
-
-
-
-    ## ---------------------------------------------------------------------
-    message("\tExtracting production triplet for item ", currentAnimalItem,
-            " (Animal)")
-    ## Get the animal formula
-    animalFormulaTable =
-        getYieldFormula(itemCode = currentAnimalItem) %>%
-        removeIndigenousBiologicalMeat(formula = .)
-
-    if(nrow(animalFormulaTable) > 1)
-        stop("Imputation should only use one formula")
-
-    ## Create the formula parameter list
-    animalFormulaParameters =
-        with(animalFormulaTable,
-             productionFormulaParameters(datasetConfig = datasetConfig,
-                                         productionCode = output,
-                                         areaHarvestedCode = input,
-                                         yieldCode = productivity,
-                                         unitConversion = unitConversion)
-             )
-
-    ## Get the animal key, we take the complete key and then modify the element
-    ## and item dimension to extract the current meat item and it's
-    ## corresponding elements.
-    ##
-    ## NOTE (Michael): We extract the triplet so that we can perform the check
-    ##                 on whether the triplet are balanced already. Eventhough
-    ##                 only the animal slaughtered element is transferred.
-    animalKey = completeImputationKey
-    animalKey@dimensions$measuredItemCPC@keys = currentAnimalItem
-    animalKey@dimensions$measuredElement@keys =
-        with(animalFormulaParameters,
-             c(productionCode, areaHarvestedCode, yieldCode,
-               currentMappingTable$measuredElementParent))
-
-    ## Get the animal data
-    animalData =
-        animalKey %>%
-        GetData(key = .) %>%
-        fillRecord(data = .) %>%
-        preProcessing(data = .) %>%
-    ensureProductionInputs(data = .,
-                           processingParameters = processingParameters,
-                           formulaParameters = animalFormulaParameters)
-
-
-    ## ---------------------------------------------------------------------
-    message("\tTransferring animal slaughtered from animal to meat commodity")
-    ## Transfer the animal slaughtered number from animal to the meat.
-    slaughteredTransferedToMeat =
-        transferAnimalSlaughtered(meatData = meatData,
-                                  animalData = animalData,
-                                  mappingTable = currentMappingTable,
-                                  parentToChild = TRUE)
-
-    message("\tSaving transferred meat data back to the database")
-    ## Save the transfered data back
-    ##
-    ## NOTE (Michael): The transfer can over-write official and semi-official
-    ##                 figures as indicated by in the synchronise slaughtered
-    ##                 module.
-    slaughteredTransferedToMeat %>%
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
-        postProcessing %>%
-        SaveData(domain = sessionKey@domain,
-                 dataset = sessionKey@dataset,
-                 data = .)
-
-
-    ## ---------------------------------------------------------------------
-    message("Step 2: Perform Imputation on the Meat Triplet")
-
-    ## NOTE (Michael): To perform the imputation, we read the transferred data
-    ##                 from the data base rather than use the data obtained
-    ##                 above. However, maybe we can process the batch and then
-    ##                 save the whold data back in one iteration to avoid
-    ##                 read/write overhead.
-
-
-    ## Start the imputation
-    ## Build imputation parameter
-    imputationParameters =
-        with(meatFormulaParameters,
-             getImputationParameters(productionCode = productionCode,
-                                     areaHarvestedCode = areaHarvestedCode,
-                                     yieldCode = yieldCode)
-             )
-
-
-    ## Load the updated meat data from the database
-    updatedMeatData =
-        meatKey %>%
-        GetData(key = .) %>%
-        fillRecord(data = .) %>%
-        preProcessing(data = .) %>%
-    ensureProductionInputs(data = .,
-                           processingParameters = processingParameters,
-                           formulaParameters = meatFormulaParameters)
-
-
-    ## Denormalise and then process the meat data
-    processedMeatData =
-        updatedMeatData %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        processProductionDomain(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters)
-
-    ## Perform imputation using the standard imputation function
-    message("\tPerfoming Imputation")
-    meatImputed =
-        imputeWithAndWithoutEstimates(
-            data = processedMeatData,
-            processingParameters = processingParameters,
-            imputationParameters = imputationParameters,
-            formulaParameters = meatFormulaParameters,
-            minObsForEst = 5)
-
-
-    message("\tSaving imputed meat data back")
-    ## Save the imputed meat back
-    meatImputed %>%
-        normalise(.) %>%
-        ## NOTE (Michael): This test currently fails occasionally
-        ##                 because it can not overwrite the ('I', '-')
-        ##                 flag for imputed value from the old system.
-        ##                 This is an error in the system as the flag
-        ##                 ('I', '-') should be replaced with ('E', 'e')
-        ##                 which can be over-written.
+        ## Build processing parameters
         ##
-        ## NOTE (Michael): Need to apply the formula for from the meat.
-        ensureProductionOutput(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters) %>%
-        ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
-        postProcessing(data = .) %>%
-        SaveData(domain = sessionKey@domain,
-                 dataset = sessionKey@dataset,
-                 data = .)
+        ## TODO (Michael): Split this into general processing parameters, and
+        ##                 yield formula parameters (or can put into the
+        ##                 imputation parameters)
+        processingParameters =
+            productionProcessingParameters(
+                datasetConfig = datasetConfig,
+                productionCode = currentFormula$output,
+                areaHarvestedCode = currentFormula$input,
+                yieldCode = currentFormula$productivity,
+                unitConversion = currentFormula$unitConversion)
 
-    ## ---------------------------------------------------------------------
-    message("Step 3: Transfer animal slaughtered back from meat to animal commodity")
+        ## Build imputation parameter
+        imputationParameters =
+            getImputationParameters(productionCode = currentFormula$output,
+                                    areaHarvestedCode = currentFormula$input,
+                                    yieldCode = currentFormula$productivity)
 
+        ## Process the data.
+        processedData =
+            GetData(subKey) %>%
+            fillRecord(data = .) %>%
+            ensureProductionInputs(data = .,
+                                   processingParameters = processingParameters) %>%
+            preProcessing(data = .) %>%
+            denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+            processProductionDomain(data = .,
+                                    processingParameters = processingParameters)
 
-    message("\tTransferring animal slaughtered from meat to animal commodity")
-    ## Transfer the animal slaughtered from meat back to animal, this can be
-    ## done by specifying parentToChild equal to FALSE.
-    slaughteredTransferedBackToAnimal =
-        meatImputed %>%
-        normalise(denormalisedData = .) %>%
-        transferAnimalSlaughtered(meatData = .,
-                                  animalData = animalData,
-                                  mappingTable = currentMappingTable,
-                                  parentToChild = FALSE)
+        ## Perform imputation
+        imputed =
+            imputeWithAndWithoutEstimates(
+                data = processedData,
+                processingParameters = processingParameters,
+                imputationParameters = imputationParameters,
+                minObsForEst = 5)
 
+        ## Perform module testing and save back to the database
 
-    ## ---------------------------------------------------------------------
-    message("\tSaving transferred animal data back")
-    ## NOTE (Michael): The transfer can over-write official and semi-official
-    ##                 figures as indicated by in the synchronise slaughtered
-    ##                 module.
+        imputed %>%
+            normalise(.) %>%
+            ## NOTE (Michael): This test currently fails occasionally
+            ##                 because it can not overwrite the ('I', '-')
+            ##                 flag for imputed value from the old system.
+            ##                 This is an error in the system as the flag
+            ##                 ('I', '-') should be replaced with ('E', 'e')
+            ##                 which can be over-written.
+            ensureProductionOutput(data = .,
+                                   processingParameters = processingParameters) %>%
+            filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+            postProcessing(data = .) %>%
+            SaveData(domain = subKey@domain,
+                     dataset = subKey@dataset,
+                     data = .)
 
-    slaughteredTransferedBackToAnimal %>%
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formEulaParameters = meatFormulaParameters) %>%
-        postProcessing(data = .) %>%
-        SaveData(domain = sessionKey@domain,
-                 dataset = sessionKey@dataset,
-                 data = .)
-
-    ## ---------------------------------------------------------------------
-    message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
-    message("\tPulling the commodity trees")
-
-    currentCommodityTree =
-        animalData %$%
-        getCommodityTree(geographicAreaM49 =
-                             as.character(unique(.$geographicAreaM49)),
-                         timePointYears =
-                             as.character(unique(.$timePointYears))) %>%
-        subset(., share > 0 &
-                  measuredItemParentCPC == currentAnimalItem &
-                  measuredItemChildCPC != currentMeatItem) %>%
-        setnames(.,
-                 old = c("measuredItemParentCPC", "timePointYearsSP"),
-                 new = c("measuredItemCPC", "timePointYears")) %>%
-        mutate(timePointYears = as.numeric(timePointYears))
-
-
-
-    message("\tTransferring animal slaughtered from animal to the following\n",
-            "child commodities (Meat excluded):\n\t",
-            paste0(unique(currentCommodityTree$measuredItemChildCPC),
-                   collapse = ", "))
-
-    transferedData =
-        currentCommodityTree %>%
-        transferParentToChild(commodityTree = .,
-                              parentData = animalData,
-                              selectedMeatTable = animalMeatMappingTable) %>%
-        postProcessing(data = .)
-
-
-    ## ---------------------------------------------------------------------
-    message("\tSaving the transferred data back")
-
-    transferedData %>%
-        ## TODO (Michael): Need to check whether the parent/child are
-        ##                 synchronised.
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
-        postProcessing %>%
-        SaveData(domain = sessionKey@domain,
-                 dataset = sessionKey@dataset,
-                 data = .)
-
-    message("\nSynchronisation and Imputation Completed for\n",
-            "Animal Parent: ", currentAnimalItem, "\n",
-            "Meat Child: ", currentMeatItem, "\n",
-            rep("-", 80), "\n")
-
+        ## Extract the slaughtered number to be synced in the following step.
+        ##
+        ## NOTE (Michael): This function actually normalises data
+        slaughteredAnimal =
+            getSlaughteredAnimal(data = imputed,
+                                 formulaTuples = currentFormula)
+        updatedSlaughteredAnimal =
+            rbind(updatedSlaughteredAnimal, slaughteredAnimal)
+    }
 }
 
+if(!is.null(updatedSlaughteredAnimal)){
+    cat("Saving back the updated animal numbers...\n")
+    ## Step 3. Copy the slaughtered animal numbers in meat back to the
+    ##         animal commodity.
+    animalTransferredData %>%
+        transferSlaughteredNumber(preUpdatedData = .,
+                                  imputationResult = slaughteredAnimal,
+                                  selectedMeatTable = selectedMeatTable) %>%
+        ## Post process the data
+        postProcessing(data = .) %>%
+        ## Module Testing before saving the data back to the database
+        ## TODO (Michael): Add in the check for production input, however, have to
+        ##                 account for multiple formulas
+
+        ## Step 4. Save all three variables for meat (production/animals
+        ##         slaughterd/carcass weight) and the animals slaughtered
+        ##         for the animal.
+        ##
+        ## Note (Michael): The above comment is incorrect, only the animal
+        ##                 number is saved back to the animal commdotiy.
+        SaveData(domain = subKey@domain, dataset = subKey@dataset,
+                 data = .)
+    message("Imputation Module Executed Successfully!")
+}
 
 
 
