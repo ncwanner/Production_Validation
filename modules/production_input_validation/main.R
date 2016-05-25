@@ -12,6 +12,8 @@ suppressMessages({
     library (sendmailR)
 })
 
+## set up for the test environment and parameters
+R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 
 if(CheckDebug()){
 
@@ -274,23 +276,80 @@ for(iter in seq(selectedItem)){
 
 
 
-printData = function(x, msg){
-    par = options()
-    options(width = 120)
-    dataPrint = paste0(msg, "\n\n\n",
-                       paste0(capture.output(print(x, nrow(x))),
-                              collapse = "\n"))
-    options(par)
-    dataPrint
-}
-
 if(max(sapply(errorList, length)) > 0){
     from = "I_am_a_magical_unicorn@sebastian_quotes.com"
     to = swsContext.userEmail
     subject = "Validation Result"
-    errorPrintOut =
-        paste0(mapply(printData, errorList, msg = testMessage), collapse = "\n")
-    sendmail(from = from, to = to, subject = subject, msg = errorPrintOut)
+    body = paste0("There are 5 tests current in the system:\n",
+                  "1. Flag validity: Whether a flag is valid\n",
+                  "2. Production range: [0, Inf)\n",
+                  "3. Area Harvested range: [0, Inf)\n",
+                  "4. Yield range: (0, Inf)\n",
+                  "5. Production balanced")
+
+
+    ## Flag error
+    flagErrorAttachmentName = "flag_error.csv"
+    flagErrorAttachmentPath =
+        paste0(R_SWS_SHARE_PATH, "/kao/", flagErrorAttachmentName)
+    write.csv(errorList[[1]], file = flagErrorAttachmentPath,
+              row.names = FALSE)
+    flagErrorAttachmentObject = mime_part(x = flagErrorAttachmentPath,
+                                          name = flagErrorAttachmentName)
+
+    ## production value error
+    prodValueErrorAttachmentName = "prodValue_error.csv"
+    prodValueErrorAttachmentPath =
+        paste0(R_SWS_SHARE_PATH, "/kao/", prodValueErrorAttachmentName)
+    write.csv(errorList[[2]], file = prodValueErrorAttachmentPath,
+              row.names = FALSE)
+    prodValueErrorAttachmentObject =
+        mime_part(x = prodValueErrorAttachmentPath,
+                  name = prodValueErrorAttachmentName)
+
+
+    ## area harvested value error
+    areaValueErrorAttachmentName = "areaValue_error.csv"
+    areaValueErrorAttachmentPath =
+        paste0(R_SWS_SHARE_PATH, "/kao/", areaValueErrorAttachmentName)
+    write.csv(errorList[[3]], file = areaValueErrorAttachmentPath,
+              row.names = FALSE)
+    areaValueErrorAttachmentObject =
+        mime_part(x = areaValueErrorAttachmentPath,
+                  name = areaValueErrorAttachmentName)
+
+
+    ## yield value error
+    yieldValueErrorAttachmentName = "yieldValue_error.csv"
+    yieldValueErrorAttachmentPath =
+        paste0(R_SWS_SHARE_PATH, "/kao/", yieldValueErrorAttachmentName)
+    write.csv(errorList[[4]], file = yieldValueErrorAttachmentPath,
+              row.names = FALSE)
+    yieldValueErrorAttachmentObject =
+        mime_part(x = yieldValueErrorAttachmentPath,
+                  name = yieldValueErrorAttachmentName)
+
+
+    ## imbalance error
+    imbalanceErrorAttachmentName = "imbalance_error.csv"
+    imbalanceErrorAttachmentPath =
+        paste0(R_SWS_SHARE_PATH, "/kao/", imbalanceErrorAttachmentName)
+    write.csv(errorList[[5]], file = imbalanceErrorAttachmentPath,
+              row.names = FALSE)
+    imbalanceErrorAttachmentObject =
+        mime_part(x = imbalanceErrorAttachmentPath,
+                  name = imbalanceErrorAttachmentName)
+
+
+
+    bodyWithAttachment =
+        list(body,
+             flagErrorAttachmentObject,
+             prodValueErrorAttachmentObject,
+             areaValueErrorAttachmentObject,
+             yieldValueErrorAttachmentObject,
+             imbalanceErrorAttachmentObject)
+    sendmail(from = from, to = to, subject = subject, msg = bodyWithAttachment)
     stop("Production Input Invalid, please check follow up email on invalid data")
 } else {
     msg = "Production Input Validation passed without any error!"
