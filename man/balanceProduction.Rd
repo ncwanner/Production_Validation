@@ -13,7 +13,7 @@ balanceProduction(data, processingParameters, formulaParameters)
 production processing algorithms.  See
 \code{productionProcessingParameters} for a starting point.}
 
-\item{formulaParameter}{A list holding the names and parmater of formulas.
+\item{formulaParameters}{A list holding the names and parmater of formulas.
 See \code{productionFormulaParameters}.}
 }
 \description{

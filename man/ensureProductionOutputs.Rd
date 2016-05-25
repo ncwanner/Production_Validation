@@ -15,6 +15,9 @@ ensureProductionOutputs(data, processingParameters, formulaParameters,
 the processing algorithms. See ?defaultProcessingParameters for a
 starting point.}
 
+\item{formulaParameters}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
+
 \item{testImputed}{logical, whether to test imputation result}
 
 \item{testCalculated}{logical, whether to test calculated result.}

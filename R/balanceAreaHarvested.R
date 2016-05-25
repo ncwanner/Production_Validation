@@ -4,7 +4,7 @@
 ##' @param processingParameters A list of the parameters for the production
 ##'     processing algorithms. See \code{productionProcessingParameters} for a
 ##'     starting point.
-##' @param formulaParameter A list holding the names and parmater of formulas.
+##' @param formulaParameters A list holding the names and parmater of formulas.
 ##'     See \code{productionFormulaParameters}.
 ##'
 ##' @export
@@ -43,10 +43,11 @@ balanceAreaHarvested = function(data,
         (data[[formulaParameters$yieldValue]] != 0)
 
     ## Balance area harvested
-    data[feasibleFilter, `:=`(c(formulaParameters$areaHarvestedValue),
-                              sapply(computeRatio(get(formulaParameters$productionValue),
-                                                  get(formulaParameters$yieldValue)) *
-                                     formulaParameters$unitConversion, roundResults))]
+    data[feasibleFilter,
+         `:=`(c(formulaParameters$areaHarvestedValue),
+              computeRatio(get(formulaParameters$productionValue),
+                           get(formulaParameters$yieldValue)) *
+              formulaParameters$unitConversion)]
     ## Assign observation flag.
     ##
     ## NOTE (Michael): If the denominator (yield is non-zero) then

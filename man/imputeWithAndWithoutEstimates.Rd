@@ -10,10 +10,20 @@ imputeWithAndWithoutEstimates(data, processingParameters, formulaParameters,
   imputationParameters, minObsForEst = 5)
 }
 \arguments{
+\item{data}{The data to be imputed}
+
+\item{processingParameters}{A list of the parameters for the production
+processing algorithms. See \code{productionProcessingParameters} for a
+starting point.}
+
+\item{formulaParameters}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
+
+\item{imputationParameters}{A list holding the imputation parameters, see
+\code{getImputationParameters}.}
+
 \item{minObsForEst}{The minimum number of observation required to keep
 'E'stimated values.}
-
-\item{meatKey}{The Datakey object}
 }
 \value{
 Imputed time series

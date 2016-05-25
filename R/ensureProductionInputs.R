@@ -6,6 +6,8 @@
 ##' @param processingParameters A list containing the parameters to be used in
 ##' the processing algorithms.  See ?defaultProcessingParameters for a starting
 ##' point.
+##' @param formulaParameters A list holding the names and parmater of formulas.
+##'     See \code{productionFormulaParameters}.
 ##' @param returnData logical, whether the data should be returned
 ##' @param normalised logical, whether the data is normalised
 ##'
@@ -13,6 +15,7 @@
 ##'
 ##' @export
 ##'
+##' @import faoswsEnsure
 
 ensureProductionInputs = function(data,
                                   processingParameters,
@@ -30,6 +33,7 @@ ensureProductionInputs = function(data,
     with(formulaParameters,
          with(processingParameters,
          {
+
              ## Check data inputs
              ensureDataInput(data = dataCopy,
                              requiredColumn = c(productionValue,
@@ -46,7 +50,6 @@ ensureProductionInputs = function(data,
                                                 areaVar),
                              returnData = FALSE)
 
-
              ## Ensure there is no production is zero while area harvested is non
              ## zero, vice versa.
              ensureNoConflictingZero(data = dataCopy,
@@ -54,6 +57,7 @@ ensureProductionInputs = function(data,
                                      valueColumn2 = areaHarvestedValue,
                                      returnData = FALSE,
                                      normalised = FALSE)
+
 
              ## Ensure the range of values are correct
              ##

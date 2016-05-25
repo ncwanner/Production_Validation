@@ -16,6 +16,8 @@ productionProcessingParameters(datasetConfig, dataset = "aproduction",
 \item{datasetConfig}{The dataset configuration returned by the function
 \code{GetDatasetConfig}}
 
+\item{dataset}{The dataset name in the database.}
+
 \item{removePriorImputation}{logical, whether previous imputation values
 should be removed.}
 
@@ -45,6 +47,10 @@ values.}
 
 \item{protectedMethodFlag}{The list of method flag that are considered as
 protected and should not be over-written.}
+
+\item{startingYear}{The starting year of the processing/imputation}
+
+\item{endYear}{The end year of the processing/imputation.}
 }
 \value{
 Returns a list of the default parameters used in the data

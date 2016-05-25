@@ -15,6 +15,9 @@ imputeProductionDomain(data, processingParameters, formulaParameters,
 processing algorithms. See defaultProductionParameters() for a starting
 point.}
 
+\item{formulaParameters}{A list holding the names and parmater of formulas.
+See \code{productionFormulaParameters}.}
+
 \item{areaHarvestedImputationParameters}{A list of the parameters for the
 area harvested imputation. See defaultImputationParameters() for a
 starting point.}
@@ -25,9 +28,6 @@ imputation. See defaultImputationParameters() for a starting point.}
 \item{productionImputationParameters}{A list of the parameters for the
 production imputation. See defaultImputationParameters() for a starting
 point.}
-
-\item{formulaParameter}{A list holding the names and parmater of formulas.
-See \code{productionFormulaParameters}.}
 }
 \description{
 The function will impute production, area harvested and yield at the same

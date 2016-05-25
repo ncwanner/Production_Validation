@@ -9,6 +9,12 @@ getImputationParameters(productionCode, areaHarvestedCode, yieldCode,
   elementVar = "measuredElement", yearVar = "timePointYears")
 }
 \arguments{
+\item{productionCode}{The element code of production}
+
+\item{areaHarvestedCode}{The element code of area harvested}
+
+\item{yieldCode}{The element code of yield.}
+
 \item{areaVar}{The column name corresponding to the geographic area.}
 
 \item{itemVar}{The column name corresponding to the commodity item.}
@@ -16,12 +22,6 @@ getImputationParameters(productionCode, areaHarvestedCode, yieldCode,
 \item{elementVar}{The column name corresponding to the measured element.}
 
 \item{yearVar}{The column name corresponding to the time dimension}
-
-\item{datasets}{The object being imputed on, typically created by
-getProductionData.}
-
-\item{i}{The row number of formulaTuples.  This allows R to produce the
-correct formula tuple/yield codes, and is typically 1.}
 }
 \value{
 A list with the yield and production imputation parameters.
@@ -29,5 +29,6 @@ A list with the yield and production imputation parameters.
 \description{
 This function contains the logic that we'll use to define the imputation
 models and their parameters.
+.
 }
 
