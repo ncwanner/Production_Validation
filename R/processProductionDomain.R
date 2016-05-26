@@ -75,7 +75,7 @@ processProductionDomain = function(data,
 
         ## Remove historical imputation (flag = E, e)
         ##
-        ## NOTE (Michael): This is however, incorrectly mapped in the database.
+        ## TODO (Michael): This is however, incorrectly mapped in the database.
         ##                 The old imputation should also have the flag
         ##                 combination (I, e). When this is corrected, the
         ##                 following chunk can be removed.
