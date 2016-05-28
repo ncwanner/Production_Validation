@@ -114,12 +114,6 @@ processProductionDomain = function(data,
                                        processingParameters$imputationMethodFlag)
     }
 
-    emptyEntry = (is.na(dataCopy[[formulaParameters$productionObservationFlag]]) |
-                  is.na(dataCopy[[formulaParameters$yieldObservationFlag]])|
-                  is.na(dataCopy[[formulaParameters$areaHarvestedObservationFlag]]))
-
-    dataCopy = dataCopy[!emptyEntry, ]
-
     if(processingParameters$removeManualEstimation){
         ## Removing manual estimation (flag = E, f)
         removeImputationEstimation(data = dataCopy,
@@ -161,6 +155,20 @@ processProductionDomain = function(data,
                                yieldValue = formulaParameters$yieldValue,
                                yieldObsFlag = formulaParameters$yieldObservationFlag,
                                yieldMethodFlag = formulaParameters$yieldMethodFlag)
+
+    ## Remove previously calculated values
+    dataCopy = removeCalculated(data = dataCopy,
+                                valueVar = formulaParameters$productionValue,
+                                observationFlagVar = formulaParameters$productionObservationFlag,
+                                methodFlagVar = formulaParameters$productionMethodFlag)
+    dataCopy = removeCalculated(data = dataCopy,
+                                valueVar = formulaParameters$areaHarvestedValue,
+                                observationFlagVar = formulaParameters$areaHarvestedObservationFlag,
+                                methodFlagVar = formulaParameters$areaHarvestedMethodFlag)
+    dataCopy = removeCalculated(data = dataCopy,
+                                valueVar = formulaParameters$yieldValue,
+                                observationFlagVar = formulaParameters$yieldObservationFlag,
+                                methodFlagVar = formulaParameters$yieldMethodFlag)
 
     return(dataCopy)
 }
