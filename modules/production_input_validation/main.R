@@ -171,8 +171,10 @@ for(iter in seq(selectedItem)){
             autoValueCorrection(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = formulaParameters) %>%
+            processingProductionDomain(data = .,
+                                       processingParameters = processingParameters,
+                                       formulaParameters = formulaParameters) %>%
             normalise
-
 
 
         ## Check flag validity
