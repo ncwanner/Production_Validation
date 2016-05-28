@@ -160,6 +160,11 @@ for(iter in seq(selectedItem)){
         currentKey %>%
         GetData(key = .)
 
+
+    ## NOTE (Michael): The test should be conducted on the raw data, that is
+    ##                 excluding any imputation, statistical estimation and
+    ##                 previous calculated values. However, auto corrected
+    ##                 values will be saved back to the database.
     if(nrow(currentData) > 0){
         autoCorrectedData =
             currentData %>%
@@ -171,15 +176,21 @@ for(iter in seq(selectedItem)){
             autoValueCorrection(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = formulaParameters) %>%
+            normalise
+
+        rawdata =
+            autoCorrectedData %>%
+            denormalise(data = .,
+                        denormaliseKey = processingParameters$elementVar) %>%
             processingProductionDomain(data = .,
                                        processingParameters = processingParameters,
-                                       formulaParameters = formulaParameters) %>%
-            normalise
+                                       formulaParameters = formulaParameters,
+                                       normlised = FALSE)
 
 
         ## Check flag validity
         errorList[[1]] =
-            autoCorrectedData %>%
+            rawData %>%
             ensureFlagValidity(data = .,
                                getInvalidData = TRUE) %>%
             rbind(errorList[[1]], .)
@@ -188,8 +199,8 @@ for(iter in seq(selectedItem)){
         errorList[[2]] =
             with(formulaParameters,
             {
-                if(productionCode %in% autoCorrectedData[["measuredElement"]]){
-                    autoCorrectedData %>%
+                if(productionCode %in% rawData[["measuredElement"]]){
+                    rawData %>%
                         denormalise(normalisedData = .,
                                     denormaliseKey = "measuredElement") %>%
                         ensureValueRange(data = .,
@@ -208,8 +219,8 @@ for(iter in seq(selectedItem)){
         errorList[[3]] =
             with(formulaParameters,
             {
-                if(areaHarvestedCode %in% autoCorrectedData[["measuredElement"]]){
-                    autoCorrectedData %>%
+                if(areaHarvestedCode %in% rawData[["measuredElement"]]){
+                    rawData %>%
                         denormalise(normalisedData = .,
                                     denormaliseKey = "measuredElement") %>%
                         ensureValueRange(data = .,
@@ -227,8 +238,8 @@ for(iter in seq(selectedItem)){
         errorList[[4]] =
             with(formulaParameters,
             {
-                if(yieldCode %in% autoCorrectedData[["measuredElement"]]){
-                    autoCorrectedData %>%
+                if(yieldCode %in% rawData[["measuredElement"]]){
+                    rawData %>%
                         denormalise(normalisedData = .,
                                     denormaliseKey = "measuredElement") %>%
                         ensureValueRange(data = .,
@@ -249,8 +260,8 @@ for(iter in seq(selectedItem)){
             with(formulaParameters,
             {
                 if(all(c(yieldCode, areaHarvestedCode, productionCode) %in%
-                       autoCorrectedData[["measuredElement"]])){
-                    autoCorrectedData %>%
+                       rawData[["measuredElement"]])){
+                    rawData %>%
                         ensureProductionBalanced(data = .,
                                                  areaVar = areaHarvestedValue,
                                                  yieldVar = yieldValue,
