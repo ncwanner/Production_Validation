@@ -80,6 +80,39 @@ autoFlagCorrection = function(data,
     dataCopy[correctionFilter,
              `:=`(c(flagObservationStatusVar, flagMethodVar),
                   c("E", "-"))]
+
+    ## Correction (3): (E, e) --> (I, e)
+    correctionFilter =
+        dataCopy[[flagObservationStatusVar]] == "E" &
+        dataCopy[[flagMethodVar]] == "e"
+    dataCopy[correctionFilter,
+             `:=`(c(flagObservationStatusVar, flagMethodVar),
+                  c("I", "e"))]
+
+    ## Correction (4): (E, p) --> (E, f)
+    correctionFilter =
+        dataCopy[[flagObservationStatusVar]] == "E" &
+        dataCopy[[flagMethodVar]] == "p"
+    dataCopy[correctionFilter,
+             `:=`(c(flagObservationStatusVar, flagMethodVar),
+                  c("E", "f"))]
+
+    ## Correction (5): (T, ) --> ( , q)
+    correctionFilter =
+        dataCopy[[flagObservationStatusVar]] == "T" &
+        dataCopy[[flagMethodVar]] == ""
+    dataCopy[correctionFilter,
+             `:=`(c(flagObservationStatusVar, flagMethodVar),
+                  c("", "q"))]
+
+    ## Correction (6): (T, f) --> (E ,f)
+    correctionFilter =
+        dataCopy[[flagObservationStatusVar]] == "T" &
+        dataCopy[[flagMethodVar]] == "f"
+    dataCopy[correctionFilter,
+             `:=`(c(flagObservationStatusVar, flagMethodVar),
+                  c("E", "f"))]
+
     dataCopy
 }
 
