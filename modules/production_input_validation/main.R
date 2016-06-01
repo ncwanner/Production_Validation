@@ -211,19 +211,19 @@ for(iter in seq(selectedItem)){
                                 formulaParameters = formulaParameters) %>%
             normalise
 
-        rawdata =
+        rawData =
             autoCorrectedData %>%
-            denormalise(data = .,
+            denormalise(normalisedData = .,
                         denormaliseKey = processingParameters$elementVar) %>%
-            processingProductionDomain(data = .,
+            processProductionDomain(data = .,
                                        processingParameters = processingParameters,
-                                       formulaParameters = formulaParameters,
-                                       normlised = FALSE)
+                                       formulaParameters = formulaParameters)
 
 
         ## Check flag validity
         errorList[[1]] =
             rawData %>%
+            normalise %>%
             ensureFlagValidity(data = .,
                                getInvalidData = TRUE) %>%
             rbind(errorList[[1]], .)
@@ -234,8 +234,6 @@ for(iter in seq(selectedItem)){
             {
                 if(productionCode %in% rawData[["measuredElement"]]){
                     rawData %>%
-                        denormalise(normalisedData = .,
-                                    denormaliseKey = "measuredElement") %>%
                         ensureValueRange(data = .,
                                          ensureColumn = productionValue,
                                          getInvalidData = TRUE) %>%
@@ -254,8 +252,6 @@ for(iter in seq(selectedItem)){
             {
                 if(areaHarvestedCode %in% rawData[["measuredElement"]]){
                     rawData %>%
-                        denormalise(normalisedData = .,
-                                    denormaliseKey = "measuredElement") %>%
                         ensureValueRange(data = .,
                                          ensureColumn = areaHarvestedValue,
                                          getInvalidData = TRUE) %>%
@@ -273,8 +269,6 @@ for(iter in seq(selectedItem)){
             {
                 if(yieldCode %in% rawData[["measuredElement"]]){
                     rawData %>%
-                        denormalise(normalisedData = .,
-                                    denormaliseKey = "measuredElement") %>%
                         ensureValueRange(data = .,
                                          ensureColumn = yieldValue,
                                          getInvalidData = TRUE,
