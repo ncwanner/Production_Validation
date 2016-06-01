@@ -68,7 +68,7 @@ imputeWithAndWithoutEstimates = function(data,
         processingParameters$removeManualEstimation = TRUE
         message("Imputation without Manual Estimates\n")
         imputation1 =
-            imputeProductionDomain(copy(dataCopy),
+            imputeProductionTriplet(copy(dataCopy),
                                    processingParameters = processingParameters,
                                    formulaParameters = formulaParameters,
                                    areaHarvestedImputationParameters =
@@ -88,7 +88,7 @@ imputeWithAndWithoutEstimates = function(data,
         areaHarvestedParams$ensembleModels = simplerModels
         message("Imputation with Manual Estimates\n")
         imputation2 =
-            imputeProductionDomain(copy(dataCopy),
+            imputeProductionTriplet(copy(dataCopy),
                                    processingParameters = processingParameters,
                                    formulaParameters = formulaParameters,
                                    areaHarvestedImputationParameters =

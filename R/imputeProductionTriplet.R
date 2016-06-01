@@ -27,7 +27,7 @@
 ##' @import data.table
 ##'
 
-imputeProductionDomain = function(data,
+imputeProductionTriplet = function(data,
                                   processingParameters,
                                   formulaParameters,
                                   areaHarvestedImputationParameters,

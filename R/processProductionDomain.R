@@ -75,7 +75,7 @@ processProductionDomain = function(data,
 
         ## Remove historical imputation (flag = E, e)
         ##
-        ## NOTE (Michael): This is however, incorrectly mapped in the database.
+        ## TODO (Michael): This is however, incorrectly mapped in the database.
         ##                 The old imputation should also have the flag
         ##                 combination (I, e). When this is corrected, the
         ##                 following chunk can be removed.
@@ -113,12 +113,6 @@ processProductionDomain = function(data,
                                    imputationEstimationMethodFlag =
                                        processingParameters$imputationMethodFlag)
     }
-
-    emptyEntry = (is.na(dataCopy[[formulaParameters$productionObservationFlag]]) |
-                  is.na(dataCopy[[formulaParameters$yieldObservationFlag]])|
-                  is.na(dataCopy[[formulaParameters$areaHarvestedObservationFlag]]))
-
-    dataCopy = dataCopy[!emptyEntry, ]
 
     if(processingParameters$removeManualEstimation){
         ## Removing manual estimation (flag = E, f)
@@ -161,6 +155,20 @@ processProductionDomain = function(data,
                                yieldValue = formulaParameters$yieldValue,
                                yieldObsFlag = formulaParameters$yieldObservationFlag,
                                yieldMethodFlag = formulaParameters$yieldMethodFlag)
+
+    ## Remove previously calculated values
+    dataCopy = removeCalculated(data = dataCopy,
+                                valueVar = formulaParameters$productionValue,
+                                observationFlagVar = formulaParameters$productionObservationFlag,
+                                methodFlagVar = formulaParameters$productionMethodFlag)
+    dataCopy = removeCalculated(data = dataCopy,
+                                valueVar = formulaParameters$areaHarvestedValue,
+                                observationFlagVar = formulaParameters$areaHarvestedObservationFlag,
+                                methodFlagVar = formulaParameters$areaHarvestedMethodFlag)
+    dataCopy = removeCalculated(data = dataCopy,
+                                valueVar = formulaParameters$yieldValue,
+                                observationFlagVar = formulaParameters$yieldObservationFlag,
+                                methodFlagVar = formulaParameters$yieldMethodFlag)
 
     return(dataCopy)
 }
