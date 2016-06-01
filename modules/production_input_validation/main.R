@@ -97,22 +97,6 @@ autoFlagCorrection = function(data,
              `:=`(c(flagObservationStatusVar, flagMethodVar),
                   c("E", "f"))]
 
-    ## Correction (5): (T, ) --> ( , q)
-    correctionFilter =
-        dataCopy[[flagObservationStatusVar]] == "T" &
-        dataCopy[[flagMethodVar]] == ""
-    dataCopy[correctionFilter,
-             `:=`(c(flagObservationStatusVar, flagMethodVar),
-                  c("", "q"))]
-
-    ## Correction (6): (T, f) --> (E ,f)
-    correctionFilter =
-        dataCopy[[flagObservationStatusVar]] == "T" &
-        dataCopy[[flagMethodVar]] == "f"
-    dataCopy[correctionFilter,
-             `:=`(c(flagObservationStatusVar, flagMethodVar),
-                  c("E", "f"))]
-
     dataCopy
 }
 
