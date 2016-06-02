@@ -66,7 +66,7 @@ imputeWithAndWithoutEstimates = function(data,
         ## imputations (corresponding to series without enough
         ## official data) and then rerun the imputation.
         processingParameters$removeManualEstimation = TRUE
-        message("Imputation without Manual Estimates\n")
+        message("Imputation without Manual Estimates")
         imputation1 =
             imputeProductionTriplet(copy(dataCopy),
                                    processingParameters = processingParameters,
@@ -86,7 +86,7 @@ imputeWithAndWithoutEstimates = function(data,
         yieldParams$ensembleModels = simplerModels
         productionParams$ensembleModels = simplerModels
         areaHarvestedParams$ensembleModels = simplerModels
-        message("Imputation with Manual Estimates\n")
+        message("Imputation with Manual Estimates")
         imputation2 =
             imputeProductionTriplet(copy(dataCopy),
                                    processingParameters = processingParameters,

@@ -35,7 +35,7 @@ imputeProductionTriplet = function(data,
                                   productionImputationParameters){
     originDataType = sapply(data, FUN = typeof)
 
-    message("Initializing ... \n")
+    message("Initializing ... ")
     dataCopy = copy(data)
     ## Data Quality Checks
     ensureImputationInputs(data = dataCopy,
@@ -67,7 +67,7 @@ imputeProductionTriplet = function(data,
 
     if(!all(allYieldMissing)){
         ## Step two: Impute Yield
-        message("Imputing Yield ...\n")
+        message("Imputing Yield ...")
         n.missYield = sum(is.na(dataCopy[[formulaParameters$yieldValue]]))
         ## if(!missing(yieldFormula))
         ##     yieldFormula =
@@ -87,8 +87,8 @@ imputeProductionTriplet = function(data,
                             yieldMethodFlag = formulaParameters$yieldMethodFlag)
         n.missYield2 = length(which(is.na(
             dataCopy[[formulaParameters$yieldValue]])))
-        message("Number of values imputed: ", n.missYield - n.missYield2, "\n")
-        message("Number of values still missing: ", n.missYield2, "\n")
+        message("Number of values imputed: ", n.missYield - n.missYield2)
+        message("Number of values still missing: ", n.missYield2)
 
         ## Balance production now using imputed yield
         balanceProduction(data = dataCopy,
@@ -104,7 +104,7 @@ imputeProductionTriplet = function(data,
 
     if(!all(allProductionMissing)){
         ## step three: Impute production
-        message("Imputing Production ...\n")
+        message("Imputing Production ...")
         n.missProduction = length(which(is.na(
             dataCopy[[formulaParameters$productionValue]])))
 
@@ -113,14 +113,14 @@ imputeProductionTriplet = function(data,
         n.missProduction2 = length(which(is.na(
             dataCopy[[formulaParameters$productionValue]])))
         message("Number of values imputed: ",
-            n.missProduction - n.missProduction2, "\n")
-        message("Number of values still missing: ", n.missProduction2, "\n")
+            n.missProduction - n.missProduction2)
+        message("Number of values still missing: ", n.missProduction2)
     } else {
         warning("The input dataset contains insufficient data for imputation to perform!")
     }
 
     ## step four: balance area harvested
-    message("Imputing Area Harvested ...\n")
+    message("Imputing Area Harvested ...")
     n.missAreaHarvested =
         length(which(is.na(
             dataCopy[[formulaParameters$areaHarvestedValue]])))
@@ -161,8 +161,8 @@ imputeProductionTriplet = function(data,
         length(which(is.na(
             dataCopy[[formulaParameters$areaHarvestedValue]])))
     message("Number of values imputed: ",
-        n.missAreaHarvested - n.missAreaHarvested2, "\n")
-    message("Number of values still missing: ", n.missAreaHarvested2, "\n")
+        n.missAreaHarvested - n.missAreaHarvested2)
+    message("Number of values still missing: ", n.missAreaHarvested2)
 
 
     ## This is to ensure the data type of the output is identical to
