@@ -130,18 +130,14 @@ livestockImputationItems =
     completeImputationKey %>%
     expandMeatSessionSelection(oldKey = .,
                                selectedMeatTable = animalMeatMappingTable) %>%
-    slot(object = ., "dimensions") %>%
-    .$measuredItemCPC %>%
-    slot(object = ., name = "keys") %>%
+    getQueryKey("measuredItemCPC", datasetkey = .) %>%
     selectMeatCodes(itemCodes = .)
 
 sessionItems =
     sessionKey %>%
     expandMeatSessionSelection(oldKey = .,
                                selectedMeatTable = animalMeatMappingTable) %>%
-    slot(object = ., "dimensions") %>%
-    .$measuredItemCPC %>%
-    slot(object = ., name = "keys") %>%
+    getQueryKey("measuredItemCPC", datasetkey = .) %>%
     selectMeatCodes(itemCodes = .)
 
 selectedMeatCode =
