@@ -143,9 +143,7 @@ autoValueCorrection = function(data,
 
 
 ##' Extract the selected item code which will be looped over
-selectedItem =
-    unique(slot(slot(selectedKey, "dimensions")[[processingParameters$itemVar]],
-                "keys"))
+selectedItem = getQueryKey("measuredItemCPC", selectedKey)
 
 ##' The tests and test messages
 tests = c("flag_validity", "production_range", "areaHarvested_range",
@@ -165,15 +163,17 @@ for(iter in seq(selectedItem)){
 
     currentItem = selectedItem[iter]
     message("Performing input validation for item: ", currentItem)
+
+    ## Get the formula (elements) associated with the current item
     currentFormula =
         getYieldFormula(currentItem) %>%
         removeIndigenousBiologicalMeat
     currentElements = with(currentFormula, c(input, productivity, output))
-    currentKey = selectedKey
+
     ## Update the item and element key to for current item
+    currentKey = selectedKey
     currentKey@dimensions$measuredItemCPC@keys = currentItem
     currentKey@dimensions$measuredElement@keys = currentElements
-
 
     ## Create the formula parameter list
     formulaParameters =
@@ -285,11 +285,12 @@ for(iter in seq(selectedItem)){
             }
             )
 
-        ## ## Save the auto-corrected data back
-        ## autoCorrectedData %>%
-        ##     SaveData(domain = sessionKey@domain,
-        ##              dataset = sessionKey@dataset,
-        ##              data = .)
+        ## Save the auto-corrected data back
+        autoCorrectedData %>%
+            SaveData(domain = sessionKey@domain,
+                     dataset = sessionKey@dataset,
+                     data = .,
+                     normalized = FALSE)
 
     } else {
         message("Current Item has no data")
@@ -300,6 +301,8 @@ for(iter in seq(selectedItem)){
 
 ##' Send email to user if the data contains invalid entries.
 if(max(sapply(errorList, nrow)) > 0){
+
+    ## Initiate email
     from = "I_am_a_magical_unicorn@sebastian_quotes.com"
     to = swsContext.userEmail
     subject = "Validation Result"
@@ -311,66 +314,37 @@ if(max(sapply(errorList, nrow)) > 0){
                   "5. Production balanced")
 
 
-    ## Flag error
-    flagErrorAttachmentName = "flag_error.csv"
-    flagErrorAttachmentPath =
-        paste0(R_SWS_SHARE_PATH, "/kao/", flagErrorAttachmentName)
-    write.csv(errorList[[1]], file = flagErrorAttachmentPath,
-              row.names = FALSE)
-    flagErrorAttachmentObject = mime_part(x = flagErrorAttachmentPath,
-                                          name = flagErrorAttachmentName)
+    ## Function to attach error to email
+    createErrorAttachmentObject = function(testName,
+                                           testResult,
+                                           R_SWS_SHARE_PATH){
+        errorAttachmentName = paste0(testName, ".csv")
+        errorAttachmentPath =
+            paste0(R_SWS_SHARE_PATH, "/kao/", errorAttachmentName)
+        write.csv(testResult, file = errorAttachmentPath,
+                  row.names = FALSE)
+        errorAttachmentObject = mime_part(x = errorAttachmentPath,
+                                          name = errorAttachmentName)
+        errorAttachmentObject
+    }
 
-    ## production value error
-    prodValueErrorAttachmentName = "prodValue_error.csv"
-    prodValueErrorAttachmentPath =
-        paste0(R_SWS_SHARE_PATH, "/kao/", prodValueErrorAttachmentName)
-    write.csv(errorList[[2]], file = prodValueErrorAttachmentPath,
-              row.names = FALSE)
-    prodValueErrorAttachmentObject =
-        mime_part(x = prodValueErrorAttachmentPath,
-                  name = prodValueErrorAttachmentName)
+    ## Create attachment for errors
+    testContainInvalidData =
+        which(sapply(errorList, nrow) > 0)
 
-
-    ## area harvested value error
-    areaValueErrorAttachmentName = "areaValue_error.csv"
-    areaValueErrorAttachmentPath =
-        paste0(R_SWS_SHARE_PATH, "/kao/", areaValueErrorAttachmentName)
-    write.csv(errorList[[3]], file = areaValueErrorAttachmentPath,
-              row.names = FALSE)
-    areaValueErrorAttachmentObject =
-        mime_part(x = areaValueErrorAttachmentPath,
-                  name = areaValueErrorAttachmentName)
-
-
-    ## yield value error
-    yieldValueErrorAttachmentName = "yieldValue_error.csv"
-    yieldValueErrorAttachmentPath =
-        paste0(R_SWS_SHARE_PATH, "/kao/", yieldValueErrorAttachmentName)
-    write.csv(errorList[[4]], file = yieldValueErrorAttachmentPath,
-              row.names = FALSE)
-    yieldValueErrorAttachmentObject =
-        mime_part(x = yieldValueErrorAttachmentPath,
-                  name = yieldValueErrorAttachmentName)
-
-
-    ## imbalance error
-    imbalanceErrorAttachmentName = "imbalance_error.csv"
-    imbalanceErrorAttachmentPath =
-        paste0(R_SWS_SHARE_PATH, "/kao/", imbalanceErrorAttachmentName)
-    write.csv(errorList[[5]], file = imbalanceErrorAttachmentPath,
-              row.names = FALSE)
-    imbalanceErrorAttachmentObject =
-        mime_part(x = imbalanceErrorAttachmentPath,
-                  name = imbalanceErrorAttachmentName)
-
-    ## Send the mail
     bodyWithAttachment =
-        list(body,
-             flagErrorAttachmentObject,
-             prodValueErrorAttachmentObject,
-             areaValueErrorAttachmentObject,
-             yieldValueErrorAttachmentObject,
-             imbalanceErrorAttachmentObject)
+        vector("list", length = length(testContainInvalidData) + 1)
+    bodyWithAttachment[[1]] = body
+
+    for(i in seq(length(testContainInvalidData))){
+        failedIndex = testContainInvalidData[i]
+        bodyWithAttachment[[(i + 1)]] =
+            createErrorAttachmentObject(tests[[failedIndex]],
+                                        errorList[[failedIndex]],
+                                        R_SWS_SHARE_PATH)
+    }
+
+    ## Send the email
     sendmail(from = from, to = to, subject = subject, msg = bodyWithAttachment)
     stop("Production Input Invalid, please check follow up email on invalid data")
 } else {
