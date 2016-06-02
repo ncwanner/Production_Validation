@@ -9,7 +9,7 @@ suppressMessages({
     library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
-    library (sendmailR)
+    library(sendmailR)
 })
 
 ## set up for the test environment and parameters
@@ -156,12 +156,12 @@ for(iter in seq(selectedItem)){
     currentFormula =
         getYieldFormula(currentItem) %>%
         removeIndigenousBiologicalMeat
+    currentElements = with(currentFormula, c(input, productivity, output))
     currentKey = selectedKey
     ## Update the item and element key to for current item
     currentKey@dimensions$measuredItemCPC@keys = currentItem
-    currentKey@dimensions$measuredElement@keys =
-        with(currentFormula,
-             c(input, productivity, output))
+    currentKey@dimensions$measuredElement@keys = currentElements
+
 
     ## Create the formula parameter list
     formulaParameters =
@@ -176,7 +176,6 @@ for(iter in seq(selectedItem)){
     currentData =
         currentKey %>%
         GetData(key = .)
-
 
     ## NOTE (Michael): The test should be conducted on the raw data, that is
     ##                 excluding any imputation, statistical estimation and
@@ -198,10 +197,12 @@ for(iter in seq(selectedItem)){
         rawData =
             autoCorrectedData %>%
             denormalise(normalisedData = .,
-                        denormaliseKey = processingParameters$elementVar) %>%
+                        denormaliseKey = processingParameters$elementVar,
+                        fillEmptyRecords = TRUE) %>%
+            createTriplet(data = ., formula = currentFormula) %>%
             processProductionDomain(data = .,
-                                       processingParameters = processingParameters,
-                                       formulaParameters = formulaParameters)
+                                    processingParameters = processingParameters,
+                                    formulaParameters = formulaParameters)
 
 
         ## Check flag validity
@@ -300,7 +301,7 @@ for(iter in seq(selectedItem)){
 
 
 
-if(max(sapply(errorList, length)) > 0){
+if(max(sapply(errorList, nrow)) > 0){
     from = "I_am_a_magical_unicorn@sebastian_quotes.com"
     to = swsContext.userEmail
     subject = "Validation Result"
@@ -377,7 +378,7 @@ if(max(sapply(errorList, length)) > 0){
     stop("Production Input Invalid, please check follow up email on invalid data")
 } else {
     msg = "Production Input Validation passed without any error!"
+    message(msg)
 }
-msg
 
 
