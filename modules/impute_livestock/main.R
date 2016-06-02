@@ -200,9 +200,10 @@ for(iter in seq(selectedMeatCode)){
         GetData(key = .) %>%
         fillRecord(data = .) %>%
         preProcessing(data = .) %>%
-    ensureProductionInputs(data = .,
-                           processingParameters = processingParameters,
-                           formulaParameters = meatFormulaParameters)
+        createTriplet(data = ., formula = meatFormulaTable) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = meatFormulaParameters)
 
 
 
@@ -247,9 +248,10 @@ for(iter in seq(selectedMeatCode)){
         GetData(key = .) %>%
         fillRecord(data = .) %>%
         preProcessing(data = .) %>%
-    ensureProductionInputs(data = .,
-                           processingParameters = processingParameters,
-                           formulaParameters = animalFormulaParameters)
+        createTriplet(data = ., formula = animalFormulaTable) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = animalFormulaParameters)
 
 
     ## ---------------------------------------------------------------------
@@ -303,15 +305,18 @@ for(iter in seq(selectedMeatCode)){
         GetData(key = .) %>%
         fillRecord(data = .) %>%
         preProcessing(data = .) %>%
-    ensureProductionInputs(data = .,
-                           processingParameters = processingParameters,
-                           formulaParameters = meatFormulaParameters)
+        createTriplet(data = ., formula = meatFormulaTable) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = meatFormulaParameters)
 
 
     ## Denormalise and then process the meat data
     processedMeatData =
         updatedMeatData %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement",
+                    fillEmptyRecords = TRUE) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters)
