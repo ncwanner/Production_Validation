@@ -10,6 +10,7 @@
 ##' 4. Check whether the yield (productivity) values are within feasible range.
 ##' 5. check whether the production triplet (input, output productivity) are
 ##'    balanced.
+##'
 
 ##' Load the libraries
 suppressMessages({
@@ -44,7 +45,8 @@ if(CheckDebug()){
 
 }
 
-##' Obtain computation parameter
+##' Obtain computation parameter, this parameter determines whether only
+##' selected session should be validated or the complete production domain.
 validationRange = swsContext.computationParams$validation_selection
 
 ##' Get session key and dataset configuration
@@ -63,13 +65,16 @@ selectedKey =
            "all" = completeImputationKey)
 
 
-##' Build processing parameters
+##' Build processing parameters, the processing parameters contain parameters on
+##' how the data should be processed.
 processingParameters =
     productionProcessingParameters(datasetConfig = datasetConfig)
 
 
 ##' Perform autocorrection, certain invalid data can be corrected if a
-##' correction rule is agreed a priori.
+##' correction rule is agreed a priori. Both function should be removed from the
+##' module, possibly to the ensure package.
+##'
 
 ##' Function to perform flag correction
 autoFlagCorrection = function(data,
@@ -142,7 +147,10 @@ autoValueCorrection = function(data,
 }
 
 
-##' Extract the selected item code which will be looped over
+##' Extract the selected item code which will be looped over, we need to loop
+##' over items as different item can have different formula. As we need to check
+##' production is balanced, we need to substitute the correct formula for each
+##' commodity.
 selectedItem = getQueryKey("measuredItemCPC", selectedKey)
 
 ##' The tests and test messages
