@@ -264,9 +264,10 @@ for(iter in seq(selectedItemCode)){
 }
 ```
 
-Return message if success
+---
+Return Message
 
 ```{r }
-message("Imputation Completed Successfully"
+message("Imputation Completed Successfully")
 ```
 

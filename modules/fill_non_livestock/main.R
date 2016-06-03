@@ -76,7 +76,7 @@ selectedImputationItems = selectImputationItem(selectedKey, completeImputationKe
 nonImputationItemCodes = nonImputationItems(selectedKey, completeImputationKey)
 
 ##' ---
-##' Perform Imputation
+##' ## Perform Imputation
 
 ##' Start the imputation, looping through each item since the model are fitted
 ##' for each item separately.
