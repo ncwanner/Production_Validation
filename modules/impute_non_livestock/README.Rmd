@@ -1,17 +1,18 @@
-##' # Imputation of Non-Livestock Commodities
-##'
-##' ## Author: Josh Browning, Michael C. J. Kao
-##'
-##' ## Description:
-##'
-##' This module imputes the triplet (input, productivity and output) for a given
-##' non-livestock commodity. Instead of writing directly back to the databse,
-##' the module saves the imputed dataset to the Statistical Working System
-##' shared drive. The imputed values can then be loaded and saved back to the
-##' database in the "Fill Livestock" module.
-##'
+# Imputation of Non-Livestock Commodities
 
-##' load the libraries
+## Author: Josh Browning, Michael C. J. Kao
+
+## Description:
+
+This module imputes the triplet (input, productivity and output) for a given
+non-livestock commodity. Instead of writing directly back to the databse,
+the module saves the imputed dataset to the Statistical Working System
+shared drive. The imputed values can then be loaded and saved back to the
+database in the "Fill Livestock" module.
+
+load the libraries
+
+```{r }
 suppressMessages({
     library(faosws)
     library(faoswsUtil)
@@ -23,12 +24,18 @@ suppressMessages({
     library(magrittr)
     library(dplyr)
 })
+```
 
-##' set up for the test environment and parameters
+set up for the test environment and parameters
+
+```{r }
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
+```
 
-##' This return FALSE if on the Statistical Working System
+This return FALSE if on the Statistical Working System
+
+```{r }
 if(CheckDebug()){
 
     library(faoswsModules)
@@ -47,64 +54,90 @@ if(CheckDebug()){
     savePath = SETTINGS[["save_imputation_path"]]
 
 }
+```
 
-##' Get user specified imputation selection
+Get user specified imputation selection
+
+```{r }
 imputationSelection = swsContext.computationParams$imputation_selection
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
+```
 
-##' Select the item list based on user input parameter
+Select the item list based on user input parameter
+
+```{r }
 if(!imputationSelection %in% c("session", "all", "missing_items"))
     stop("Incorrect imputation selection specified")
+```
 
-##' Build processing parameters
+Build processing parameters
+
+```{r }
 processingParameters =
     productionProcessingParameters(datasetConfig = datasetConfig)
+```
 
+Get the full imputation Datakey
 
-##' Get the full imputation Datakey
+```{r }
 completeImputationKey = getCompleteImputationKey()
+```
 
+NOTE (Michael): Since the animal/meat are currently imputed by the
+                imputed_slaughtered and synchronise slaughtered module, so
+                they should not be imputed here.
 
-##' NOTE (Michael): Since the animal/meat are currently imputed by the
-##'                 imputed_slaughtered and synchronise slaughtered module, so
-##'                 they should not be imputed here.
-##'
-##' TODO (Michael): Merge the this module with the imputed slaughtered and
-##'                 synchronise slaughtered as the logic are identical.
+TODO (Michael): Merge the this module with the imputed slaughtered and
+                synchronise slaughtered as the logic are identical.
+
+```{r }
 liveStockItems =
     getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
                          onlyMeatChildren = FALSE) %>%
     select(measuredItemParentCPC, measuredItemChildCPC) %>%
     unlist(x = ., use.names = FALSE) %>%
     unique(x = .)
+```
 
+This is the complete list of items that are in the imputation list
 
-##' This is the complete list of items that are in the imputation list
+```{r }
 nonLivestockImputationItems =
     getQueryKey("measuredItemCPC", completeImputationKey) %>%
     setdiff(., liveStockItems)
+```
 
-##' These are the items selected by the users
+These are the items selected by the users
+
+```{r }
 sessionItems =
     getQueryKey("measuredItemCPC", sessionKey) %>%
     intersect(., nonLivestockImputationItems)
+```
 
-##' This returns the list of items current does not have an imputed dataset.
+This returns the list of items current does not have an imputed dataset.
+
+```{r }
 missingItems =
     nonLivestockImputationItems[!imputationExist(savePath,
                                                  nonLivestockImputationItems)]
+```
 
-##' Select the commodities based on the user input parameter
+Select the commodities based on the user input parameter
+
+```{r }
 selectedItemCode =
     switch(imputationSelection,
            session = sessionItems,
            all = nonLivestockImputationItems,
            missing_items = missingItems)
+```
 
+Loop through the commodities to impute the items individually.
 
-##' Loop through the commodities to impute the items individually.
+```{r }
 for(iter in seq(selectedItemCode)){
     currentItem = selectedItemCode[iter]
 
@@ -214,7 +247,11 @@ for(iter in seq(selectedItemCode)){
         }
 
 }
+```
 
-##' Return message if success
+Return message if success
+
+```{r }
 message("Imputation Completed Successfully"
+```
 

@@ -1,4 +1,4 @@
-##' # Synchronise and Impute Slaughtered
+##' # Imputation and Synchronisation of Livestock Commodities
 ##'
 ##' ## Author: Josh Browning, Michael C. J. Kao
 ##'

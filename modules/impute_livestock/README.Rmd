@@ -1,4 +1,4 @@
-# Synchronise and Impute Slaughtered
+# Imputation and Synchronisation of Livestock Commodities
 
 ## Author: Josh Browning, Michael C. J. Kao
 
@@ -157,7 +157,11 @@ sessionItems =
                                selectedMeatTable = animalMeatMappingTable) %>%
     getQueryKey("measuredItemCPC", datasetkey = .) %>%
     selectMeatCodes(itemCodes = .)
+```
 
+Select the range of items based on the computational parameter.
+
+```{r }
 selectedMeatCode =
     switch(imputationSelection,
            session = sessionItems,
