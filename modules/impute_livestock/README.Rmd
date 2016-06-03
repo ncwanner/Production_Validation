@@ -1,8 +1,8 @@
 # Imputation and Synchronisation of Livestock Commodities
 
-## Author: Josh Browning, Michael C. J. Kao
+**Author: Josh Browning, Michael C. J. Kao**
 
-## Description:
+**Description:**
 
 The animals slaughtered for production of meat, offals, fats and hides must
 be available before running the production imputation code. These numbers,
@@ -16,7 +16,15 @@ quantity of animals slaughtered for meat and then the imputation ran. We
 also decided to save the imputations for meat so as to retain consistency
 with the animal figures.
 
-## Steps:
+**Inputs:**
+
+* Production domain
+* Animal to meat mapping table
+* Flag table
+* Yield formula table
+* Commodity tree table
+
+**Steps:**
 
 1. Transfer the animal slaughtered from animal commodity (parent) to the
    meat commodity (child)
@@ -29,6 +37,16 @@ with the animal figures.
 
 4. Transfer the slaughtered animal from the animal to all other child
    commodities. This includes items such as offals, fats and hides.
+
+**Flag Changes:**
+
+| Procedure | Observation Status Flag | Method Flag|
+| --- | --- | --- |
+| Tranasfer between animal and meat commodity | `<Same as origin>` | `<Same as origin>` |
+| Balance by Production Identity | I | i |
+| Imputation | I | e |
+
+---
 
 ```{r }
 message("Step 0: Setup")

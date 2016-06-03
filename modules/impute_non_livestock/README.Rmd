@@ -1,8 +1,8 @@
 # Imputation of Non-Livestock Commodities
 
-## Author: Josh Browning, Michael C. J. Kao
+**Author: Josh Browning, Michael C. J. Kao**
 
-## Description:
+**Description:**
 
 This module imputes the triplet (input, productivity and output) for a given
 non-livestock commodity. Instead of writing directly back to the databse,
@@ -10,6 +10,17 @@ the module saves the imputed dataset to the Statistical Working System
 shared drive. The imputed values can then be loaded and saved back to the
 database in the "Fill Livestock" module.
 
+**Inputs:**
+
+* Production domain
+* Animal to meat mapping table
+* Yield formula table
+
+**Flag Changes:**
+
+No flag change as the data is not saved back.
+
+---
 load the libraries
 
 ```{r }

@@ -1,9 +1,28 @@
 ##' # Balance Production Identity
 ##'
+##' **Author: Michael C. J. Kao**
+##'
+##' **Descriptions:
+##'
 ##' Module to balance the production domain identity. That is the equation
 ##' Production = Area x yield
 ##'
-##' Author: Michael C. J. Kao
+##' **Inputs:**
+##'
+##' * Production domain
+##' * Yield formula table
+##'
+##' **Steps:**
+##'
+##' 1. Compute Yield
+##' 2. Balance Production
+##' 3. Balance Area Harvested
+##'
+##' **Flag Changes:**
+##'
+##' | Procedure | Observation Status Flag | Method Flag|
+##' | --- | --- | --- |
+##' | Compute/Balance | `<Flag Aggregation>` | i |
 ##'
 ##' ---
 
