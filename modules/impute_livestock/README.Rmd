@@ -1,6 +1,8 @@
-Title: Synchronise and Impute Slaughtered
+# Synchronise and Impute Slaughtered
 
-Author: Josh Browning, Michael C. J. Kao
+## Author: Josh Browning, Michael C. J. Kao
+
+## Description:
 
 The animals slaughtered for production of meat, offals, fats and hides must
 be available before running the production imputation code. These numbers,
@@ -14,7 +16,7 @@ quantity of animals slaughtered for meat and then the imputation ran. We
 also decided to save the imputations for meat so as to retain consistency
 with the animal figures.
 
-Steps:
+## Steps:
 
 1. Transfer the animal slaughtered from animal commodity (parent) to the
    meat commodity (child)
@@ -78,9 +80,14 @@ if(CheckDebug()){
 Load the computation parameters
 
 ```{r }
+imputationSelection = swsContext.computationParams$imputation_selection
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
+
+## Select the item list based on user input parameter
+if(!imputationSelection %in% c("session", "all", "missing_items"))
+    stop("Incorrect imputation selection specified")
 ```
 
 Build processing parameters
@@ -96,19 +103,18 @@ Obtain the complete imputation key
 completeImputationKey = getCompleteImputationKey()
 
 ## TODO (Michael): This is to be removed.
-getAnimalMeatMapping = function(onlyMeatChildren = FALSE,
-                                meatPattern = "^211(1|2|7).*"){
-    mapping = fread("~/Downloads/animal_parent_child_mapping.csv",
-                    colClasses = "character")
-
-    if(onlyMeatChildren)
-        mapping =
-            subset(mapping,
-                   measuredItemChildCPC %in%
-                   selectMeatCodes(measuredItemChildCPC,
-                                    meatPattern = meatPattern))
-    mapping
-}
+## getAnimalMeatMapping = function(onlyMeatChildren = FALSE,
+##                                 meatPattern = "^211(1|2|7).*"){
+##     mapping = fread("~/Downloads/animal_parent_child_mapping.csv",
+##                     colClasses = "character")
+##     if(onlyMeatChildren)
+##         mapping =
+##             subset(mapping,
+##                    measuredItemChildCPC %in%
+##                    selectMeatCodes(measuredItemChildCPC,
+##                                     meatPattern = meatPattern))
+##     mapping
+## }
 ```
 
 Extract the animal parent to child commodity mapping table
@@ -138,14 +144,24 @@ unrendered), and 02951.01 (raw hides and skins of cattle).
 The elements are also expanded
 
 ```{r }
-selectedMeatCode =
+livestockImputationItems =
+    completeImputationKey %>%
+    expandMeatSessionSelection(oldKey = .,
+                               selectedMeatTable = animalMeatMappingTable) %>%
+    getQueryKey("measuredItemCPC", datasetkey = .) %>%
+    selectMeatCodes(itemCodes = .)
+
+sessionItems =
     sessionKey %>%
     expandMeatSessionSelection(oldKey = .,
                                selectedMeatTable = animalMeatMappingTable) %>%
-    slot(object = ., "dimensions") %>%
-    .$measuredItemCPC %>%
-    slot(object = ., name = "keys") %>%
+    getQueryKey("measuredItemCPC", datasetkey = .) %>%
     selectMeatCodes(itemCodes = .)
+
+selectedMeatCode =
+    switch(imputationSelection,
+           session = sessionItems,
+           all = nonLivestockImputationItems)
 ```
 
 Iterate through the selected meat items and transfer the the animal
@@ -202,10 +218,11 @@ for(iter in seq(selectedMeatCode)){
         meatKey %>%
         GetData(key = .) %>%
         fillRecord(data = .) %>%
-        preProcessing(data = .)##  %>%
-    ## ensureProductionInputs(data = .,
-    ##                        processingParameters = processingParameters,
-    ##                        formulaParameters = meatFormulaParameters)
+        preProcessing(data = .) %>%
+        createTriplet(data = ., formula = meatFormulaTable) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = meatFormulaParameters)
 
 
 
@@ -249,10 +266,11 @@ for(iter in seq(selectedMeatCode)){
         animalKey %>%
         GetData(key = .) %>%
         fillRecord(data = .) %>%
-        preProcessing(data = .)##  %>%
-    ## ensureProductionInputs(data = .,
-    ##                        processingParameters = processingParameters,
-    ##                        formulaParameters = animalFormulaParameters)
+        preProcessing(data = .) %>%
+        createTriplet(data = ., formula = animalFormulaTable) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = animalFormulaParameters)
 
 
     ## ---------------------------------------------------------------------
@@ -271,9 +289,9 @@ for(iter in seq(selectedMeatCode)){
     ##                 figures as indicated by in the synchronise slaughtered
     ##                 module.
     slaughteredTransferedToMeat %>%
-        ## ensureProductionOutputs(data = .,
-        ##                         processingParameters = processingParameters,
-        ##                         formulaParameters = meatFormulaParameters) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters) %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -305,16 +323,19 @@ for(iter in seq(selectedMeatCode)){
         meatKey %>%
         GetData(key = .) %>%
         fillRecord(data = .) %>%
-        preProcessing(data = .)##  %>%
-    ## ensureProductionInputs(data = .,
-    ##                        processingParameters = processingParameters,
-    ##                        formulaParameters = meatFormulaParameters)
+        preProcessing(data = .) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = meatFormulaParameters)
 
 
     ## Denormalise and then process the meat data
     processedMeatData =
         updatedMeatData %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement",
+                    fillEmptyRecords = TRUE) %>%
+        createTriplet(data = ., formula = meatFormulaTable) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters)
@@ -342,9 +363,9 @@ for(iter in seq(selectedMeatCode)){
         ##                 which can be over-written.
         ##
         ## NOTE (Michael): Need to apply the formula for from the meat.
-        ## ensureProductionOutput(data = .,
-        ##                        processingParameters = processingParameters,
-        ##                        formulaParameters = meatFormulaParameters) %>%
+        ensureProductionOutput(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = meatFormulaParameters) %>%
         ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
         postProcessing(data = .) %>%
         SaveData(domain = sessionKey@domain,
@@ -374,9 +395,9 @@ for(iter in seq(selectedMeatCode)){
     ##                 module.
 
     slaughteredTransferedBackToAnimal %>%
-        ## ensureProductionOutputs(data = .,
-        ##                         processingParameters = processingParameters,
-        ##                         formEulaParameters = meatFormulaParameters) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formEulaParameters = meatFormulaParameters) %>%
         postProcessing(data = .) %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -402,8 +423,8 @@ for(iter in seq(selectedMeatCode)){
 
 
 
-    message("\tTransferring animal slaughtered from animal to the following ",
-            " child commodities (Meat excluded)\n\t",
+    message("\tTransferring animal slaughtered from animal to the following\n",
+            "child commodities (Meat excluded):\n\t",
             paste0(unique(currentCommodityTree$measuredItemChildCPC),
                    collapse = ", "))
 
@@ -421,9 +442,9 @@ for(iter in seq(selectedMeatCode)){
     transferedData %>%
         ## TODO (Michael): Need to check whether the parent/child are
         ##                 synchronised.
-        ## ensureProductionOutputs(data = .,
-        ##                         processingParameters = processingParameters,
-        ##                         formulaParameters = meatFormulaParameters) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters) %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
