@@ -140,6 +140,7 @@ sessionItems =
     getQueryKey("measuredItemCPC", datasetkey = .) %>%
     selectMeatCodes(itemCodes = .)
 
+##' Select the range of items based on the computational parameter.
 selectedMeatCode =
     switch(imputationSelection,
            session = sessionItems,
@@ -305,7 +306,6 @@ for(iter in seq(selectedMeatCode)){
         GetData(key = .) %>%
         fillRecord(data = .) %>%
         preProcessing(data = .) %>%
-        createTriplet(data = ., formula = meatFormulaTable) %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = meatFormulaParameters)
@@ -317,6 +317,7 @@ for(iter in seq(selectedMeatCode)){
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
                     fillEmptyRecords = TRUE) %>%
+        createTriplet(data = ., formula = meatFormulaTable) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters)
