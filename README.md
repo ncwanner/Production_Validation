@@ -25,7 +25,7 @@ In this phase, the input data will be checked, corrected and validated prior
 to imputation of missing data. All the process will be automised with
 algorithms.
 
-#### [Production Input Validation](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/production_input_validation)
+#### [R module: Production Input Validation](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/production_input_validation)
 
 This module performs both input validation of the production domain, and at
 the same auto-correction of data with given rules.
@@ -40,19 +40,19 @@ module, while the non-livestock commodities requires the construction of the
 imputed dataset with the `Impute non-livestock` before loading them with
 `Fill non-ivestock`.
 
-### [R module: Impute Livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/production_input_validation)
+#### [R module: Impute Livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/production_input_validation)
 
 This module performs imputation on the livestock commodities and at the same
 time ensure slaughtered animal is synchronised accross all related
 parent/child commodities.
 
-### [R module: Impute Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/impute_non_livestock)
+#### [R module: Impute Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/impute_non_livestock)
 
 This module craetes the imputed values for the non-livestock items, however,
 does not write back directly to the database. Instead the imputed values are
 saved to the shared drive.
 
-### [R module: Fill Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/fill_non_livestock)
+#### [R module: Fill Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/fill_non_livestock)
 
 This module follows the `Impute Non-livestock` module and loads the impute
 value then fill in the imputation value then saves back to the database.
