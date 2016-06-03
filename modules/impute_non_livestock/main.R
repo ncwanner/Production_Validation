@@ -23,6 +23,8 @@
 ##' ---
 
 
+##' ## Initialisation
+##'
 
 ##' load the libraries
 suppressMessages({
@@ -116,6 +118,8 @@ selectedItemCode =
            all = nonLivestockImputationItems,
            missing_items = missingItems)
 
+##' ---
+##' ## Perform Imputation
 
 ##' Loop through the commodities to impute the items individually.
 for(iter in seq(selectedItemCode)){

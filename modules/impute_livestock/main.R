@@ -49,6 +49,8 @@
 ##' ---
 
 
+##' ## Initialisation
+##'
 
 message("Step 0: Setup")
 
@@ -165,12 +167,14 @@ selectedMeatCode =
            all = nonLivestockImputationItems)
 
 
+##' ---
+##' ## Perform Synchronisation and Imputation
+
 ##' Iterate through the selected meat items and transfer the the animal
 ##' slaughtered from the animal parent to the child commodity such as offals and
 ##' skins.
 
 for(iter in seq(selectedMeatCode)){
-
     message("Step 1: Extract Transfer Animal Slaughtered from animal commodity to Meat")
     currentMeatItem = selectedMeatCode[iter]
     currentMappingTable =
@@ -409,17 +413,17 @@ for(iter in seq(selectedMeatCode)){
 
     currentCommodityTree =
         animalData %$%
-        getCommodityTree(geographicAreaM49 =
-                             as.character(unique(.$geographicAreaM49)),
-                         timePointYears =
-                             as.character(unique(.$timePointYears))) %>%
-        subset(., share > 0 &
-                  measuredItemParentCPC == currentAnimalItem &
-                  measuredItemChildCPC != currentMeatItem) %>%
-        setnames(.,
-                 old = c("measuredItemParentCPC", "timePointYearsSP"),
-                 new = c("measuredItemCPC", "timePointYears")) %>%
-        mutate(timePointYears = as.numeric(timePointYears))
+    getCommodityTree(geographicAreaM49 =
+                         as.character(unique(.$geographicAreaM49)),
+                     timePointYears =
+                         as.character(unique(.$timePointYears))) %>%
+    subset(., share > 0 &
+              measuredItemParentCPC == currentAnimalItem &
+              measuredItemChildCPC != currentMeatItem) %>%
+    setnames(.,
+             old = c("measuredItemParentCPC", "timePointYearsSP"),
+             new = c("measuredItemCPC", "timePointYears")) %>%
+    mutate(timePointYears = as.numeric(timePointYears))
 
 
 

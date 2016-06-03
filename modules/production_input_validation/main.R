@@ -14,7 +14,7 @@
 ##' 2. Check whether the production (input) values are within feasible range.
 ##' 3. Check whether the area harvested (output) values are within feasible range.
 ##' 4. Check whether the yield (productivity) values are within feasible range.
-##' 5. check whether the production triplet (input, output productivity) are
+##' 5. Check whether the production triplet (input, output productivity) are
 ##'    balanced.
 ##'
 ##' **Auto-corrections:**
@@ -36,6 +36,10 @@
 ##'
 ##' ---
 
+
+##' ## Initialisation
+##'
+
 ##' Load the libraries
 suppressMessages({
     library(faosws)
@@ -50,7 +54,7 @@ suppressMessages({
     library(sendmailR)
 })
 
-##' set up for the test environment and parameters
+##' Set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 
 ##' Load the configuration if in debug mode
@@ -95,9 +99,13 @@ processingParameters =
     productionProcessingParameters(datasetConfig = datasetConfig)
 
 
-##' Perform autocorrection, certain invalid data can be corrected if a
-##' correction rule is agreed a priori. Both function should be removed from the
-##' module, possibly to the ensure package.
+
+##' ---
+##' ## Define auto-correction.
+##'
+##' Certain invalid data can be corrected if a correction rule is agreed a
+##' priori. Both function should be removed from the module, possibly to the
+##' ensure package.
 ##'
 
 ##' Function to perform flag correction
@@ -170,6 +178,8 @@ autoValueCorrection = function(data,
     correctedData
 }
 
+##' ## Perform Validation
+##'
 
 ##' Extract the selected item code which will be looped over, we need to loop
 ##' over items as different item can have different formula. As we need to check
@@ -180,11 +190,6 @@ selectedItem = getQueryKey("measuredItemCPC", selectedKey)
 ##' The tests and test messages
 tests = c("flag_validity", "production_range", "areaHarvested_range",
           "yield_range", "balanced")
-testMessage = c("The following entry contains invalid flag",
-                "The following entry contain invalid production value",
-                "The following entry contain invalid area harvsted value",
-                "The following entry contain invalid yield value",
-                "The following entry is imbalanced, check the values then re-run balance production identity module")
 
 ##' Initialise the error list
 errorList = vector("list", length(tests))
@@ -221,11 +226,11 @@ for(iter in seq(selectedItem)){
         currentKey %>%
         GetData(key = .)
 
-    ## NOTE (Michael): The test should be conducted on the raw data, that is
-    ##                 excluding any imputation, statistical estimation and
-    ##                 previous calculated values. However, auto corrected
-    ##                 values will be saved back to the database.
     if(nrow(currentData) > 0){
+        ## NOTE (Michael): The test should be conducted on the raw data, that is
+        ##                 excluding any imputation, statistical estimation and
+        ##                 previous calculated values. However, auto corrected
+        ##                 values will be saved back to the database.
 
         ## Correct the flag and values here where available based on agreed
         ## correction rules.
@@ -331,6 +336,11 @@ for(iter in seq(selectedItem)){
 }
 
 
+
+##' ---
+##' ## Return Messages and Send Error
+##'
+
 ##' Send email to user if the data contains invalid entries.
 if(max(sapply(errorList, nrow)) > 0){
 
@@ -357,7 +367,7 @@ if(max(sapply(errorList, nrow)) > 0){
                   row.names = FALSE)
         errorAttachmentObject = mime_part(x = errorAttachmentPath,
                                           name = errorAttachmentName)
-        errorAttachmentObject
+       errorAttachmentObject
     }
 
     ## Create attachment for errors

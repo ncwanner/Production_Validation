@@ -23,6 +23,9 @@
 ##'
 ##' ---
 
+##' ## Initialisation
+##'
+
 ##' Load the libraries
 suppressMessages({
     library(faosws)
@@ -71,6 +74,9 @@ selectedImputationItems = selectImputationItem(selectedKey, completeImputationKe
 ##' completeImputationKey, then it will be returned as a message that the item
 ##' should probably be added in.
 nonImputationItemCodes = nonImputationItems(selectedKey, completeImputationKey)
+
+##' ---
+##' Perform Imputation
 
 ##' Start the imputation, looping through each item since the model are fitted
 ##' for each item separately.
@@ -183,7 +189,12 @@ for(i in seq(selectedImputationItems)){
 
 }
 
-##' Return messages
+##' ---
+##' ## Return Messages
+##'
+
+##' The following error message are due to the data selection containing years
+##' which were not part of the range used to construct the imputation model.
 yearOutOfImputationRange =
     setdiff(selectedKey@dimensions$timePointYears@keys, imputationYears)
 
@@ -195,6 +206,8 @@ yearWarningMessage =
            "")
 
 
+##' The following error message is assocated with selected commodities which are
+##' not in the imputation basket.
 commodityWarningMessage =
     ifelse(length(nonImputationItemCodes) > 0,
            paste0("\n\n The following selected commodities were not ",

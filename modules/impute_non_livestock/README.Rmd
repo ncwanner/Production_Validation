@@ -21,6 +21,8 @@ database in the "Fill Livestock" module.
 No flag change as the data is not saved back.
 
 ---
+## Initialisation
+
 load the libraries
 
 ```{r }
@@ -146,6 +148,8 @@ selectedItemCode =
            missing_items = missingItems)
 ```
 
+---
+## Perform Imputation
 Loop through the commodities to impute the items individually.
 
 ```{r }

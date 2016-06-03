@@ -26,6 +26,9 @@
 ##'
 ##' ---
 
+
+##' ## Initialisation
+
 ##' Load required libraries
 suppressMessages({
     library(faosws)
@@ -85,8 +88,12 @@ formulaTuples =
 unique_formulas = unique(formulaTuples[, list(input, productivity, output,
                                               unitConversion)])
 
+
+##' ---
+##' ## Balance Production Identity
+
 ##' Loop through the formulas
-for(i in 1:nrow(unique_formulas)){
+for(i in seq(nrow(unique_formulas))){
     ## Subset the formula table
     current_formula = unique_formulas[i, ]
     with(current_formula,
@@ -153,6 +160,8 @@ for(i in 1:nrow(unique_formulas)){
 
 }
 
-##' Return results
+##' ---
+##' Return Message
+
 paste("Module completed in",
       round(difftime(Sys.time(), startTime, units = "min"), 2), "minutes.")

@@ -22,6 +22,8 @@ database.
 | Imputation | I | e |
 
 ---
+## Initialisation
+
 Load the libraries
 
 ```{r }
@@ -89,6 +91,8 @@ should probably be added in.
 nonImputationItemCodes = nonImputationItems(selectedKey, completeImputationKey)
 ```
 
+---
+Perform Imputation
 Start the imputation, looping through each item since the model are fitted
 for each item separately.
 
@@ -203,7 +207,11 @@ for(i in seq(selectedImputationItems)){
 }
 ```
 
-Return messages
+---
+## Return Messages
+
+The following error message are due to the data selection containing years
+which were not part of the range used to construct the imputation model.
 
 ```{r }
 yearOutOfImputationRange =
@@ -215,8 +223,12 @@ yearWarningMessage =
                   "are out of range (1999 - current year): \n",
                   paste0(yearOutOfImputationRange, collapse = ", "), "\n"),
            "")
+```
 
+The following error message is assocated with selected commodities which are
+not in the imputation basket.
 
+```{r }
 commodityWarningMessage =
     ifelse(length(nonImputationItemCodes) > 0,
            paste0("\n\n The following selected commodities were not ",
