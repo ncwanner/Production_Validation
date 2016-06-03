@@ -79,13 +79,6 @@ imputeWithAndWithoutEstimates = function(data,
 
         ## Now impute while leaving estimates in
         processingParameters$removeManualEstimation = FALSE
-        simplerModels = allDefaultModels()
-        simplerModels = simplerModels[c("defaultMean", "defaultLm",
-                                        "defaultExp", "defaultNaive",
-                                        "defaultMixedModel")]
-        yieldParams$ensembleModels = simplerModels
-        productionParams$ensembleModels = simplerModels
-        areaHarvestedParams$ensembleModels = simplerModels
         message("Imputation with Manual Estimates")
         imputation2 =
             imputeProductionTriplet(copy(dataCopy),
