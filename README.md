@@ -46,13 +46,13 @@ This module performs imputation on the livestock commodities and at the same
 time ensure slaughtered animal is synchronised accross all related
 parent/child commodities.
 
-### Impute Non-livestock
+### [R module: Impute Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/impute_non_livestock)
 
 This module craetes the imputed values for the non-livestock items, however,
 does not write back directly to the database. Instead the imputed values are
 saved to the shared drive.
 
-### Fill Non-livestock
+### [R module: Fill Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/fill_non_livestock)
 
 This module follows the `Impute Non-livestock` module and loads the impute
 value then fill in the imputation value then saves back to the database.
@@ -67,7 +67,7 @@ and reported to team A for continual improvements of the algorithm.
 After the manual intervention, the execution of the `Balance Production
 Identity` is required to ensure the production is balanced.
 
-#### Balance Production Identity
+#### [R module: Balance Production Identity](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/balance_production_identity)
 
 This module re-calculates the production identity, this ensures the
 relationship of `Production = Area Harvested x Yield` holds when new changes
