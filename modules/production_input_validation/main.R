@@ -7,6 +7,7 @@
 ##' **Author: Michael C. J. Kao**
 ##'
 ##' **Validation:**
+##'
 ##' Currently there are 5 tests in the suite:
 ##'
 ##' 1. Check whether flags are valid.
