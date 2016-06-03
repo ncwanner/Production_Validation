@@ -40,7 +40,7 @@ module, while the non-livestock commodities requires the construction of the
 imputed dataset with the `Impute non-livestock` before loading them with
 `Fill non-ivestock`.
 
-### Impute Livestock
+### (R module: Impute Livestock)[https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/production_input_validation]
 
 This module performs imputation on the livestock commodities and at the same
 time ensure slaughtered animal is synchronised accross all related
