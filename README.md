@@ -1,185 +1,88 @@
-# sws_production
+# Production Domain Overview
 
 This is the repository containing both the package and the modules for
 processing the production domain.
 
+The repository also contains information on the complete processing cycle and
+research materials.
+
+---
+
+## Production Domain Cycle
+
+The complete cycle contains 4 stages:
+
+1. **Data collection**
+
+   This phase collects data and inputs from various sources and merge them into
+   a single final information set.
+
+   No R module is involved in this phase.
+
+2. **Data validation**
+
+   In this phase, the input data will be checked, corrected and validated prior
+   to imputation of missing data. All the process will be automised with
+   algorithms.
+
+   The validation is performed by the `Production Input Validation` module.
+
+3. **Imputation**
+
+   In this phase, the missing records will be imputed. All the process will be
+   automised with algorithms.
+
+   The imputation is separated into three separate modules. The livestock can be
+   imputed directly with the `Impute Livestock` module, while the non-livestock
+   commodities requires the building imputed dataset with the `Impute
+   non-livestock` before loading them with `Fill non-ivestock`.
+
+4. **Post validation**
+
+   During this phase, the processed dataset will be investigated. It will be
+   possible to manually correct imputed values. However, all corrections are
+   required to be scientifically justified, mandatorily explained in the
+   metadata, and reported to team A for continual improvements of the algorithm.
+
+   After the manual intervention, the execution of the `Balance Production
+   Identity` is required to ensure the production is balanced.
+
+
+![production_workflow_horizontal](https://cloud.githubusercontent.com/assets/1054320/15774133/10547148-297b-11e6-8662-f70894ed59ea.jpg)
+
+---
+
 ## Modules Overview
 
-Production Module Flow:
-![flowchart mm](https://cloud.githubusercontent.com/assets/1054320/15193239/18f489fc-17bd-11e6-9f3b-282c4891a702.png)
+Currently, there are 5 modules in the production domain.
 
-**NOTE: Module 1, 2, and 4 will be merged into a single module in the future, as
-  the same logic applies.**
+### Production Input Validation
 
-**NOTE: Module 3 which balance the production identity is no longer required in
-  the sequence, it is a preliminary step in the imputation. The only use of this
-  module is to balance the identity again when manual estimates are inputted
-  after the imputation.**
+This module performs both input validation of the production domain, and at the
+same auto-correction of data with given rules.
 
----
+### Impute Livestock
 
-### 1. Impute Slaughtered
+This module performs imputation on the livestock commodities and at the same
+time ensure slaughtered animal is synchronised accross all related parent/child
+commodities.
 
-The module imputes the animal and meat commodity and ensure the slaughtered
-number in both commodity are identical.
+### Impute Non-livestock
 
-**Inputs:**
+This module craetes the imputed values for the non-livestock items, however,
+does not write back directly to the database. Instead the imputed values are
+saved to the shared drive.
 
-* Production domain
-* Animal to meat mapping table
-* Flag table
-* Yield formula
+### Fill Non-livestock
 
-**Steps:**
+This module follows the `Impute Non-livestock` module and loads the imputed
+value then fill in the imputation value then saves back to the database.
 
-1. Transfer Slaughtered animal from the animal commodity to the meat commodity.
-2. Perform imputation on the meat commodity.
-3. Transfer the imputed slaughtered animal back to the animal commodity.
+### Balance Production Identity
 
-**Flag Changes:**
-
-| Procedure | Observation Status Flag | Method Flag|
-| --- | --- | --- |
-| Tranasfer between animal and meat commodity | `<Same as origin>` | `<Same as origin>` |
-| Balance by Production Identity | I | i |
-| Imputation | I | e |
-
-**NOTE: The method flag for transfer is currently incorrectly implemented, it
-  will be changed to "c"**
-
-**Output:**
-
-Meat commodity complete imputed where available and the slaughtered animal
-synced between the meat and the parent commodity.
-
----
-
-### 2. Synchronise Slaughtered
-
-The module transfers the animal slaughtered from the animal commodity to all
-related derivative such as skins, hide, and offals.
-
-**Inputs:**
-
-* Production domain
-* Animal to meat mapping table
-* Flag table
-* Commodity tree table
-
-**Steps:**
-
-
-commodity.
-
-**Flag Changes:**
-
-| Procedure | Observation Status Flag | Method Flag|
-| --- | --- | --- |
-| Tranasfer between animal and meat commodity | `<Same as origin>` | `<Same as origin>` |
-
-**NOTE: The method flag for transfer is currently incorrectly implemented, it
-  will be changed to "c"**
-
-**Output:**
-
-Animal slaughtered in the animal commodity transfered to all derived products.
-
----
-
-### 3. Balance Production Identity
-
-This module ensures the production/area harvested/yield relationship is
-fulfilled and calculate any missing values where available.
-
-**Inputs:**
-
-* Production domain
-* Yield formula
-
-**Steps:**
-
-1. Compute yield
-2. Balance Production
-3. Balance Area Harvested
-
-**Flag Changes:**
-
-| Procedure | Observation Status Flag | Method Flag|
-| --- | --- | --- |
-| Compute/Balance | `<Flag Aggregation>` | i |
-
-**Output:**
-
-The production domain data balanced according to the equation.
-
----
-
-### 4. Build Imputed Dataset
-
-This module performs the imputation and saves the imputed values as `.rds`
-objects back to the SWS shared drive. The purpose of this module is to avoid the
-long running time of imputation, and allow the imputation to be loaded.
-
-**Inputs:**
-
-* Production domain
-* Animal to meat mapping table
-* Complete imputation key
-* Yield formula
-
-**Steps:**
-
-1. Compute yield
-2. Impute yield
-3. Balance production
-4. Impute production
-5. Balance Area Harvested
-6. Impute Area harvested
-7. Compute yield
-8. Impute yield
-
-**NOTE: Step 7 and 8 are to ensure that yield are updated again according to the
-  new imputation of production and area harvested. However, this does not ensure
-  convergence and full complete imputation. A new algorithm is in development to
-  ensure convergence and complete imputation where available.**
-
-**Flag Changes:**
-
-No flag change as the data is not saved back.
-
-**Output:**
-
-An `.rds` object saved on the SWS shared drive with all production imputed where
-available.
-
----
-
-### 5. Fill Imputation
-
-This module loads the imputed value from the `.rds` file from the shared drive
-and fill and save the missing values.
-
-**Inputs:**
-
-* Production domain
-* Imputed `.rds` object
-* Complete imputation key
-* Yield formula
-
-**Steps:**
-
-1. Fill in imputed value from previous imputed dataset
-
-**Flag Changes:**
-
-| Procedure | Observation Status Flag | Method Flag |
-| --- | --- | --- |
-| Compute/Balance | `<Flag Aggregation>` | i |
-| Imputation | I | e |
-
-**Output:**
-
-Production domain imputed where available.
+This module re-calculates the production identity, this ensures the relationship
+of `Production = Area Harvested x Yield` holds when new changes are introduced
+in the post validation phase.
 
 ---
 
