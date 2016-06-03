@@ -48,7 +48,8 @@ The complete cycle contains 4 stages:
    Identity` is required to ensure the production is balanced.
 
 
-![production_workflow_horizontal](https://cloud.githubusercontent.com/assets/1054320/15774133/10547148-297b-11e6-8662-f70894ed59ea.jpg)
+![production_workflow_horizontal](https://cloud.githubusercontent.com/assets/1054320/15775155/a8b18c82-2980-11e6-980a-8e223202c793.jpg)
+
 
 ---
 
