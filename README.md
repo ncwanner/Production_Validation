@@ -12,61 +12,39 @@ research materials.
 
 The complete cycle contains 4 stages:
 
-1. **Data collection**
+### 1. Data collection
 
-   This phase collects data and inputs from various sources and merge them into
-   a single final information set.
+This phase collects data and inputs from various sources and merge them into
+a single final information set.
 
-   No R module is involved in this phase.
+No R module is involved in this phase.
 
-2. **Data validation**
+### 2. Data validation
 
-   In this phase, the input data will be checked, corrected and validated prior
-   to imputation of missing data. All the process will be automised with
-   algorithms.
+In this phase, the input data will be checked, corrected and validated prior
+to imputation of missing data. All the process will be automised with
+algorithms.
 
-   The validation is performed by the `Production Input Validation` module.
+#### Production Input Validation
 
-3. **Imputation**
-
-   In this phase, the missing records will be imputed. All the process will be
-   automised with algorithms.
-
-   The imputation is separated into three separate modules. The livestock can be
-   imputed directly with the `Impute Livestock` module, while the non-livestock
-   commodities requires the building imputed dataset with the `Impute
-   non-livestock` before loading them with `Fill non-ivestock`.
-
-4. **Post validation**
-
-   During this phase, the processed dataset will be investigated. It will be
-   possible to manually correct imputed values. However, all corrections are
-   required to be scientifically justified, mandatorily explained in the
-   metadata, and reported to team A for continual improvements of the algorithm.
-
-   After the manual intervention, the execution of the `Balance Production
-   Identity` is required to ensure the production is balanced.
+This module performs both input validation of the production domain, and at
+the same auto-correction of data with given rules.
 
 
-![production_workflow_horizontal](https://cloud.githubusercontent.com/assets/1054320/15775155/a8b18c82-2980-11e6-980a-8e223202c793.jpg)
+### 3. Imputation
 
-
----
-
-## Modules Overview
-
-Currently, there are 5 modules in the production domain.
-
-### Production Input Validation
-
-This module performs both input validation of the production domain, and at the
-same auto-correction of data with given rules.
+In this phase, the missing records will be imputed. All the process will be
+automised with algorithms. The imputation is consists of three modules. The
+livestock commodities can be imputed directly with the `Impute Livestock`
+module, while the non-livestock commodities requires the construction of the
+imputed dataset with the `Impute non-livestock` before loading them with
+`Fill non-ivestock`.
 
 ### Impute Livestock
 
 This module performs imputation on the livestock commodities and at the same
-time ensure slaughtered animal is synchronised accross all related parent/child
-commodities.
+time ensure slaughtered animal is synchronised accross all related
+parent/child commodities.
 
 ### Impute Non-livestock
 
@@ -76,14 +54,27 @@ saved to the shared drive.
 
 ### Fill Non-livestock
 
-This module follows the `Impute Non-livestock` module and loads the imputed
+This module follows the `Impute Non-livestock` module and loads the impute
 value then fill in the imputation value then saves back to the database.
 
-### Balance Production Identity
+### 4. Post validation
 
-This module re-calculates the production identity, this ensures the relationship
-of `Production = Area Harvested x Yield` holds when new changes are introduced
-in the post validation phase.
+During this phase, the processed dataset will be investigated. It will be
+possible to manually correct imputed values. However, all corrections are
+required to be scientifically justified, mandatorily explained in the metadata,
+and reported to team A for continual improvements of the algorithm.
+
+After the manual intervention, the execution of the `Balance Production
+Identity` is required to ensure the production is balanced.
+
+#### Balance Production Identity
+
+This module re-calculates the production identity, this ensures the
+relationship of `Production = Area Harvested x Yield` holds when new changes
+are introduced in the post validation phase.
+
+
+![production_workflow_horizontal](https://cloud.githubusercontent.com/assets/1054320/15775155/a8b18c82-2980-11e6-980a-8e223202c793.jpg)
 
 ---
 
