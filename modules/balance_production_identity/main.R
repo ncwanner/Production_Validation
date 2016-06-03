@@ -2,7 +2,7 @@
 ##'
 ##' **Author: Michael C. J. Kao**
 ##'
-##' **Descriptions:
+##' **Descriptions:**
 ##'
 ##' Module to balance the production domain identity. That is the equation
 ##' Production = Area x yield

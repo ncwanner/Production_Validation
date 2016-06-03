@@ -1,7 +1,12 @@
-##' # This module examins whether the production data are valid.
+##' # Production Input Validation Module
+##'
+##' **Desscription:**
+##'
+##' This module examins whether the production data are valid.
 ##'
 ##' **Author: Michael C. J. Kao**
 ##'
+##' **Validation:**
 ##' Currently there are 5 tests in the suite:
 ##'
 ##' 1. Check whether flags are valid.
@@ -11,6 +16,24 @@
 ##' 5. check whether the production triplet (input, output productivity) are
 ##'    balanced.
 ##'
+##' **Auto-corrections:**
+##'
+##' 1. Flag (M, -) --> (M, u)
+##' 2. Flag (E, t) --> (E, -)
+##' 3. Flag (E, e) --> (I, e)
+##' 4. Flag (E, p) --> (E, f)
+##' 5. Conflicting area harvested and production are removed.
+##' 6. Zero yield are removed.
+##'
+##' **Steps:**
+##'
+##' 1. Perform auto-correction
+##' 2. Remove previous production processing.
+##' 3. Perform validation on non-processed data
+##' 4. Save auto-corrected data back to the database
+##' 5. Send email to user if input data contains invalid entries.
+##'
+##' ---
 
 ##' Load the libraries
 suppressMessages({
