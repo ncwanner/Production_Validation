@@ -36,9 +36,10 @@ transferParentToChild = function(parentData, commodityTree, selectedMeatTable){
             parentDataWithMapping[!is.na(measuredItemChildCPC), ]
     }
 
-    parentDataWithMapping[, `:=`(c("Value", "share"), list(Value * share, NULL))]
-    parentDataWithMapping[, `:=`(c("measuredItemCPC", "extractionRate"),
-                                 list(NULL, NULL))]
+    ## TODO (Michael): Need to check for the observation and method flags
+    parentDataWithMapping[, `:=`(c("Value"), list(Value * share))]
+    parentDataWithMapping[, `:=`(c("measuredItemCPC", "extractionRate", "share"),
+                                 list(NULL, NULL, NULL))]
     setnames(parentDataWithMapping, "measuredItemChildCPC", "measuredItemCPC")
 
 
