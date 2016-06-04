@@ -43,7 +43,7 @@ transferSlaughteredNumber = function(preUpdatedData,
                         by = c(areaVar, itemVar, elementVar, yearVar))
     updatedData = updatedData[is.na(Value) & !is.na(Value.new), ]
     updatedData[, c("Value", "flagObservationStatus", "flagMethod") :=
-                list(Value.new, flagObservationStatus.new, flagMethod.new)]
+                list(Value.new, flagObservationStatus.new, "c")]
     updatedData[, c("Value.new", "flagObservationStatus.new",
                     "flagMethod.new") := NULL]
     updatedData
