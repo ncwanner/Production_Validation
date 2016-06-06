@@ -19,13 +19,27 @@
 balanceProductionTriplet = function(data,
                                     processingParameters,
                                     formulaParameters){
-    computeYield(data = data,
-                 processingParameters = processingParams,
-                 formulaParameters = formulaParameters)
-    balanceProduction(data = data,
-                      processingParameters = processingParams,
-                      formulaParameters = formulaParameters)
-    balanceAreaHarvested(data = data,
-                         processingParameters = processingParams,
-                         formulaParameters = formulaParameters)
+    dataCopy = copy(data)
+
+    ## Data quality check
+    ensureProductionInputs(dataCopy,
+                           processingParameters = processingParameters,
+                           formulaParameters = formulaParameters,
+                           returnData = FALSE,
+                           normalised = FALSE)
+
+    yieldComputed =
+        computeYield(data = dataCopy,
+                     processingParameters = processingParams,
+                     formulaParameters = formulaParameters)
+    productionBalanced =
+        balanceProduction(data = yieldComputed,
+                          processingParameters = processingParams,
+                          formulaParameters = formulaParameters)
+    areaHarvestedBalanced =
+        balanceAreaHarvested(data = productionBalanced,
+                             processingParameters = processingParams,
+                             formulaParameters = formulaParameters)
+
+    areaHarvestedBalanced
 }

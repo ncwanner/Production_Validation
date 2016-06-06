@@ -20,8 +20,10 @@ computeYield = function(data,
                         formulaParameters,
                         flagTable = faoswsFlagTable){
 
+    dataCopy = copy(data)
+
     ## Data quality check
-    ensureProductionInputs(data,
+    ensureProductionInputs(dataCopy,
                            processingParameters = processingParameters,
                            formulaParameters = formulaParameters,
                            returnData = FALSE,
@@ -35,16 +37,16 @@ computeYield = function(data,
     ##                 zero, then yield should remain a missing value as we can
     ##                 not observe the yield.
     missingYield =
-        is.na(data[[formulaParameters$yieldValue]]) |
-        data[[formulaParameters$yieldObservationFlag]] == formulaParameters$missingValueObservationFlag
+        is.na(dataCopy[[formulaParameters$yieldValue]]) |
+        dataCopy[[formulaParameters$yieldObservationFlag]] == formulaParameters$missingValueObservationFlag
     nonMissingProduction =
-        !is.na(data[[formulaParameters$productionValue]]) &
-        data[[formulaParameters$productionObservationFlag]] != formulaParameters$missingValueObservationFlag
+        !is.na(dataCopy[[formulaParameters$productionValue]]) &
+        dataCopy[[formulaParameters$productionObservationFlag]] != formulaParameters$missingValueObservationFlag
     nonMissingAreaHarvested =
-        !is.na(data[[formulaParameters$areaHarvestedValue]]) &
-        data[[formulaParameters$areaHarvestedObservationFlag]] != formulaParameters$missingValueObservationFlag
+        !is.na(dataCopy[[formulaParameters$areaHarvestedValue]]) &
+        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] != formulaParameters$missingValueObservationFlag
     nonZeroProduction =
-        (data[[formulaParameters$productionValue]] != 0)
+        (dataCopy[[formulaParameters$productionValue]] != 0)
 
     feasibleFilter =
         missingYield &
@@ -55,29 +57,30 @@ computeYield = function(data,
     ## When area harvested (denominator) is zero, the calculation can be
     ## performed and returns NA. So a different flag should
     nonZeroAreaHarvestedFilter =
-        (data[[formulaParameters$productionValue]] != 0)
+        (dataCopy[[formulaParameters$productionValue]] != 0)
 
     ## Calculate the yield
-    data[feasibleFilter, `:=`(c(formulaParameters$yieldValue),
-                              computeRatio(get(formulaParameters$productionValue),
-                                           get(formulaParameters$areaHarvestedValue)) *
-                              formulaParameters$unitConversion)]
+    dataCopy[feasibleFilter, `:=`(c(formulaParameters$yieldValue),
+                                  computeRatio(get(formulaParameters$productionValue),
+                                               get(formulaParameters$areaHarvestedValue)) *
+                                  formulaParameters$unitConversion)]
 
     ## Assign observation flag.
     ##
     ## NOTE (Michael): If the denominator (area harvested is non-zero) then
     ##                 perform flag aggregation, if the denominator is zero,
     ##                 then assign the missing flag as the computed yield is NA.
-    data[feasibleFilter & nonZeroAreaHarvestedFilter,
-         `:=`(c(formulaParameters$yieldObservationFlag),
-              aggregateObservationFlag(get(formulaParameters$productionObservationFlag),
-                                       get(formulaParameters$areaHarvestedObservationFlag)))]
-    data[feasibleFilter & !nonZeroAreaHarvestedFilter,
-         `:=`(c(formulaParameters$yieldObservationFlag),
-              processingParameters$missingValueObservationFlag)]
+    dataCopy[feasibleFilter & nonZeroAreaHarvestedFilter,
+             `:=`(c(formulaParameters$yieldObservationFlag),
+                  aggregateObservationFlag(get(formulaParameters$productionObservationFlag),
+                                           get(formulaParameters$areaHarvestedObservationFlag)))]
+    dataCopy[feasibleFilter & !nonZeroAreaHarvestedFilter,
+             `:=`(c(formulaParameters$yieldObservationFlag),
+                  processingParameters$missingValueObservationFlag)]
 
     ## Assign method flag
-    data[feasibleFilter, `:=`(c(formulaParameters$yieldMethodFlag),
-                              processingParameters$balanceMethodFlag)]
-    return(data)
+    dataCopy[feasibleFilter,
+             `:=`(c(formulaParameters$yieldMethodFlag),
+                  processingParameters$balanceMethodFlag)]
+    return(dataCopy)
 }

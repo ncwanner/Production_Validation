@@ -14,9 +14,10 @@ balanceProduction = function(data,
                              processingParameters,
                              formulaParameters){
 
+    dataCopy = copy(data)
 
     ## Data quality check
-    ensureProductionInputs(data,
+    ensureProductionInputs(dataCopy,
                            processingParameters = processingParameters,
                            formulaParameters = formulaParameters,
                            returnData = FALSE,
@@ -24,14 +25,14 @@ balanceProduction = function(data,
 
     ## Impute only when area and yield are available and production isn't
     missingProduction =
-        is.na(data[[formulaParameters$productionValue]]) |
-        data[[formulaParameters$productionObservationFlag]] == formulaParameters$missingValueObservationFlag
+        is.na(dataCopy[[formulaParameters$productionValue]]) |
+        dataCopy[[formulaParameters$productionObservationFlag]] == formulaParameters$missingValueObservationFlag
     nonMissingAreaHarvested =
-        !is.na(data[[formulaParameters$areaHarvestedValue]]) &
-        data[[formulaParameters$areaHarvestedObservationFlag]] != formulaParameters$missingValueObservationFlag
+        !is.na(dataCopy[[formulaParameters$areaHarvestedValue]]) &
+        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] != formulaParameters$missingValueObservationFlag
     nonMissingYield =
-        !is.na(data[[formulaParameters$yieldValue]]) &
-        data[[formulaParameters$yieldObservationFlag]] != formulaParameters$missingValueObservationFlag
+        !is.na(dataCopy[[formulaParameters$yieldValue]]) &
+        dataCopy[[formulaParameters$yieldObservationFlag]] != formulaParameters$missingValueObservationFlag
 
     feasibleFilter =
         missingProduction &
@@ -42,22 +43,22 @@ balanceProduction = function(data,
     ##                 removed or return an error. The input data can not
     ##                 contain zero yield.
     nonZeroYieldFilter =
-        (data[[formulaParameters$yieldValue]] != 0)
+        (dataCopy[[formulaParameters$yieldValue]] != 0)
 
     ## Calculate production
-    data[feasibleFilter & nonZeroYieldFilter,
-         `:=`(c(formulaParameters$productionValue),
-              get(formulaParameters$areaHarvestedValue) *
-              get(formulaParameters$yieldValue) /
-              formulaParameters$unitConversion)]
+    dataCopy[feasibleFilter & nonZeroYieldFilter,
+             `:=`(c(formulaParameters$productionValue),
+                  get(formulaParameters$areaHarvestedValue) *
+                  get(formulaParameters$yieldValue) /
+                  formulaParameters$unitConversion)]
     ## Assign observation flag
-    data[feasibleFilter & nonZeroYieldFilter,
-         `:=`(c(formulaParameters$productionObservationFlag),
-              aggregateObservationFlag(get(formulaParameters$areaHarvestedObservationFlag),
-                                       get(formulaParameters$yieldObservationFlag)))]
+    dataCopy[feasibleFilter & nonZeroYieldFilter,
+             `:=`(c(formulaParameters$productionObservationFlag),
+                  aggregateObservationFlag(get(formulaParameters$areaHarvestedObservationFlag),
+                                           get(formulaParameters$yieldObservationFlag)))]
 
     ## Assign method flag
-    data[feasibleFilter, `:=`(c(formulaParameters$productionMethodFlag),
-                              processingParameters$balanceMethodFlag)]
-    return(data)
+    dataCopy[feasibleFilter, `:=`(c(formulaParameters$productionMethodFlag),
+                                  processingParameters$balanceMethodFlag)]
+    return(dataCopy)
 }

@@ -40,38 +40,41 @@ processProductionDomain = function(data,
     ## Remove prior imputations
     if(processingParameters$removePriorImputation){
         ## Remove current imputation (flag = I, e)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$areaHarvestedValue,
-                                   observationFlag =
-                                       formulaParameters$areaHarvestedObservationFlag,
-                                   methodFlag = formulaParameters$areaHarvestedMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$imputationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$imputationMethodFlag)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$yieldValue,
-                                   observationFlag = formulaParameters$yieldObservationFlag,
-                                   methodFlag = formulaParameters$yieldMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$imputationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$imputationMethodFlag)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$productionValue,
-                                   observationFlag =
-                                       formulaParameters$productionObservationFlag,
-                                   methodFlag = formulaParameters$productionMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$imputationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$imputationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$areaHarvestedValue,
+                                       observationFlag =
+                                           formulaParameters$areaHarvestedObservationFlag,
+                                       methodFlag = formulaParameters$areaHarvestedMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$imputationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$imputationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$yieldValue,
+                                       observationFlag = formulaParameters$yieldObservationFlag,
+                                       methodFlag = formulaParameters$yieldMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$imputationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$imputationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$productionValue,
+                                       observationFlag =
+                                           formulaParameters$productionObservationFlag,
+                                       methodFlag = formulaParameters$productionMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$imputationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$imputationMethodFlag)
 
         ## Remove historical imputation (flag = E, e)
         ##
@@ -79,96 +82,105 @@ processProductionDomain = function(data,
         ##                 The old imputation should also have the flag
         ##                 combination (I, e). When this is corrected, the
         ##                 following chunk can be removed.
-
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$areaHarvestedValue,
-                                   observationFlag =
-                                       formulaParameters$areaHarvestedObservationFlag,
-                                   methodFlag = formulaParameters$areaHarvestedMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$manualEstimationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$imputationMethodFlag)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$yieldValue,
-                                   observationFlag = formulaParameters$yieldObservationFlag,
-                                   methodFlag = formulaParameters$yieldMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$manualEstimationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$imputationMethodFlag)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$productionValue,
-                                   observationFlag =
-                                       formulaParameters$productionObservationFlag,
-                                   methodFlag = formulaParameters$productionMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$manualEstimationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$imputationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$areaHarvestedValue,
+                                       observationFlag =
+                                           formulaParameters$areaHarvestedObservationFlag,
+                                       methodFlag = formulaParameters$areaHarvestedMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$manualEstimationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$imputationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$yieldValue,
+                                       observationFlag = formulaParameters$yieldObservationFlag,
+                                       methodFlag = formulaParameters$yieldMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$manualEstimationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$imputationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$productionValue,
+                                       observationFlag =
+                                           formulaParameters$productionObservationFlag,
+                                       methodFlag = formulaParameters$productionMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$manualEstimationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$imputationMethodFlag)
     }
 
     if(processingParameters$removeManualEstimation){
         ## Removing manual estimation (flag = E, f)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$areaHarvestedValue,
-                                   observationFlag =
-                                       formulaParameters$areaHarvestedObservationFlag,
-                                   methodFlag = formulaParameters$areaHarvestedMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$manualEstimationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$manualEstimationMethodFlag)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$yieldValue,
-                                   observationFlag = formulaParameters$yieldObservationFlag,
-                                   methodFlag = formulaParameters$yieldMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$manualEstimationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$manualEstimationMethodFlag)
-        removeImputationEstimation(data = dataCopy,
-                                   value = formulaParameters$productionValue,
-                                   observationFlag =
-                                       formulaParameters$productionObservationFlag,
-                                   methodFlag = formulaParameters$productionMethodFlag,
-                                   missingObservationFlag =
-                                       processingParameters$missingValueObservationFlag,
-                                   imputationEstimationObservationFlag =
-                                       processingParameters$manualEstimationObservationFlag,
-                                   imputationEstimationMethodFlag =
-                                       processingParameters$manualEstimationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$areaHarvestedValue,
+                                       observationFlag =
+                                           formulaParameters$areaHarvestedObservationFlag,
+                                       methodFlag = formulaParameters$areaHarvestedMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$manualEstimationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$manualEstimationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$yieldValue,
+                                       observationFlag = formulaParameters$yieldObservationFlag,
+                                       methodFlag = formulaParameters$yieldMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$manualEstimationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$manualEstimationMethodFlag)
+        dataCopy =
+            removeImputationEstimation(data = dataCopy,
+                                       value = formulaParameters$productionValue,
+                                       observationFlag =
+                                           formulaParameters$productionObservationFlag,
+                                       methodFlag = formulaParameters$productionMethodFlag,
+                                       missingObservationFlag =
+                                           processingParameters$missingValueObservationFlag,
+                                       imputationEstimationObservationFlag =
+                                           processingParameters$manualEstimationObservationFlag,
+                                       imputationEstimationMethodFlag =
+                                           processingParameters$manualEstimationMethodFlag)
     }
 
     ## Remove yield that are zero
-    dataCopy = removeZeroYield(data = dataCopy,
-                               yieldValue = formulaParameters$yieldValue,
-                               yieldObsFlag = formulaParameters$yieldObservationFlag,
-                               yieldMethodFlag = formulaParameters$yieldMethodFlag)
+    dataCopy =
+        removeZeroYield(data = dataCopy,
+                        yieldValue = formulaParameters$yieldValue,
+                        yieldObsFlag = formulaParameters$yieldObservationFlag,
+                        yieldMethodFlag = formulaParameters$yieldMethodFlag)
 
     ## Remove previously calculated values
-    dataCopy = removeCalculated(data = dataCopy,
-                                valueVar = formulaParameters$productionValue,
-                                observationFlagVar = formulaParameters$productionObservationFlag,
-                                methodFlagVar = formulaParameters$productionMethodFlag)
-    dataCopy = removeCalculated(data = dataCopy,
-                                valueVar = formulaParameters$areaHarvestedValue,
-                                observationFlagVar = formulaParameters$areaHarvestedObservationFlag,
-                                methodFlagVar = formulaParameters$areaHarvestedMethodFlag)
-    dataCopy = removeCalculated(data = dataCopy,
-                                valueVar = formulaParameters$yieldValue,
-                                observationFlagVar = formulaParameters$yieldObservationFlag,
-                                methodFlagVar = formulaParameters$yieldMethodFlag)
+    dataCopy =
+        removeCalculated(data = dataCopy,
+                         valueVar = formulaParameters$productionValue,
+                         observationFlagVar = formulaParameters$productionObservationFlag,
+                         methodFlagVar = formulaParameters$productionMethodFlag)
+    dataCopy =
+        removeCalculated(data = dataCopy,
+                         valueVar = formulaParameters$areaHarvestedValue,
+                         observationFlagVar = formulaParameters$areaHarvestedObservationFlag,
+                         methodFlagVar = formulaParameters$areaHarvestedMethodFlag)
+    dataCopy =
+        removeCalculated(data = dataCopy,
+                         valueVar = formulaParameters$yieldValue,
+                         observationFlagVar = formulaParameters$yieldObservationFlag,
+                         methodFlagVar = formulaParameters$yieldMethodFlag)
 
     return(dataCopy)
 }

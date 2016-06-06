@@ -15,8 +15,10 @@ balanceAreaHarvested = function(data,
                                 formulaParameters){
 
 
+    dataCopy = copy(data)
+
     ## Data quality check
-    ensureProductionInputs(data,
+    ensureProductionInputs(dataCopy,
                            processingParameters = processingParameters,
                            formulaParameters = formulaParameters,
                            returnData = FALSE,
@@ -25,14 +27,14 @@ balanceAreaHarvested = function(data,
 
     ## Impute only when area and yield are available and production isn't
     missingAreaHarvested =
-        is.na(data[[formulaParameters$areaHarvestedValue]]) |
-        data[[formulaParameters$areaHarvestedObservationFlag]] == formulaParameters$missingValueObservationFlag
+        is.na(dataCopy[[formulaParameters$areaHarvestedValue]]) |
+        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] == formulaParameters$missingValueObservationFlag
     nonMissingProduction =
-        !is.na(data[[formulaParameters$productionValue]]) &
-        data[[formulaParameters$productionObservationFlag]] != formulaParameters$missingValueObservationFlag
+        !is.na(dataCopy[[formulaParameters$productionValue]]) &
+        dataCopy[[formulaParameters$productionObservationFlag]] != formulaParameters$missingValueObservationFlag
     nonMissingYield =
-        !is.na(data[[formulaParameters$yieldValue]]) &
-        data[[formulaParameters$yieldObservationFlag]] != formulaParameters$missingValueObservationFlag
+        !is.na(dataCopy[[formulaParameters$yieldValue]]) &
+        dataCopy[[formulaParameters$yieldObservationFlag]] != formulaParameters$missingValueObservationFlag
 
     feasibleFilter =
         missingAreaHarvested &
@@ -40,14 +42,14 @@ balanceAreaHarvested = function(data,
         nonMissingYield
 
     nonZeroYieldFilter =
-        (data[[formulaParameters$yieldValue]] != 0)
+        (dataCopy[[formulaParameters$yieldValue]] != 0)
 
     ## Balance area harvested
-    data[feasibleFilter,
-         `:=`(c(formulaParameters$areaHarvestedValue),
-              computeRatio(get(formulaParameters$productionValue),
-                           get(formulaParameters$yieldValue)) *
-              formulaParameters$unitConversion)]
+    dataCopy[feasibleFilter,
+             `:=`(c(formulaParameters$areaHarvestedValue),
+                  computeRatio(get(formulaParameters$productionValue),
+                               get(formulaParameters$yieldValue)) *
+                  formulaParameters$unitConversion)]
     ## Assign observation flag.
     ##
     ## NOTE (Michael): If the denominator (yield is non-zero) then
@@ -55,16 +57,16 @@ balanceAreaHarvested = function(data,
     ##                 then assign the missing flag as the computed yield is NA.
     ##
     ## NOTE (Michael): Although the yield should never be zero by definition.
-    data[feasibleFilter & nonZeroYieldFilter,
-         `:=`(c(formulaParameters$areaHarvestedObservationFlag),
-              aggregateObservationFlag(get(formulaParameters$productionObservationFlag),
-                                       get(formulaParameters$yieldObservationFlag)))]
-    data[feasibleFilter & !nonZeroYieldFilter,
-         `:=`(c(formulaParameters$areaHarvestedObservationFlag),
-              processingParameters$missingValueObservationFlag)]
+    dataCopy[feasibleFilter & nonZeroYieldFilter,
+             `:=`(c(formulaParameters$areaHarvestedObservationFlag),
+                  aggregateObservationFlag(get(formulaParameters$productionObservationFlag),
+                                           get(formulaParameters$yieldObservationFlag)))]
+    dataCopy[feasibleFilter & !nonZeroYieldFilter,
+             `:=`(c(formulaParameters$areaHarvestedObservationFlag),
+                  processingParameters$missingValueObservationFlag)]
 
     ## Assign method flag
-    data[feasibleFilter, `:=`(c(formulaParameters$areaHarvestedMethodFlag),
-                              processingParameters$balanceMethodFlag)]
-    return(data)
+    dataCopy[feasibleFilter, `:=`(c(formulaParameters$areaHarvestedMethodFlag),
+                                  processingParameters$balanceMethodFlag)]
+    return(dataCopy)
 }
