@@ -7,14 +7,23 @@
 The animals slaughtered for production of meat, offals, fats and hides must
 be available before running the production imputation code. These numbers,
 however, are not guaranteed to be available, and in the case of missing
-data, an imputation method must be applied. The decision was to use the
-production figures of meat, if available, to compute the missing animals
-slaughtered. If these figures are also missing, they should be imputed using
-the production imputation methodology. Of course, in the case of currently
-available data in the animal element, that data should be transferred to the
-quantity of animals slaughtered for meat and then the imputation ran. We
-also decided to save the imputations for meat so as to retain consistency
-with the animal figures.
+data, an imputation method must be applied.
+
+The decision was to use the production figures of meat, if available, to
+compute the missing animals slaughtered. If these figures are also missing,
+they should be imputed using the production imputation methodology. Of
+course, in the case of currently available data in the animal element, that
+data should be transferred to the quantity of animals slaughtered for meat
+and then the imputation ran. We also decided to save the imputations for
+meat so as to retain consistency with the animal figures.
+
+Although the procedure is called transfer, however, the value is actually
+calculated. To transfer value from animal (parent) to meat (child), we copy
+the value, then multiplied by a `share`. The meaning of the variable is the
+share of the slaughtered animal that is used as input for the children. In
+most cases they are 100%, however, take cattle in India for example, they
+can be less then 100 as not all cattle slaughtered are used to produce meat
+due to the holy nature of the animal.
 
 **Inputs:**
 
@@ -42,9 +51,13 @@ with the animal figures.
 
 | Procedure | Observation Status Flag | Method Flag|
 | --- | --- | --- |
-| Tranasfer between animal and meat commodity | `<Same as origin>` | `<Same as origin>` |
+| Tranasfer between animal and meat commodity | `<Same as origin>` | i |
 | Balance by Production Identity | I | i |
 | Imputation | I | e |
+
+**NOTE (Michael): Currently the transfer has flag 'i' indicating it is
+calculated via identity, however, they should be replaced with a new flag as
+the relationship is not an identity but an assumed relationship.**
 
 ---
 ## Initialisation
@@ -131,9 +144,9 @@ item/element code. For example, the slaughtered animal element for cattle is
 
 
 ```{r }
-## NOTE (Michael): The two elements should be merged and have a single code in
-##                 the classification. This will eliminate the change of code in
-##                 the transfer procedure.
+## NOTE (Michael): Ideally, the two elements should be merged and have a single
+##                 code in the classification. This will eliminate the change of
+##                 code in the transfer procedure.
 animalMeatMappingTable =
     getAnimalMeatMapping(onlyMeatChildren = FALSE) %>%
     select(measuredItemParentCPC, measuredElementParent,
