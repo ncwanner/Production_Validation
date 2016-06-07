@@ -7,14 +7,23 @@
 ##' The animals slaughtered for production of meat, offals, fats and hides must
 ##' be available before running the production imputation code. These numbers,
 ##' however, are not guaranteed to be available, and in the case of missing
-##' data, an imputation method must be applied. The decision was to use the
-##' production figures of meat, if available, to compute the missing animals
-##' slaughtered. If these figures are also missing, they should be imputed using
-##' the production imputation methodology. Of course, in the case of currently
-##' available data in the animal element, that data should be transferred to the
-##' quantity of animals slaughtered for meat and then the imputation ran. We
-##' also decided to save the imputations for meat so as to retain consistency
-##' with the animal figures.
+##' data, an imputation method must be applied.
+##'
+##' The decision was to use the production figures of meat, if available, to
+##' compute the missing animals slaughtered. If these figures are also missing,
+##' they should be imputed using the production imputation methodology. Of
+##' course, in the case of currently available data in the animal element, that
+##' data should be transferred to the quantity of animals slaughtered for meat
+##' and then the imputation ran. We also decided to save the imputations for
+##' meat so as to retain consistency with the animal figures.
+##'
+##' Although the procedure is called transfer, however, the value is actually
+##' calculated. To transfer value from animal (parent) to meat (child), we copy
+##' the value, then multiplied by a `share`. The meaning of the variable is the
+##' share of the slaughtered animal that is used as input for the children. In
+##' most cases they are 100%, however, take cattle in India for example, they
+##' can be less then 100 as not all cattle slaughtered are used to produce meat
+##' due to the holy nature of the animal.
 ##'
 ##' **Inputs:**
 ##'
@@ -22,7 +31,7 @@
 ##' * Animal to meat mapping table
 ##' * Flag table
 ##' * Yield formula table
-##' * Commodity tree table
+##' * Share table
 ##'
 ##' **Steps:**
 ##'
@@ -42,12 +51,15 @@
 ##'
 ##' | Procedure | Observation Status Flag | Method Flag|
 ##' | --- | --- | --- |
-##' | Tranasfer between animal and meat commodity | `<Same as origin>` | `<Same as origin>` |
+##' | Tranasfer between animal and meat commodity | `<Same as origin>` | i |
 ##' | Balance by Production Identity | I | i |
 ##' | Imputation | I | e |
 ##'
+##' **NOTE (Michael): Currently the transfer has flag 'i' indicating it is
+##' calculated via identity, however, they should be replaced with a new flag as
+##' the relationship is not an identity but an assumed relationship.**
+##'
 ##' ---
-
 
 ##' ## Initialisation
 ##'
@@ -114,9 +126,9 @@ completeImputationKey = getCompleteImputationKey()
 ##' 5315, while the slaughtered animal for cattle meat is 5320.
 ##'
 
-## NOTE (Michael): The two elements should be merged and have a single code.
-##                 This will eliminate the change of code in the transfer
-##                 procedure.
+## NOTE (Michael): Ideally, the two elements should be merged and have a single
+##                 code in the classification. This will eliminate the change of
+##                 code in the transfer procedure.
 animalMeatMappingTable =
     getAnimalMeatMapping(onlyMeatChildren = FALSE) %>%
     select(measuredItemParentCPC, measuredElementParent,
@@ -166,7 +178,27 @@ for(iter in seq(selectedMeatCode)){
     currentMappingTable =
         animalMeatMappingTable[measuredItemChildCPC == currentMeatItem, ]
     currentAnimalItem = currentMappingTable[, measuredItemParentCPC]
+    currentAllDerivedProduct =
+        animalMeatMappingTable[measuredItemParentCPC == currentAnimalItem,
+                               measuredItemChildCPC]
+    currentNonMeatItem =
+        currentAllDerivedProduct[currentAllDerivedProduct != currentMeatItem]
 
+
+    message("\tPulling the commodity trees with shares")
+
+    ## TODO (Michael): Need to get all the child commodity
+    shareData =
+        getShareData(geographicAreaM49 =
+                         getQueryKey("geographicAreaM49", completeImputationKey),
+                     measuredItemChildCPC = currentAllDerivedProduct,
+                     measuredItemParentCPC = currentAnimalItem,
+                     timePointYearsSP =
+                         getQueryKey("timePointYears", completeImputationKey)) %>%
+        setnames(x = .,
+                 old = c("Value", "timePointYearsSP"),
+                 new = c("share", "timePointYears")) %>%
+        mutate(timePointYears = as.numeric(timePointYears))
 
     ## ---------------------------------------------------------------------
     message("\tExtracting production triplet for item ", currentMeatItem,
@@ -216,9 +248,6 @@ for(iter in seq(selectedMeatCode)){
                                formulaParameters = meatFormulaParameters,
                                normalised = FALSE) %>%
         normalise
-
-
-
 
     ## ---------------------------------------------------------------------
     message("\tExtracting production triplet for item ", currentAnimalItem,
@@ -270,15 +299,52 @@ for(iter in seq(selectedMeatCode)){
         normalise
 
 
+    message("\tExtracting production triplet for item ",
+            paste0(currentNonMeatItem, collapse = ", "),
+            " (Non-meat Child)")
+    ## Get the non Meat formula
+    nonMeatFormulaTable =
+        getYieldFormula(itemCode = currentNonMeatItem) %>%
+        removeIndigenousBiologicalMeat(formula = .)
+
+    ## Build the non meat key
+    nonMeatKey = completeImputationKey
+    nonMeatKey@dimensions$measuredItemCPC@keys = currentNonMeatItem
+    nonMeatKey@dimensions$measuredElement@keys =
+        with(nonMeatFormulaTable,
+             unique(c(input, output, productivity,
+                      currentMappingTable$measuredElementChild)))
+
+    ## Get the non meat data
+    nonMeatData =
+        nonMeatKey %>%
+        GetData(key = .) %>%
+        fillRecord(data = .) %>%
+        preProcessing(data = .) %>%
+        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
+        createTriplet(data = ., formula = nonMeatFormulaTable) %>%
+        ensureProductionInputs(data = .,
+                               processingParameters = processingParameters,
+                               formulaParameters = meatFormulaParameters,
+                               normalised = FALSE) %>%
+        normalise
+
+
+
+
 
     ## ---------------------------------------------------------------------
     message("\tTransferring animal slaughtered from animal to meat commodity")
+    animalMeatMappingShare =
+        merge(currentMappingTable, shareData, all.x = TRUE,
+              by = c("measuredItemParentCPC", "measuredItemChildCPC"))
+
     ## Transfer the animal slaughtered number from animal to the meat.
     slaughteredTransferedToMeat =
-        transferAnimalSlaughtered(meatData = meatData,
-                                  animalData = animalData,
-                                  mappingTable = currentMappingTable,
-                                  parentToChild = TRUE)
+        transferParentToChild(parentData = animalData,
+                              childData = meatData,
+                              mappingTable = animalMeatMappingShare,
+                              parentToChild = TRUE)
 
     message("\tSaving transferred meat data back to the database")
     ## Save the transfered data back
@@ -287,9 +353,11 @@ for(iter in seq(selectedMeatCode)){
     ##                 figures as indicated by in the synchronise slaughtered
     ##                 module.
     slaughteredTransferedToMeat %>%
+        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         ensureProductionOutputs(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters) %>%
+        normalise
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -353,18 +421,10 @@ for(iter in seq(selectedMeatCode)){
     ## Save the imputed meat back
     meatImputed %>%
         normalise(.) %>%
-        ## NOTE (Michael): This test currently fails occasionally
-        ##                 because it can not overwrite the ('I', '-')
-        ##                 flag for imputed value from the old system.
-        ##                 This is an error in the system as the flag
-        ##                 ('I', '-') should be replaced with ('E', 'e')
-        ##                 which can be over-written.
-        ##
         ## NOTE (Michael): Need to apply the formula for from the meat.
         ensureProductionOutput(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = meatFormulaParameters) %>%
-        ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
         postProcessing(data = .) %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -380,11 +440,14 @@ for(iter in seq(selectedMeatCode)){
     slaughteredTransferedBackToAnimal =
         meatImputed %>%
         normalise(denormalisedData = .) %>%
-        transferAnimalSlaughtered(meatData = .,
-                                  animalData = animalData,
-                                  mappingTable = currentMappingTable,
-                                  parentToChild = FALSE)
-
+        ## transferAnimalSlaughtered(meatData = .,
+        ##                           animalData = animalData,
+        ##                           mappingTable = currentMappingTable,
+        ##                           parentToChild = FALSE)
+        transferParentToChild(parentData = animalData,
+                              childData = .,
+                              mappingTable = animalMeatMappingShare,
+                              parentToChild = FALSE)
 
     ## ---------------------------------------------------------------------
     message("\tSaving transferred animal data back")
@@ -403,41 +466,32 @@ for(iter in seq(selectedMeatCode)){
 
     ## ---------------------------------------------------------------------
     message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
-    message("\tPulling the commodity trees")
-
-    currentCommodityTree =
-        animalData %$%
-    getCommodityTree(geographicAreaM49 =
-                         as.character(unique(.$geographicAreaM49)),
-                     timePointYears =
-                         as.character(unique(.$timePointYears))) %>%
-    subset(., share > 0 &
-              measuredItemParentCPC == currentAnimalItem &
-              measuredItemChildCPC != currentMeatItem) %>%
-    setnames(.,
-             old = c("measuredItemParentCPC", "timePointYearsSP"),
-             new = c("measuredItemCPC", "timePointYears")) %>%
-    mutate(timePointYears = as.numeric(timePointYears))
 
 
 
     message("\tTransferring animal slaughtered from animal to the following\n",
             "child commodities (Meat excluded):\n\t",
-            paste0(unique(currentCommodityTree$measuredItemChildCPC),
+            paste0(unique(currentNonMeatItem),
                    collapse = ", "))
 
-    transferedData =
-        currentCommodityTree %>%
-        transferParentToChild(commodityTree = .,
-                              parentData = animalData,
-                              selectedMeatTable = animalMeatMappingTable) %>%
-        postProcessing(data = .)
+    nonMeatMappingTable =
+        animalMeatMappingTable[measuredItemChildCPC %in% currentNonMeatItem, ]
+
+    animalNonMeatMappingShare =
+        merge(nonMeatMappingTable, shareData, all.x = TRUE,
+              by = c("measuredItemParentCPC", "measuredItemChildCPC"))
+
+    slaughteredTransferToNonMeatChildData =
+        transferParentToChild(parentData = animalData,
+                              childData = nonMeatData,
+                              mappingTable = animalNonMeatMappingShare,
+                              parentToChild = TRUE)
 
 
     ## ---------------------------------------------------------------------
     message("\tSaving the transferred data back")
 
-    transferedData %>%
+    slaughteredTransferToNonMeatChildData %>%
         ## TODO (Michael): Need to check whether the parent/child are
         ##                 synchronised.
         ensureProductionOutputs(data = .,
