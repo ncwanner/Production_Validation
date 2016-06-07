@@ -392,6 +392,7 @@ if(max(sapply(errorList, nrow)) > 0){
 } else {
     msg = "Production Input Validation passed without any error!"
     message(msg)
+    msg
 }
 
 
