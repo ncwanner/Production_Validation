@@ -107,20 +107,6 @@ processingParameters =
 ##' Obtain the complete imputation key
 completeImputationKey = getCompleteImputationKey()
 
-## TODO (Michael): This is to be removed.
-## getAnimalMeatMapping = function(onlyMeatChildren = FALSE,
-##                                 meatPattern = "^211(1|2|7).*"){
-##     mapping = fread("~/Downloads/animal_parent_child_mapping.csv",
-##                     colClasses = "character")
-##     if(onlyMeatChildren)
-##         mapping =
-##             subset(mapping,
-##                    measuredItemChildCPC %in%
-##                    selectMeatCodes(measuredItemChildCPC,
-##                                     meatPattern = meatPattern))
-##     mapping
-## }
-
 ##' Extract the animal parent to child commodity mapping table
 ##'
 ##' This table contains the parent item/element code which maps to the child
@@ -223,10 +209,14 @@ for(iter in seq(selectedMeatCode)){
         GetData(key = .) %>%
         fillRecord(data = .) %>%
         preProcessing(data = .) %>%
+        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = meatFormulaTable) %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters)
+                               formulaParameters = meatFormulaParameters,
+                               normalised = FALSE) %>%
+        normalise
+
 
 
 
@@ -271,10 +261,14 @@ for(iter in seq(selectedMeatCode)){
         GetData(key = .) %>%
         fillRecord(data = .) %>%
         preProcessing(data = .) %>%
+        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = animalFormulaTable) %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
-                               formulaParameters = animalFormulaParameters)
+                               formulaParameters = animalFormulaParameters,
+                               normalised = FALSE) %>%
+        normalise
+
 
 
     ## ---------------------------------------------------------------------
