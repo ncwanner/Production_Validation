@@ -2,23 +2,28 @@
 % Please edit documentation in R/transferParentToChild.R
 \name{transferParentToChild}
 \alias{transferParentToChild}
-\title{The function transfer values from parent to child}
+\title{Function to transfer values from parent to child.}
 \usage{
-transferParentToChild(parentData, commodityTree, selectedMeatTable)
+transferParentToChild(parentData, childData, mappingTable,
+  parentToChild = TRUE)
 }
 \arguments{
-\item{parentData}{The data containing the values of the parent}
+\item{parentData}{The animal slaughtered data from animal commodity.}
 
-\item{commodityTree}{The commodity tree returned by \code{getCommodityTree}.}
+\item{childData}{The animal slaughtered data from meat commodity.}
 
-\item{selectedMeatTable}{Table of the same format as the output of
-\code{getAnimalMeatMapping}.}
+\item{mappingTable}{The mapping table between the parent and the child.}
+
+\item{parentToChild}{logical, if true, slaughtered animal are transferred
+from animal commodity to meat, otherwise the otherway around.}
 }
 \value{
-A dataset with the codes of children items while values updated from
-    parents.
+The transferred data
 }
 \description{
-The function transfer values from parent to child
+When values transferred between parent and child, shares are applied. To
+transfer parent to children, we multiply by the share in order to obtain the
+share of parents used to produce the child commodity. In the reversed
+direction, the values are divided by the shares.
 }
 
