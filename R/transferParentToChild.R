@@ -91,7 +91,7 @@ transferParentToChild = function(parentData,
                                           measuredElementChild,
                                           Value_parent * share,
                                           flagObservationStatus_parent,
-                                          "c"))]
+                                          "i"))]
     } else {
         ## TODO (Michael): If share is zero, then the value of the child should
         ##                 be zero as well. An error should be thrown here.
@@ -105,12 +105,14 @@ transferParentToChild = function(parentData,
                                         measuredElementParent,
                                         Value_child/share,
                                         flagObservationStatus_child,
-                                        "c"))]
+                                        "i"))]
     }
 
 
     dataToBeReturned =
-        subset(parentChildMergedData, select = requiredColumn)
+        subset(parentChildMergedData,
+               select = requiredColumn,
+               subset = !is.na(Value))
 
 
     dataToBeReturned
