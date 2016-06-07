@@ -1,56 +1,117 @@
-##' The function transfer values from parent to child
+##' Function to transfer values from parent to child.
 ##'
-##' @param parentData The data containing the values of the parent
-##' @param commodityTree The commodity tree returned by \code{getCommodityTree}.
-##' @param selectedMeatTable Table of the same format as the output of
-##'     \code{getAnimalMeatMapping}.
+##' When values transferred between parent and child, shares are applied. To
+##' transfer parent to children, we multiply by the share in order to obtain the
+##' share of parents used to produce the child commodity. In the reversed
+##' direction, the values are divided by the shares.
 ##'
-##' @return A dataset with the codes of children items while values updated from
-##'     parents.
+##' @param parentData The animal slaughtered data from animal commodity.
+##' @param childData The animal slaughtered data from meat commodity.
+##' @param mappingTable The mapping table between the parent and the child.
+##' @param parentToChild logical, if true, slaughtered animal are transferred
+##'     from animal commodity to meat, otherwise the otherway around.
+##'
+##' @return The transferred data
 ##' @export
 
+transferParentToChild = function(parentData,
+                                 childData,
+                                 mappingTable,
+                                 parentToChild = TRUE){
 
-transferParentToChild = function(parentData, commodityTree, selectedMeatTable){
+    ## Input check
+    ##
+    ## TODO (Michael): Need an input check for mapping table as well.
+    requiredColumn = c("geographicAreaM49",
+                       "measuredItemCPC",
+                       "measuredElement",
+                       "timePointYears",
+                       "Value",
+                       "flagObservationStatus",
+                       "flagMethod")
 
-    ## Cartesian mapping is allowed as each parent has multiple child.
-    parentDataWithMapping =
-        merge(parentData, commodityTree,
-              by = c("geographicAreaM49", "timePointYears", "measuredItemCPC"),
-              all.x = TRUE,
-              allow.cartesian = TRUE)
-    if(any(is.na(parentDataWithMapping$measuredItemChildCPC))){
-        ## NOTE (Michael): After checking the validity of the commodity table,
-        ##                 we wil change the warning to an error.
-        ##
-        ## TODO (Michael): Check the wild card in the commodity tree.
-        ##
-        ## missingTable = parentDataWithMapping[is.na(measuredItemChildCPC), ]
-        ## stop("Not all child mapped,",
-        ##      "Please updated the commodity table so all child are mapped ",
-        ##      "for each country, commodity and year combination key",
-        ##      print(missingTable, NROW(missingTable)))
-        warning("Not all child mapped, unmapped children will be ommited! ",
-                "Please updated the commodity table so all child are mapped ",
-                "for each country, commodity and year combination key")
-        parentDataWithMapping =
-            parentDataWithMapping[!is.na(measuredItemChildCPC), ]
+    ensureDataInput(data = childData,
+                    requiredColumn = requiredColumn,
+                    returnData = FALSE)
+    ensureDataInput(data = parentData,
+                    requiredColumn = requiredColumn,
+                    returnData = FALSE)
+
+
+    ## Convert the names of the table
+    childDataCopy = copy(childData)
+    parentDataCopy = copy(parentData)
+
+    setnames(x = childDataCopy,
+             old = c("measuredItemCPC", "measuredElement",
+                     "Value", "flagObservationStatus", "flagMethod"),
+             new = c("measuredItemChildCPC", "measuredElementChild",
+                     paste0(c("Value", "flagObservationStatus", "flagMethod"),
+                            "_child")))
+    setnames(x = parentDataCopy,
+             old = c("measuredItemCPC", "measuredElement",
+                     "Value", "flagObservationStatus", "flagMethod"),
+             new = c("measuredItemParentCPC", "measuredElementParent",
+                     paste0(c("Value", "flagObservationStatus", "flagMethod"),
+                            "_parent")))
+
+    ## Merge the three input dataset
+    childMergeCol = intersect(colnames(childDataCopy),
+                              colnames(mappingTable))
+    childDataMapped = merge(childDataCopy, mappingTable,
+                            by = childMergeCol, all.y = TRUE)
+
+    parentMergeCol = intersect(colnames(parentDataCopy),
+                               colnames(mappingTable))
+    parentDataMapped = merge(parentDataCopy, mappingTable,
+                             by = parentMergeCol, all.y = TRUE)
+
+    mergeAllCol = intersect(colnames(childDataMapped),
+                            colnames(parentDataMapped))
+    parentChildMergedData = merge(childDataMapped, parentDataMapped,
+                                  by = mergeAllCol, all = TRUE)
+
+    ## If share is missing, it is defaulted to 1
+    parentChildMergedData[is.na(share), `:=`(c("share"), 1)]
+
+    ## Transfer the value from parent to child or the other way round.
+    ##
+    ## TODO (Michael): Need to check what can be copied.
+    ##
+    ## NOTE (Michael): I think everything should be copied except for protected
+    ##                 data. An error should be thrown when both value are
+    ##                 protected data.
+    if(parentToChild){
+        parentChildMergedData[, `:=`(c("measuredItemCPC",
+                                       "measuredElement",
+                                       "Value",
+                                       "flagObservationStatus",
+                                       "flagMethod"),
+                                     list(measuredItemChildCPC,
+                                          measuredElementChild,
+                                          Value_parent * share,
+                                          flagObservationStatus_parent,
+                                          "c"))]
+    } else {
+        ## TODO (Michael): If share is zero, then the value of the child should
+        ##                 be zero as well. An error should be thrown here.
+        parentChildMergedData[share != 0,
+                              `:=`(c("measuredItemCPC",
+                                     "measuredElement",
+                                     "Value",
+                                     "flagObservationStatus",
+                                     "flagMethod"),
+                                   list(measuredItemParentCPC,
+                                        measuredElementParent,
+                                        Value_child/share,
+                                        flagObservationStatus_child,
+                                        "c"))]
     }
 
-    ## TODO (Michael): Need to check for the observation and method flags
-    parentDataWithMapping[, `:=`(c("Value"), list(Value * share))]
-    parentDataWithMapping[, `:=`(c("measuredItemCPC", "extractionRate", "share"),
-                                 list(NULL, NULL, NULL))]
-    setnames(parentDataWithMapping, "measuredItemChildCPC", "measuredItemCPC")
+
+    dataToBeReturned =
+        subset(parentChildMergedData, select = requiredColumn)
 
 
-    childElementTable =
-        selectedMeatTable[, c("measuredItemChildCPC", "measuredElementChild"),
-                          with = FALSE]
-    setnames(childElementTable, "measuredItemChildCPC", "measuredItemCPC")
-    setkeyv(childElementTable, cols = "measuredItemCPC")
-    setkeyv(parentDataWithMapping, cols = "measuredItemCPC")
-    parentDataWithMapping[childElementTable,
-                          `:=`(measuredElement, i.measuredElementChild)]
-    setcolorder(parentDataWithMapping, neworder = colnames(parentData))
-    parentDataWithMapping
+    dataToBeReturned
 }
