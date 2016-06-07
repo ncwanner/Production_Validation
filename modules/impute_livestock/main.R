@@ -142,7 +142,7 @@ animalMeatMappingTable =
 ##' (edible offal of cattle, fresh, chilled or frozen), 21512 (cattle fat,
 ##' unrendered), and 02951.01 (raw hides and skins of cattle).
 ##'
-##' The elements are also expanded
+##' The elements are also expanded to the required triplet.
 
 livestockImputationItems =
     completeImputationKey %>%
@@ -168,11 +168,13 @@ selectedMeatCode =
 ##' ---
 ##' ## Perform Synchronisation and Imputation
 
-##' Iterate through the selected meat items and transfer the the animal
-##' slaughtered from the animal parent to the child commodity such as offals and
-##' skins.
+##' Here we iterate through the the meat item to perform the steps described in
+##' the description. Essentially, we are looping over different livestock trees.
+
 
 for(iter in seq(selectedMeatCode)){
+    message("Processing livestock tree (", iter, " out of ",
+            length(selectedMeatCode), ")")
     message("Step 1: Extract Transfer Animal Slaughtered from animal commodity to Meat")
     currentMeatItem = selectedMeatCode[iter]
     currentMappingTable =
