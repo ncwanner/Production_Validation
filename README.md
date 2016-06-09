@@ -78,6 +78,35 @@ are introduced in the post validation phase.
 
 ---
 
+## Auxiliary Datasets
+
+The production modules in addition to the main production data
+(`agriculture:aproduction`) depends on several auxiliary datasets detailed
+below:
+
+* `Livestock Element Mapping Table`: This table provides the mapping of element
+  codes between a parent commodity and child commodity. The table is currently
+  on the Statistical Shared Drive under
+  '/kao/production/animal_parent_child_mapping.csv'. A request is already sent
+  to migrate the table into the system, please see issue
+  [#128](https://github.com/SWS-Methodology/faoswsProduction/issues/128). The
+  table can be accessed via the `getAnimalMeatMapping` function.
+
+* `Identity Formula Table`: This table contains the triplet element code (input,
+  output and productivity) for each commodity. The triplet is used to calculate
+  the equation `output = input x productivity`. In the case of crops, it
+  translates to `Production = area harvested x yield` where as in the case of
+  meat it corresponds to `Production = Animal Slaughtered x Carcass Weight`.
+  This is a DataTable on the system under the name `item_type_yield_elements`
+  and can be retrieved with the function `getYieldFormula`.
+
+* `Share table`: This dataset contains the share used to allocate parent
+  commodities to child commodities. When transferring values from parent to
+  child, `share` determines the proportion of the parent commodity is allocated
+  to produce the child commodity. This is a Dataset on the SWS
+  (`agriculture:aupus_share`) and can be accessed with the function
+  `faoswsUtil:getShareData`.
+
 ## Production Processing
 
 During the production imputation phase, certain values based on their
