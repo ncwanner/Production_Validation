@@ -5,8 +5,7 @@
 \title{This function imputes the whole production domain.}
 \usage{
 imputeProductionTriplet(data, processingParameters, formulaParameters,
-  areaHarvestedImputationParameters, yieldImputationParameters,
-  productionImputationParameters)
+  imputationParameters)
 }
 \arguments{
 \item{data}{The data}
@@ -18,16 +17,8 @@ point.}
 \item{formulaParameters}{A list holding the names and parmater of formulas.
 See \code{productionFormulaParameters}.}
 
-\item{areaHarvestedImputationParameters}{A list of the parameters for the
-area harvested imputation. See defaultImputationParameters() for a
-starting point.}
-
-\item{yieldImputationParameters}{A list of the parameters for the yield
-imputation. See defaultImputationParameters() for a starting point.}
-
-\item{productionImputationParameters}{A list of the parameters for the
-production imputation. See defaultImputationParameters() for a starting
-point.}
+\item{imputationParameters}{A list holding the imputation parameters, see
+\code{getImputationParameters}.}
 }
 \description{
 The function will impute production, area harvested and yield at the same
