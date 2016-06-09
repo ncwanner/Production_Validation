@@ -188,20 +188,32 @@ autoValueCorrection = function(data,
 selectedItem = getQueryKey("measuredItemCPC", selectedKey)
 
 ##' The tests and test messages
-tests = c("flag_validity", "production_range", "areaHarvested_range",
-          "yield_range", "balanced")
+tests = c("flag_validity", "correct_missing_value",
+          "production_range", "areaHarvested_range", "yield_range", "balanced")
 
 ##' Initialise the error list
 errorList = vector("list", length(tests))
 
-##' Check the flags
-errorList[[1]] =
+completeData =
     GetData(selectedKey) %>%
     subset(!is.na(flagObservationStatus) |
-           !is.na(flagMethod)) %>%
+           !is.na(flagMethod))
+
+##' Check the flags
+errorList[[1]] =
+    completeData %>%
     ensureFlagValidity(data = .,
                        getInvalidData = TRUE)
 
+##' Ensuring missing values are correctly specified
+errorList[[2]] =
+    completeData %>%
+    ensureCorrectMissingValue(data = .,
+                              valueVar = "Value",
+                              flagObservationStatusVar = "flagObservationStatus",
+                              missingObservationFlag = "M",
+                              returnData = FALSE,
+                              getInvalidData = TRUE)
 
 ##' Perform input validation item by item
 for(iter in seq(selectedItem)){
@@ -264,7 +276,7 @@ for(iter in seq(selectedItem)){
 
 
         ## Check production value
-        errorList[[2]] =
+        errorList[[3]] =
             with(formulaParameters,
             {
                 rawData %>%
@@ -272,12 +284,12 @@ for(iter in seq(selectedItem)){
                                      ensureColumn = productionValue,
                                      getInvalidData = TRUE) %>%
                     normalise %>%
-                    rbind(errorList[[2]], .)
+                    rbind(errorList[[3]], .)
             }
             )
 
         ## Check area harvested value
-        errorList[[3]] =
+        errorList[[4]] =
             with(formulaParameters,
             {
                 rawData %>%
@@ -285,12 +297,12 @@ for(iter in seq(selectedItem)){
                                      ensureColumn = areaHarvestedValue,
                                      getInvalidData = TRUE) %>%
                     normalise %>%
-                    rbind(errorList[[3]], .)
+                    rbind(errorList[[4]], .)
             }
             )
 
         ## Check yield value
-        errorList[[4]] =
+        errorList[[5]] =
             with(formulaParameters,
             {
                 rawData %>%
@@ -299,12 +311,12 @@ for(iter in seq(selectedItem)){
                                      getInvalidData = TRUE,
                                      includeEndPoint = FALSE) %>%
                     normalise %>%
-                    rbind(errorList[[4]], .)
+                    rbind(errorList[[5]], .)
             }
             )
 
         ## Check production domain balanced.
-        errorList[[5]] =
+        errorList[[6]] =
             with(formulaParameters,
             {
                 rawData %>%
@@ -316,7 +328,7 @@ for(iter in seq(selectedItem)){
                                              getInvalidData = TRUE,
                                              normalised = FALSE) %>%
                     normalise %>%
-                    rbind(errorList[[5]], .)
+                    rbind(errorList[[6]], .)
             }
             )
 
@@ -370,10 +382,11 @@ if(max(sapply(errorList, nrow)) > 0){
     subject = "Validation Result"
     body = paste0("There are 5 tests current in the system:\n",
                   "1. Flag validity: Whether a flag is valid\n",
-                  "2. Production range: [0, Inf)\n",
-                  "3. Area Harvested range: [0, Inf)\n",
-                  "4. Yield range: (0, Inf)\n",
-                  "5. Production balanced")
+                  "2. Missing values are correctly specified\n",
+                  "3. Production range: [0, Inf)\n",
+                  "4. Area Harvested range: [0, Inf)\n",
+                  "5. Yield range: (0, Inf)\n",
+                  "6. Production balanced")
 
 
     ## Function to attach error to email
