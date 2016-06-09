@@ -13,8 +13,8 @@
 ##' **Inputs:**
 ##'
 ##' * Production domain
-##' * Animal to meat mapping table
-##' * Yield formula table
+##' * Livestock Element Mapping Table
+##' * Identity Formula Table
 ##'
 ##' **Flag Changes:**
 ##'

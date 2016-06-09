@@ -10,7 +10,7 @@
 ##' **Inputs:**
 ##'
 ##' * Production domain
-##' * Yield formula table
+##' * Identity Formula Table
 ##'
 ##' **Steps:**
 ##'

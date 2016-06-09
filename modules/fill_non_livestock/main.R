@@ -12,7 +12,7 @@
 ##'
 ##' * Production domain
 ##' * Imputed `.rds` object
-##' * Yield formula table
+##' * Identity Formula Table
 ##'
 ##' **Flag Changes:**
 ##'

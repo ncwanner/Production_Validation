@@ -28,9 +28,8 @@
 ##' **Inputs:**
 ##'
 ##' * Production domain
-##' * Animal to meat mapping table
-##' * Flag table
-##' * Yield formula table
+##' * Livestock Element Mapping Table
+##' * Identity Formula table
 ##' * Share table
 ##'
 ##' **Steps:**
@@ -130,7 +129,8 @@ completeImputationKey = getCompleteImputationKey()
 ##                 code in the classification. This will eliminate the change of
 ##                 code in the transfer procedure.
 animalMeatMappingTable =
-    getAnimalMeatMapping(onlyMeatChildren = FALSE) %>%
+    getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
+                         onlyMeatChildren = FALSE) %>%
     select(measuredItemParentCPC, measuredElementParent,
            measuredItemChildCPC, measuredElementChild)
 
