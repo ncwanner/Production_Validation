@@ -12,15 +12,8 @@
 ##'     point.
 ##' @param formulaParameters A list holding the names and parmater of formulas.
 ##'     See \code{productionFormulaParameters}.
-##' @param yieldImputationParameters A list of the parameters for the yield
-##'     imputation. See defaultImputationParameters() for a starting point.
-##' @param productionImputationParameters A list of the parameters for the
-##'     production imputation. See defaultImputationParameters() for a starting
-##'     point.
-##' @param areaHarvestedImputationParameters A list of the parameters for the
-##'     area harvested imputation. See defaultImputationParameters() for a
-##'     starting point.
-##'
+##' @param imputationParameters A list holding the imputation parameters, see
+##'     \code{getImputationParameters}.
 ##' @export
 ##'
 ##' @import faoswsImputation
@@ -30,10 +23,12 @@
 imputeProductionTriplet = function(data,
                                   processingParameters,
                                   formulaParameters,
-                                  areaHarvestedImputationParameters,
-                                  yieldImputationParameters,
-                                  productionImputationParameters){
+                                  imputationParameters){
     originDataType = sapply(data, FUN = typeof)
+
+    areaHarvestedImputationParameters = imputationParameters$areaHarvestedParams
+    yieldImputationParameters = imputationParameters$yieldParams
+    productionImputationParameters = imputationParameters$productionParams
 
     message("Initializing ... ")
     dataCopy = copy(data)
@@ -57,9 +52,6 @@ imputeProductionTriplet = function(data,
                  processingParameters = processingParameters,
                  formulaParameters = formulaParameters)
     ## Check whether all values are missing
-    ##
-    ## NOTE (Michael): The imputation module fails if all yield are
-    ##                 missing.
     allYieldMissing = all(is.na(dataCopy[[formulaParameters$yieldValue]]))
     allProductionMissing = all(is.na(dataCopy[[formulaParameters$productionValue]]))
     allAreaMissing = all(is.na(dataCopy[[formulaParameters$areaHarvestedValue]]))

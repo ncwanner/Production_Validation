@@ -202,12 +202,11 @@ for(iter in seq(selectedItemCode)){
 
     ## Perform imputation
     imputed =
-        imputeWithAndWithoutEstimates(
+        imputeProductionTriplet(
             data = processedData,
             processingParameters = processingParameters,
             formulaParameters = formulaParameters,
-            imputationParameters = imputationParameters,
-            minObsForEst = 5)
+            imputationParameters = imputationParameters)
 
     ## Check the imputation before saving.
     imputed %>%

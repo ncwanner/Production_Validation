@@ -28,15 +28,6 @@ imputeWithAndWithoutEstimates = function(data,
     dataCopy = copy(data)
     if(NROW(dataCopy) > 0){
 
-        ## NOTE (Michael): Stop the plotting.
-        imputationParameters$yieldParams$plotImputation = ""
-        imputationParameters$productionParams$plotImputation = ""
-        imputationParameters$areaHarvestedParams$plotImputation = ""
-
-        yieldParams = imputationParameters$yieldParams
-        productionParams = imputationParameters$productionParams
-        areaHarvestedParams = imputationParameters$areaHarvestedParams
-
         ## HACK (Michael): The following is to account for the case
         ##                 where the data becomes empty after the
         ##                 processing.
@@ -71,11 +62,7 @@ imputeWithAndWithoutEstimates = function(data,
             imputeProductionTriplet(copy(dataCopy),
                                    processingParameters = processingParameters,
                                    formulaParameters = formulaParameters,
-                                   areaHarvestedImputationParameters =
-                                       areaHarvestedParams,
-                                   yieldImputationParameters = yieldParams,
-                                   productionImputationParameters =
-                                       productionParams)
+                                   imputationParameters = imputationParameters)
 
         ## Now impute while leaving estimates in
         processingParameters$removeManualEstimation = FALSE
@@ -84,11 +71,7 @@ imputeWithAndWithoutEstimates = function(data,
             imputeProductionTriplet(copy(dataCopy),
                                    processingParameters = processingParameters,
                                    formulaParameters = formulaParameters,
-                                   areaHarvestedImputationParameters =
-                                       areaHarvestedParams,
-                                   yieldImputationParameters = yieldParams,
-                                   productionImputationParameters =
-                                       productionParams)
+                                   imputationParameters = imputationParameters)
 
         ## Select imputed data without estimates
         imputationNormalised1 = normalise(imputation1)
