@@ -245,10 +245,10 @@ for(iter in seq(selectedMeatCode)){
         preProcessing(data = .) %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = meatFormulaTable) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters,
-                               normalised = FALSE) %>%
+        ## ensureProductionInputs(data = .,
+        ##                        processingParameters = processingParameters,
+        ##                        formulaParameters = meatFormulaParameters,
+        ##                        normalised = FALSE) %>%
         normalise
 
     ## ---------------------------------------------------------------------
@@ -294,10 +294,10 @@ for(iter in seq(selectedMeatCode)){
         preProcessing(data = .) %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = animalFormulaTable) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = animalFormulaParameters,
-                               normalised = FALSE) %>%
+        ## ensureProductionInputs(data = .,
+        ##                        processingParameters = processingParameters,
+        ##                        formulaParameters = animalFormulaParameters,
+        ##                        normalised = FALSE) %>%
         normalise
 
 
@@ -325,10 +325,10 @@ for(iter in seq(selectedMeatCode)){
         preProcessing(data = .) %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = nonMeatFormulaTable) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters,
-                               normalised = FALSE) %>%
+        ## ensureProductionInputs(data = .,
+        ##                        processingParameters = processingParameters,
+        ##                        formulaParameters = meatFormulaParameters,
+        ##                        normalised = FALSE) %>%
         normalise
 
 
@@ -356,10 +356,10 @@ for(iter in seq(selectedMeatCode)){
     ##                 module.
     slaughteredTransferedToMeat %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
-        normalise
+        ## ensureProductionOutputs(data = .,
+        ##                         processingParameters = processingParameters,
+        ##                         formulaParameters = meatFormulaParameters) %>%
+        normalise %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -391,10 +391,10 @@ for(iter in seq(selectedMeatCode)){
         meatKey %>%
         GetData(key = .) %>%
         fillRecord(data = .) %>%
-        preProcessing(data = .) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters)
+        preProcessing(data = .)##  %>%
+        ## ensureProductionInputs(data = .,
+        ##                        processingParameters = processingParameters,
+        ##                        formulaParameters = meatFormulaParameters)
 
 
     ## Denormalise and then process the meat data
@@ -410,13 +410,13 @@ for(iter in seq(selectedMeatCode)){
 
     ## Perform imputation using the standard imputation function
     message("\tPerfoming Imputation")
+
     meatImputed =
-        imputeWithAndWithoutEstimates(
+        imputeProductionTriplet(
             data = processedMeatData,
             processingParameters = processingParameters,
             imputationParameters = imputationParameters,
-            formulaParameters = meatFormulaParameters,
-            minObsForEst = 5)
+            formulaParameters = meatFormulaParameters)
 
 
     message("\tSaving imputed meat data back")
@@ -424,9 +424,9 @@ for(iter in seq(selectedMeatCode)){
     meatImputed %>%
         normalise(.) %>%
         ## NOTE (Michael): Need to apply the formula for from the meat.
-        ensureProductionOutput(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters) %>%
+        ## ensureProductionOutput(data = .,
+        ##                        processingParameters = processingParameters,
+        ##                        formulaParameters = meatFormulaParameters) %>%
         postProcessing(data = .) %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -458,9 +458,9 @@ for(iter in seq(selectedMeatCode)){
     ##                 module.
 
     slaughteredTransferedBackToAnimal %>%
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formEulaParameters = meatFormulaParameters) %>%
+        ## ensureProductionOutputs(data = .,
+        ##                         processingParameters = processingParameters,
+        ##                         formEulaParameters = meatFormulaParameters) %>%
         postProcessing(data = .) %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -496,9 +496,9 @@ for(iter in seq(selectedMeatCode)){
     slaughteredTransferToNonMeatChildData %>%
         ## TODO (Michael): Need to check whether the parent/child are
         ##                 synchronised.
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
+        ## ensureProductionOutputs(data = .,
+        ##                         processingParameters = processingParameters,
+        ##                         formulaParameters = meatFormulaParameters) %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
