@@ -8,9 +8,9 @@ transferParentToChild(parentData, childData, mappingTable,
   parentToChild = TRUE)
 }
 \arguments{
-\item{parentData}{The animal slaughtered data from animal commodity.}
+\item{parentData}{The data for animal commodity.}
 
-\item{childData}{The animal slaughtered data from meat commodity.}
+\item{childData}{The data for meat commodity.}
 
 \item{mappingTable}{The mapping table between the parent and the child.}
 
@@ -18,12 +18,30 @@ transferParentToChild(parentData, childData, mappingTable,
 from animal commodity to meat, otherwise the otherway around.}
 }
 \value{
-The transferred data
+An updated dataset depending on the direction of the transfer. The
+    output dataset is strictly greater than the original target dataset.
 }
 \description{
 When values transferred between parent and child, shares are applied. To
 transfer parent to children, we multiply by the share in order to obtain the
 share of parents used to produce the child commodity. In the reversed
 direction, the values are divided by the shares.
+}
+\details{
+An outer merge is applied for all the merge, this is to ensure no values are
+omitted. Three different type of matching occur as a result and they are:
+
+\enumerate{
+
+\item{1. Value available in origin but not in target}{In this case, the
+target is filled with the new calculated value.}
+
+\item{2. Value present in origin and in target}{In this case, the target
+cell is replaced with the new calculated value.}
+
+\item{3. Value present in target but not in origin}{The value in the target
+is retained.}
+
+}
 }
 
