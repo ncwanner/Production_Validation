@@ -116,7 +116,7 @@ processingParameters =
     productionProcessingParameters(datasetConfig = datasetConfig)
 
 ##' Obtain the complete imputation key
-completeImputationKey = getCompleteImputationKey()
+completeImputationKey = getCompleteImputationKey("production")
 
 ##' Extract the animal parent to child commodity mapping table
 ##'

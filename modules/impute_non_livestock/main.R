@@ -79,7 +79,7 @@ processingParameters =
 
 
 ##' Get the full imputation Datakey
-completeImputationKey = getCompleteImputationKey()
+completeImputationKey = getCompleteImputationKey("production")
 
 
 ##' NOTE (Michael): Since the animal/meat are currently imputed by the
