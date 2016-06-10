@@ -96,19 +96,6 @@ ensureProductionOutputs = function(data,
                                           conversion = unitConversion,
                                           returnData = FALSE,
                                           normalised = FALSE)
-
-                 ## Ensure protected data are not over-written
-                 ensureProtectedData(data = dataCopy,
-                                     domain = domain,
-                                     dataset = dataset,
-                                     areaVar = areaVar,
-                                     itemVar = itemVar,
-                                     elementVar = elementVar,
-                                     yearVar = yearVar,
-                                     flagObservationVar = flagObsservationVar,
-                                     flagMethodVar = flagMethodVar,
-                                     returnData = FALSE,
-                                     normalised = FALSE)
              })
 
              if(testImputed){
