@@ -33,16 +33,19 @@ imputeProductionTriplet = function(data,
     message("Initializing ... ")
     dataCopy = copy(data)
     ## Data Quality Checks
-    ensureImputationInputs(data = dataCopy,
-                           imputationParameters = yieldImputationParameters)
-    ensureImputationInputs(data = dataCopy,
-                           imputationParameters = productionImputationParameters)
+    suppressMessages({
+        ensureImputationInputs(data = dataCopy,
+                               imputationParameters = yieldImputationParameters)
+        ensureImputationInputs(data = dataCopy,
+                               imputationParameters =
+                                   productionImputationParameters)
 
-    ensureProductionInputs(dataCopy,
-                           processingParameters = processingParameters,
-                           formulaParameters = formulaParameters,
-                           returnData = FALSE,
-                           normalised = FALSE)
+        ensureProductionInputs(dataCopy,
+                               processingParameters = processingParameters,
+                               formulaParameters = formulaParameters,
+                               returnData = FALSE,
+                               normalised = FALSE)
+    })
 
     setkeyv(x = dataCopy, cols = c(processingParameters$areaVar,
                                    processingParameters$yearValue))
