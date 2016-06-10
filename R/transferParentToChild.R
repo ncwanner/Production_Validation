@@ -59,12 +59,12 @@ transferParentToChild = function(parentData,
     childMergeCol = intersect(colnames(childDataCopy),
                               colnames(mappingTable))
     childDataMapped = merge(childDataCopy, mappingTable,
-                            by = childMergeCol, all.y = TRUE)
+                            by = childMergeCol, all = TRUE)
 
     parentMergeCol = intersect(colnames(parentDataCopy),
                                colnames(mappingTable))
     parentDataMapped = merge(parentDataCopy, mappingTable,
-                             by = parentMergeCol, all.y = TRUE)
+                             by = parentMergeCol, all = TRUE)
 
     mergeAllCol = intersect(colnames(childDataMapped),
                             colnames(parentDataMapped))
@@ -82,38 +82,75 @@ transferParentToChild = function(parentData,
     ##                 data. An error should be thrown when both value are
     ##                 protected data.
     if(parentToChild){
-        parentChildMergedData[, `:=`(c("measuredItemCPC",
-                                       "measuredElement",
-                                       "Value",
-                                       "flagObservationStatus",
-                                       "flagMethod"),
-                                     list(measuredItemChildCPC,
-                                          measuredElementChild,
-                                          Value_parent * share,
-                                          flagObservationStatus_parent,
-                                          "i"))]
+
+        isMapped =
+            with(parentChildMergedData,
+                 !is.na(measuredItemChildCPC) &
+                 !is.na(measuredElementChild))
+        origCellAvailable =
+            with(parentChildMergedData,
+                 !is.na(Value_parent) &
+                 !is.na(flagObservationStatus_parent))
+
+        parentChildMergedData[
+            isMapped & origCellAvailable,
+            `:=`(c("Value_child",
+                   "flagObservationStatus_child",
+                   "flagMethod_child"),
+                 list(Value_parent * share,
+                      flagObservationStatus_parent,
+                      "i"))]
+
+        setnames(parentChildMergedData,
+                 old = c("measuredItemChildCPC",
+                         "measuredElementChild",
+                         "Value_child",
+                         "flagObservationStatus_child",
+                         "flagMethod_child"),
+                 new = c("measuredItemCPC",
+                         "measuredElement",
+                         "Value",
+                         "flagObservationStatus",
+                         "flagMethod"))
     } else {
+
         ## TODO (Michael): If share is zero, then the value of the child should
         ##                 be zero as well. An error should be thrown here.
-        parentChildMergedData[share != 0,
-                              `:=`(c("measuredItemCPC",
-                                     "measuredElement",
-                                     "Value",
-                                     "flagObservationStatus",
-                                     "flagMethod"),
-                                   list(measuredItemParentCPC,
-                                        measuredElementParent,
-                                        Value_child/share,
-                                        flagObservationStatus_child,
-                                        "i"))]
+        isMapped =
+            with(parentChildMergedData,
+                 !is.na(measuredItemParentCPC) &
+                 !is.na(measuredElementParent))
+        origCellAvailable =
+            with(parentChildMergedData,
+                 !is.na(Value_child) &
+                 !is.na(flagObservationStatus_child))
+
+        parentChildMergedData[
+            share != 0 & isMapped & origCellAvailable,
+            `:=`(c("Value_parent",
+                   "flagObservationStatus_parent",
+                   "flagMethod_parent"),
+                 list(Value_child/share,
+                      flagObservationStatus_child,
+                      "i"))]
+
+        setnames(parentChildMergedData,
+                 old = c("measuredItemParentCPC",
+                         "measuredElementParent",
+                         "Value_parent",
+                         "flagObservationStatus_parent",
+                         "flagMethod_parent"),
+                 new = c("measuredItemCPC",
+                         "measuredElement",
+                         "Value",
+                         "flagObservationStatus",
+                         "flagMethod"))
     }
 
 
     dataToBeReturned =
         subset(parentChildMergedData,
                select = requiredColumn,
-               subset = !is.na(Value))
-
-
+               subset = !is.na(flagObservationStatus))
     dataToBeReturned
 }
