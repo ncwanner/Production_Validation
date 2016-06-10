@@ -106,17 +106,11 @@ sessionItems =
     getQueryKey("measuredItemCPC", sessionKey) %>%
     intersect(., nonLivestockImputationItems)
 
-##' This returns the list of items current does not have an imputed dataset.
-missingItems =
-    nonLivestockImputationItems[!imputationExist(savePath,
-                                                 nonLivestockImputationItems)]
-
 ##' Select the commodities based on the user input parameter
 selectedItemCode =
     switch(imputationSelection,
-           session = sessionItems,
-           all = nonLivestockImputationItems,
-           missing_items = missingItems)
+           "session" = sessionItems,
+           "all" = nonLivestockImputationItems)
 
 ##' ---
 ##' ## Perform Imputation
@@ -167,8 +161,6 @@ for(iter in seq(selectedItemCode)){
                                      yieldCode = yieldCode)
              )
 
-    saveFileName = createImputationObjectName(item = currentItem)
-
     ## NOTE (Michael): We now impute the full triplet rather than
     ##                 just production for non-primary
     ##                 products. However, in the imputeModel
@@ -195,7 +187,7 @@ for(iter in seq(selectedItemCode)){
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
                     fillEmptyRecords = TRUE) %>%
-        createTriplet(data = ., formula = meatFormulaTable) %>%
+        createTriplet(data = ., formula = formulaTable) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = formulaParameters)
@@ -206,28 +198,28 @@ for(iter in seq(selectedItemCode)){
             data = processedData,
             processingParameters = processingParameters,
             formulaParameters = formulaParameters,
-            imputationParameters = imputationParameters)
+            imputationParameters = imputationParameters) %>%
+        subset(x = ., select = -ensembleVariance)
+
 
     ## Check the imputation before saving.
     imputed %>%
-        normalise(.) %>%
+        mutate(timePointYears = as.character(timePointYears)) %>%
         ensureProductionOutputs(data = .,
                                 processingParameters = processingParameters,
-                                formulaParameters = formulaParameters) %>%
+                                formulaParameters = formulaParameters,
+                                normalised = FALSE) %>%
+        normalise(.) %>%
+        filter(., flagMethod == "i" |
+                  (flagObservationStatus == "I" &
+                   flagMethod == "e")) %>%
+        ensureProtectedData(data = .,
+                            domain = sessionKey@domain,
+                            dataset = sessionKey@dataset) %>%
         postProcessing(data = .) %>%
-        {
-            ## HACK (Michael): Before we decide how to deal with the flags,
-            ##                 we will not perform this check as we can not
-            ##                 determine what is considered 'protected'
-            ##
-            ## Check whether protected data are being over-written
-            ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
-            ##     checkProtectedData(dataToBeSaved = .) %>%
-            ##     print(.)
-
-            ## Save the fitted object for future loading
-            saveRDS(object = ., file = paste0(savePath, saveFileName))
-        }
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
+                 data = .)
 
 }
 
@@ -235,4 +227,3 @@ for(iter in seq(selectedItemCode)){
 ##' ## Return Message
 
 message("Imputation Completed Successfully")
-
