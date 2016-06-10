@@ -33,24 +33,27 @@ imputeProductionTriplet = function(data,
     message("Initializing ... ")
     dataCopy = copy(data)
     ## Data Quality Checks
-    ensureImputationInputs(data = dataCopy,
-                           imputationParameters = yieldImputationParameters)
-    ensureImputationInputs(data = dataCopy,
-                           imputationParameters = productionImputationParameters)
+    suppressMessages({
+        ensureImputationInputs(data = dataCopy,
+                               imputationParameters = yieldImputationParameters)
+        ensureImputationInputs(data = dataCopy,
+                               imputationParameters =
+                                   productionImputationParameters)
 
-    ensureProductionInputs(dataCopy,
-                           processingParameters = processingParameters,
-                           formulaParameters = formulaParameters,
-                           returnData = FALSE,
-                           normalised = FALSE)
+        ensureProductionInputs(dataCopy,
+                               processingParameters = processingParameters,
+                               formulaParameters = formulaParameters,
+                               returnData = FALSE,
+                               normalised = FALSE)
+    })
 
     setkeyv(x = dataCopy, cols = c(processingParameters$areaVar,
                                    processingParameters$yearValue))
 
 
-    computeYield(dataCopy,
-                 processingParameters = processingParameters,
-                 formulaParameters = formulaParameters)
+    dataCopy = computeYield(dataCopy,
+                            processingParameters = processingParameters,
+                            formulaParameters = formulaParameters)
     ## Check whether all values are missing
     allYieldMissing = all(is.na(dataCopy[[formulaParameters$yieldValue]]))
     allProductionMissing = all(is.na(dataCopy[[formulaParameters$productionValue]]))
@@ -83,15 +86,16 @@ imputeProductionTriplet = function(data,
         message("Number of values still missing: ", n.missYield2)
 
         ## Balance production now using imputed yield
-        balanceProduction(data = dataCopy,
-                          processingParameters = processingParameters,
-                          formulaParameters = formulaParameters)
+        dataCopy =
+            balanceProduction(data = dataCopy,
+                              processingParameters = processingParameters,
+                              formulaParameters = formulaParameters)
 
         ## NOTE (Michael): Check again whether production is available
         ##                 now after it is balanced.
         allProductionMissing = all(is.na(dataCopy[[formulaParameters$productionValue]]))
     } else {
-        warning("The input dataset contains insufficient data for imputation to perform!")
+        warning("The input dataset contains insufficient data to impute yield!")
     }
 
     if(!all(allProductionMissing)){
@@ -108,7 +112,7 @@ imputeProductionTriplet = function(data,
             n.missProduction - n.missProduction2)
         message("Number of values still missing: ", n.missProduction2)
     } else {
-        warning("The input dataset contains insufficient data for imputation to perform!")
+        warning("The input dataset contains insufficient data to impute production!")
     }
 
     ## step four: balance area harvested
@@ -117,9 +121,10 @@ imputeProductionTriplet = function(data,
         length(which(is.na(
             dataCopy[[formulaParameters$areaHarvestedValue]])))
 
-    balanceAreaHarvested(data = dataCopy,
-                         processingParameters = processingParameters,
-                         formulaParameters = formulaParameters)
+    dataCopy =
+        balanceAreaHarvested(data = dataCopy,
+                             processingParameters = processingParameters,
+                             formulaParameters = formulaParameters)
     allAreaMissing = all(is.na(dataCopy[[formulaParameters$areaHarvestedValue]]))
 
     if(!all(allAreaMissing)){
@@ -143,9 +148,10 @@ imputeProductionTriplet = function(data,
                         formulaParameters$yieldObservationFlag,
                         formulaParameters$yieldMethodFlag),
                       list(NA, "M", "u"))]
-        computeYield(dataCopy,
-                     processingParameters = processingParameters,
-                     formulaParameters = formulaParameters)
+        dataCopy =
+            computeYield(dataCopy,
+                         processingParameters = processingParameters,
+                         formulaParameters = formulaParameters)
         imputeVariable(data = dataCopy,
                        imputationParameters = yieldImputationParameters)
     } ## End of HACK.

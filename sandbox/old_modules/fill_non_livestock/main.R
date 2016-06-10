@@ -63,7 +63,7 @@ if(CheckDebug()){
 selectedKey = swsContext.datasets[[1]]
 
 ##' Get the full imputation Datakey
-completeImputationKey = getCompleteImputationKey()
+completeImputationKey = getCompleteImputationKey("production")
 
 ##' Subset the item of the complete key to the selected items. We use the
 ##' complete key to subset as the selection may not include the full list of

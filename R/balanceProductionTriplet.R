@@ -22,11 +22,13 @@ balanceProductionTriplet = function(data,
     dataCopy = copy(data)
 
     ## Data quality check
-    ensureProductionInputs(dataCopy,
-                           processingParameters = processingParameters,
-                           formulaParameters = formulaParameters,
-                           returnData = FALSE,
-                           normalised = FALSE)
+    suppressMessages({
+        ensureProductionInputs(dataCopy,
+                               processingParameters = processingParameters,
+                               formulaParameters = formulaParameters,
+                               returnData = FALSE,
+                               normalised = FALSE)
+    })
 
     yieldComputed =
         computeYield(data = dataCopy,

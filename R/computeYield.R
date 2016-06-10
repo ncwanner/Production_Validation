@@ -23,11 +23,13 @@ computeYield = function(data,
     dataCopy = copy(data)
 
     ## Data quality check
-    ensureProductionInputs(dataCopy,
-                           processingParameters = processingParameters,
-                           formulaParameters = formulaParameters,
-                           returnData = FALSE,
-                           normalised = FALSE)
+    suppressMessages({
+        ensureProductionInputs(dataCopy,
+                               processingParameters = processingParameters,
+                               formulaParameters = formulaParameters,
+                               returnData = FALSE,
+                               normalised = FALSE)
+    })
 
     ## Balance yield values only when they're missing, and both production and
     ## area harvested are not missing
@@ -38,13 +40,13 @@ computeYield = function(data,
     ##                 not observe the yield.
     missingYield =
         is.na(dataCopy[[formulaParameters$yieldValue]]) |
-        dataCopy[[formulaParameters$yieldObservationFlag]] == formulaParameters$missingValueObservationFlag
+        dataCopy[[formulaParameters$yieldObservationFlag]] == processingParameters$missingValueObservationFlag
     nonMissingProduction =
         !is.na(dataCopy[[formulaParameters$productionValue]]) &
-        dataCopy[[formulaParameters$productionObservationFlag]] != formulaParameters$missingValueObservationFlag
+        dataCopy[[formulaParameters$productionObservationFlag]] != processingParameters$missingValueObservationFlag
     nonMissingAreaHarvested =
         !is.na(dataCopy[[formulaParameters$areaHarvestedValue]]) &
-        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] != formulaParameters$missingValueObservationFlag
+        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] != processingParameters$missingValueObservationFlag
     nonZeroProduction =
         (dataCopy[[formulaParameters$productionValue]] != 0)
 

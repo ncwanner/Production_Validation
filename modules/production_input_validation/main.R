@@ -84,7 +84,7 @@ datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
 
 
 ##' Obtain the complete imputation Datakey
-completeImputationKey = getCompleteImputationKey()
+completeImputationKey = getCompleteImputationKey("production")
 
 ##' Selected the key based on the input parameter
 selectedKey =

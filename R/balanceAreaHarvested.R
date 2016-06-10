@@ -18,23 +18,24 @@ balanceAreaHarvested = function(data,
     dataCopy = copy(data)
 
     ## Data quality check
-    ensureProductionInputs(dataCopy,
-                           processingParameters = processingParameters,
-                           formulaParameters = formulaParameters,
-                           returnData = FALSE,
-                           normalised = FALSE)
-
+    suppressMessages({
+        ensureProductionInputs(dataCopy,
+                               processingParameters = processingParameters,
+                               formulaParameters = formulaParameters,
+                               returnData = FALSE,
+                               normalised = FALSE)
+    })
 
     ## Impute only when area and yield are available and production isn't
     missingAreaHarvested =
         is.na(dataCopy[[formulaParameters$areaHarvestedValue]]) |
-        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] == formulaParameters$missingValueObservationFlag
+        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] == processingParameters$missingValueObservationFlag
     nonMissingProduction =
         !is.na(dataCopy[[formulaParameters$productionValue]]) &
-        dataCopy[[formulaParameters$productionObservationFlag]] != formulaParameters$missingValueObservationFlag
+        dataCopy[[formulaParameters$productionObservationFlag]] != processingParameters$missingValueObservationFlag
     nonMissingYield =
         !is.na(dataCopy[[formulaParameters$yieldValue]]) &
-        dataCopy[[formulaParameters$yieldObservationFlag]] != formulaParameters$missingValueObservationFlag
+        dataCopy[[formulaParameters$yieldObservationFlag]] != processingParameters$missingValueObservationFlag
 
     feasibleFilter =
         missingAreaHarvested &

@@ -31,10 +31,6 @@
 					<Label> All Production Data </Label>
 					<Value>all</Value>
 				</Option>
-        <Option>
-					<Label> Unimputed Items</Label>
-					<Value>missing_items</Value>
-				</Option>
 			</Options>
     </Param>
   </Params>
