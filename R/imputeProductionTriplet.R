@@ -94,7 +94,7 @@ imputeProductionTriplet = function(data,
         ##                 now after it is balanced.
         allProductionMissing = all(is.na(dataCopy[[formulaParameters$productionValue]]))
     } else {
-        warning("The input dataset contains insufficient data for imputation to perform!")
+        warning("The input dataset contains insufficient data to impute yield!")
     }
 
     if(!all(allProductionMissing)){
@@ -111,7 +111,7 @@ imputeProductionTriplet = function(data,
             n.missProduction - n.missProduction2)
         message("Number of values still missing: ", n.missProduction2)
     } else {
-        warning("The input dataset contains insufficient data for imputation to perform!")
+        warning("The input dataset contains insufficient data to impute production!")
     }
 
     ## step four: balance area harvested
