@@ -5,13 +5,31 @@
 ##' share of parents used to produce the child commodity. In the reversed
 ##' direction, the values are divided by the shares.
 ##'
-##' @param parentData The animal slaughtered data from animal commodity.
-##' @param childData The animal slaughtered data from meat commodity.
+##' An outer merge is applied for all the merge, this is to ensure no values are
+##' omitted. Three different type of matching occur as a result and they are:
+##'
+##' \enumerate{
+##'
+##' \item{1. Value available in origin but not in target}{In this case, the
+##' target is filled with the new calculated value.}
+##'
+##' \item{2. Value present in origin and in target}{In this case, the target
+##' cell is replaced with the new calculated value.}
+##'
+##' \item{3. Value present in target but not in origin}{The value in the target
+##' is retained.}
+##'
+##' }
+##'
+##' @param parentData The data for animal commodity.
+##' @param childData The data for meat commodity.
 ##' @param mappingTable The mapping table between the parent and the child.
 ##' @param parentToChild logical, if true, slaughtered animal are transferred
 ##'     from animal commodity to meat, otherwise the otherway around.
 ##'
-##' @return The transferred data
+##' @return An updated dataset depending on the direction of the transfer. The
+##'     output dataset is strictly greater than the original target dataset.
+##'
 ##' @export
 
 transferParentToChild = function(parentData,
@@ -30,13 +48,24 @@ transferParentToChild = function(parentData,
                        "flagObservationStatus",
                        "flagMethod")
 
-    ensureDataInput(data = childData,
-                    requiredColumn = requiredColumn,
-                    returnData = FALSE)
-    ensureDataInput(data = parentData,
-                    requiredColumn = requiredColumn,
-                    returnData = FALSE)
-
+    suppressMessages({
+        ensureDataInput(data = childData,
+                        requiredColumn = requiredColumn,
+                        returnData = FALSE)
+        ensureDataInput(data = parentData,
+                        requiredColumn = requiredColumn,
+                        returnData = FALSE)
+        ensureDataInput(data = mappingTable,
+                        requiredColumn = c("measuredItemParentCPC",
+                                           "measuredItemChildCPC",
+                                           "measuredElementParent",
+                                           "measuredElementChild",
+                                           "geographicAreaM49",
+                                           "timePointYears",
+                                           "share",
+                                           "flagShare"),
+                        returnData = FALSE)
+    })
 
     ## Convert the names of the table
     childDataCopy = copy(childData)
