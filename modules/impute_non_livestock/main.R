@@ -70,7 +70,7 @@ datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
 
 ##' Select the item list based on user input parameter
-if(!imputationSelection %in% c("session", "all", "missing_items"))
+if(!imputationSelection %in% c("session", "all"))
     stop("Incorrect imputation selection specified")
 
 ##' Build processing parameters
