@@ -360,7 +360,8 @@ for(iter in seq(selectedMeatCode)){
     meatImputed =
         slaughteredTransferedToMeatData %>%
         denormalise(normalisedData = .,
-                    denormaliseKey = "measuredElement") %>%
+                    denormaliseKey = "measuredElement",
+                    fillEmptyRecords = TRUE) %>%
         imputeProductionTriplet(data = .,
                                 processingParameters = processingParameters,
                                 imputationParameters = imputationParameters,
@@ -397,6 +398,14 @@ for(iter in seq(selectedMeatCode)){
                               parentToChild = TRUE)
 
     ## ---------------------------------------------------------------------
+    message("\tTesting transfers are applied correctly")
+    ensureCorrectTransfer(parentData = slaughteredTransferedBackToAnimalData,
+                          childData = rbind(meatImputed,
+                                            slaughteredTransferToNonMeatChildData),
+                          mappingTable = rbind(animalMeatMappingShare,
+                                               animalNonMeatMappingShare),
+                          returnData = FALSE)
+
     message("\tSaving the synchronised and imputed data back")
     syncedData = rbind(meatImputed,
                        slaughteredTransferedBackToAnimalData,
@@ -407,8 +416,6 @@ for(iter in seq(selectedMeatCode)){
         ##                 semi-official figures as indicated by in the previous
         ##                 synchronise slaughtered module.
         ##
-        ## TODO (Michael): Need to check whether the parent/child are
-        ##                 synchronised.
         ## ensureProductionOutputs(data = .,
         ##                         processingParameters = processingParameters,
         ##                         formulaParameters = meatFormulaParameters) %>%
