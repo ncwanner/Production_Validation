@@ -55,8 +55,6 @@ if(CheckDebug()){
 
 }
 
-##' Get user specified imputation selection
-imputationSelection = swsContext.computationParams$imputation_selection
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
@@ -69,8 +67,8 @@ completeImputationKey = getCompleteImputationKey("production")
 completeImputationData =
     completeImputationKey %>%
     GetData %>%
-    filter(!is.na(flagObservationStatus)) %>%
     preProcessing(data = .)
+
 saveRDS(completeImputationData, file = "completeImputationData.rds")
 
 completeProductionData = readRDS("completeImputationData.rds")
@@ -80,16 +78,32 @@ combineFlag = function(flagObservationStatus, flagMethod){
 }
 
 ## Flag distribution
-completeNormalisedProductionData[, `:=`("flagCombination",
+completeImputationData[, `:=`("flagCombination",
                                         combineFlag(flagObservationStatus,
                                                     flagMethod))]
 
-table(completeNormalisedProductionData[["flagCombination"]])
+flagPctTable =
+    as.data.frame(round(table(completeImputationData[["flagCombination"]])/
+                        nrow(completeImputationData) * 100, 2))
+colnames(flagPctTable) = c("flag combination", "percentage")
 
 ## Missing value percentage
-sum(completeNormalisedProductionData[["flagObservationStatus"]] == "M")/nrow(completeNormalisedProductionData) * 100
+sum(completeImputationData[["flagObservationStatus"]] == "M")/nrow(completeImputationData) * 100
+
+
+countTimeSeries = function(data, key){
+    timeSeriesMissing = data[, sum(is.na(Value)) == .N, by = key]
+    totalTimeSeries = nrow(timeSeriesMissing)
+    nonMissingTimeSeries = sum(!timeSeriesMissing$V1)
+    missingTimeSeries = sum(timeSeriesMissing$V1)
+    list(totalTimeSeries = totalTimeSeries,
+         nonMissingTimeSeries = nonMissingTimeSeries,
+         missingTimeSeries =missingTimeSeries)
+}
 
 ## Total number of time series
-
+timeSeriesCount =
+    countTimeSeries(completeImputationData,
+                key = c("geographicAreaM49", "measuredElement", "measuredItemCPC"))
 
 ## Plot the triplet for all the items
