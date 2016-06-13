@@ -11,10 +11,11 @@
 ##' Currently there are 5 tests in the suite:
 ##'
 ##' 1. Check whether flags are valid.
-##' 2. Check whether the production (input) values are within feasible range.
-##' 3. Check whether the area harvested (output) values are within feasible range.
-##' 4. Check whether the yield (productivity) values are within feasible range.
-##' 5. Check whether the production triplet (input, output productivity) are
+##' 2. Check whether missing values are specified correctly
+##' 3. Check whether the production (input) values are within feasible range.
+##' 4. Check whether the area harvested (output) values are within feasible range.
+##' 5. Check whether the yield (productivity) values are within feasible range.
+##' 6. Check whether the production triplet (input, output productivity) are
 ##'    balanced.
 ##'
 ##' **Auto-corrections:**

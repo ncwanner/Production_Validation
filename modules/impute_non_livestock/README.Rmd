@@ -13,8 +13,8 @@ database in the "Fill Livestock" module.
 **Inputs:**
 
 * Production domain
-* Animal to meat mapping table
-* Yield formula table
+* Livestock Element Mapping Table
+* Identity Formula Table
 
 **Flag Changes:**
 
@@ -81,7 +81,7 @@ datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
 Select the item list based on user input parameter
 
 ```{r }
-if(!imputationSelection %in% c("session", "all", "missing_items"))
+if(!imputationSelection %in% c("session", "all"))
     stop("Incorrect imputation selection specified")
 ```
 
@@ -95,7 +95,7 @@ processingParameters =
 Get the full imputation Datakey
 
 ```{r }
-completeImputationKey = getCompleteImputationKey()
+completeImputationKey = getCompleteImputationKey("production")
 ```
 
 NOTE (Michael): Since the animal/meat are currently imputed by the
@@ -130,22 +130,13 @@ sessionItems =
     intersect(., nonLivestockImputationItems)
 ```
 
-This returns the list of items current does not have an imputed dataset.
-
-```{r }
-missingItems =
-    nonLivestockImputationItems[!imputationExist(savePath,
-                                                 nonLivestockImputationItems)]
-```
-
 Select the commodities based on the user input parameter
 
 ```{r }
 selectedItemCode =
     switch(imputationSelection,
-           session = sessionItems,
-           all = nonLivestockImputationItems,
-           missing_items = missingItems)
+           "session" = sessionItems,
+           "all" = nonLivestockImputationItems)
 ```
 
 ---
@@ -198,8 +189,6 @@ for(iter in seq(selectedItemCode)){
                                      yieldCode = yieldCode)
              )
 
-    saveFileName = createImputationObjectName(item = currentItem)
-
     ## NOTE (Michael): We now impute the full triplet rather than
     ##                 just production for non-primary
     ##                 products. However, in the imputeModel
@@ -218,7 +207,6 @@ for(iter in seq(selectedItemCode)){
     ## Process the data.
     processedData =
         GetData(subKey) %>%
-        fillRecord(data = .) %>%
         preProcessing(data = .) %>%
         ensureProductionInputs(data = .,
                                processingParam = processingParameters,
@@ -226,40 +214,39 @@ for(iter in seq(selectedItemCode)){
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
                     fillEmptyRecords = TRUE) %>%
-        createTriplet(data = ., formula = meatFormulaTable) %>%
+        createTriplet(data = ., formula = formulaTable) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = formulaParameters)
 
     ## Perform imputation
     imputed =
-        imputeWithAndWithoutEstimates(
+        imputeProductionTriplet(
             data = processedData,
             processingParameters = processingParameters,
             formulaParameters = formulaParameters,
-            imputationParameters = imputationParameters,
-            minObsForEst = 5)
+            imputationParameters = imputationParameters) %>%
+        subset(x = ., select = -ensembleVariance)
+
 
     ## Check the imputation before saving.
     imputed %>%
-        normalise(.) %>%
+        mutate(timePointYears = as.character(timePointYears)) %>%
         ensureProductionOutputs(data = .,
                                 processingParameters = processingParameters,
-                                formulaParameters = formulaParameters) %>%
+                                formulaParameters = formulaParameters,
+                                normalised = FALSE) %>%
+        normalise(.) %>%
+        filter(., flagMethod == "i" |
+                  (flagObservationStatus == "I" &
+                   flagMethod == "e")) %>%
+        ensureProtectedData(data = .,
+                            domain = sessionKey@domain,
+                            dataset = sessionKey@dataset) %>%
         postProcessing(data = .) %>%
-        {
-            ## HACK (Michael): Before we decide how to deal with the flags,
-            ##                 we will not perform this check as we can not
-            ##                 determine what is considered 'protected'
-            ##
-            ## Check whether protected data are being over-written
-            ## filter(flagMethod %in% c("i", "t", "e", "n", "u")) %>%
-            ##     checkProtectedData(dataToBeSaved = .) %>%
-            ##     print(.)
-
-            ## Save the fitted object for future loading
-            saveRDS(object = ., file = paste0(savePath, saveFileName))
-        }
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
+                 data = .)
 
 }
 ```
