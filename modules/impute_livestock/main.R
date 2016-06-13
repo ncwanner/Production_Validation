@@ -239,7 +239,6 @@ for(iter in seq(selectedMeatCode)){
     meatData =
         meatKey %>%
         GetData(key = .) %>%
-        fillRecord(data = .) %>%
         preProcessing(data = .) %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = meatFormulaTable) %>%
@@ -288,7 +287,6 @@ for(iter in seq(selectedMeatCode)){
     animalData =
         animalKey %>%
         GetData(key = .) %>%
-        fillRecord(data = .) %>%
         preProcessing(data = .) %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = animalFormulaTable) %>%
@@ -319,7 +317,6 @@ for(iter in seq(selectedMeatCode)){
     nonMeatData =
         nonMeatKey %>%
         GetData(key = .) %>%
-        fillRecord(data = .) %>%
         preProcessing(data = .) %>%
         denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
         createTriplet(data = ., formula = nonMeatFormulaTable) %>%

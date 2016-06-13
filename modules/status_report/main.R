@@ -65,21 +65,31 @@ datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
 
 completeImputationKey = getCompleteImputationKey("production")
 
+## NOTE (Michael): Probably better to get the data normalised
 completeImputationData =
     completeImputationKey %>%
     GetData %>%
     filter(!is.na(flagObservationStatus)) %>%
-    preProcessing(data = .) %>%
-    denormalise(normalisedData = .,
-                denormaliseKey = "measuredElement",
-                fillEmptyRecords = TRUE)
-
+    preProcessing(data = .)
 saveRDS(completeImputationData, file = "completeImputationData.rds")
 
+completeProductionData = readRDS("completeImputationData.rds")
+
+combineFlag = function(flagObservationStatus, flagMethod){
+    paste0("(", flagObservationStatus, ", ", flagMethod, ")")
+}
+
 ## Flag distribution
+completeNormalisedProductionData[, `:=`("flagCombination",
+                                        combineFlag(flagObservationStatus,
+                                                    flagMethod))]
+
+table(completeNormalisedProductionData[["flagCombination"]])
 
 ## Missing value percentage
+sum(completeNormalisedProductionData[["flagObservationStatus"]] == "M")/nrow(completeNormalisedProductionData) * 100
 
 ## Total number of time series
 
 
+## Plot the triplet for all the items

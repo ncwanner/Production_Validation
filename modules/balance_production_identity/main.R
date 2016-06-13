@@ -126,7 +126,6 @@ for(i in seq(nrow(unique_formulas))){
     yieldData =
         getYieldData(subKey) %>%
         .$query %>%
-        fillRecord(data = .) %>%
         ensureProductionInputs(data = .,
                                processingParam = processingParams,
                                normalised = FALSE) %>%
