@@ -256,7 +256,6 @@ for(iter in seq(selectedItem)){
         ## correction rules.
         autoCorrectedData =
             currentData %>%
-            fillRecord(data = .) %>%
             preProcessing(data = .) %>%
             autoFlagCorrection(data = .) %>%
             denormalise(normalisedData = .,

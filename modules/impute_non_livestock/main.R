@@ -179,7 +179,6 @@ for(iter in seq(selectedItemCode)){
     ## Process the data.
     processedData =
         GetData(subKey) %>%
-        fillRecord(data = .) %>%
         preProcessing(data = .) %>%
         ensureProductionInputs(data = .,
                                processingParam = processingParameters,
