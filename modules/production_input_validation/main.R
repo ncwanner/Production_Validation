@@ -196,8 +196,7 @@ errorList = vector("list", length(tests))
 
 completeData =
     GetData(selectedKey) %>%
-    subset(!is.na(flagObservationStatus) |
-           !is.na(flagMethod))
+    preProcessing(data = .)
 
 ##' Check the flags
 errorList[[1]] =
