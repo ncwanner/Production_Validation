@@ -5,12 +5,11 @@
 \title{Default Processing Parameters}
 \usage{
 productionProcessingParameters(datasetConfig, dataset = "aproduction",
-  removePriorImputation = TRUE, removeManualEstimation = TRUE,
+  removePriorImputation = TRUE, removeManualEstimation = FALSE,
   imputationObservationFlag = "I", imputationMethodFlag = "e",
   balanceMethodFlag = "i", manualEstimationObservationFlag = "E",
   manualEstimationMethodFlag = "f", missingValueObservationFlag = "M",
-  missingValueMethodFlag = "u", protectedMethodFlag = c("-", "q", "p", "h",
-  "c"), startingYear = 1999, endYear = year(Sys.Date()))
+  missingValueMethodFlag = "u")
 }
 \arguments{
 \item{datasetConfig}{The dataset configuration returned by the function
@@ -44,13 +43,6 @@ missing values.}
 
 \item{missingValueMethodFlag}{The method flag corresponding to missing
 values.}
-
-\item{protectedMethodFlag}{The list of method flag that are considered as
-protected and should not be over-written.}
-
-\item{startingYear}{The starting year of the processing/imputation}
-
-\item{endYear}{The end year of the processing/imputation.}
 }
 \value{
 Returns a list of the default parameters used in the data
@@ -81,9 +73,6 @@ Below is a description of the parameters: \itemize{
 \item manualEstimationMethodFlag: The method flag that corresponds to manual (FAO) estimates
 \item missingValueObservationFlag: The observation flag corresponding to missing values.
 \item missingValueMethodFlag: The method flag corresponding to missing values.
-\item protectedMethodFlag: The list of method flag that are considered as protected and should not be over-written.
-\item startingYear: The starting year of the processing/imputation
-\item endYear: The end year of the processing/imputation.
 }
 }
 

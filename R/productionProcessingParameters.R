@@ -26,10 +26,6 @@
 ##'     missing values.
 ##' @param missingValueMethodFlag The method flag corresponding to missing
 ##'     values.
-##' @param protectedMethodFlag The list of method flag that are considered as
-##'     protected and should not be over-written.
-##' @param startingYear The starting year of the processing/imputation
-##' @param endYear The end year of the processing/imputation.
 ##'
 ##' @return Returns a list of the default parameters used in the data
 ##'   pre-processing algorithm.
@@ -52,9 +48,6 @@
 ##' \item manualEstimationMethodFlag: The method flag that corresponds to manual (FAO) estimates
 ##' \item missingValueObservationFlag: The observation flag corresponding to missing values.
 ##' \item missingValueMethodFlag: The method flag corresponding to missing values.
-##' \item protectedMethodFlag: The list of method flag that are considered as protected and should not be over-written.
-##' \item startingYear: The starting year of the processing/imputation
-##' \item endYear: The end year of the processing/imputation.
 ##' }
 ##'
 ##' @export
@@ -63,17 +56,14 @@
 productionProcessingParameters = function(datasetConfig,
                                           dataset = "aproduction",
                                           removePriorImputation = TRUE,
-                                          removeManualEstimation = TRUE,
+                                          removeManualEstimation = FALSE,
                                           imputationObservationFlag = "I",
                                           imputationMethodFlag = "e",
                                           balanceMethodFlag = "i",
                                           manualEstimationObservationFlag = "E",
                                           manualEstimationMethodFlag = "f",
                                           missingValueObservationFlag = "M",
-                                          missingValueMethodFlag = "u",
-                                          protectedMethodFlag = c("-", "q", "p", "h", "c"),
-                                          startingYear = 1999,
-                                          endYear = year(Sys.Date())){
+                                          missingValueMethodFlag = "u"){
     ## HACK (Michael): There is no information on how to configure this, and
     ##                 thus it is hard coded.
     areaVar = datasetConfig$dimensions[1]
@@ -104,10 +94,7 @@ productionProcessingParameters = function(datasetConfig,
         manualEstimationObservationFlag = manualEstimationObservationFlag,
         manualEstimationMethodFlag = manualEstimationMethodFlag,
         missingValueObservationFlag = missingValueObservationFlag,
-        missingValueMethodFlag = missingValueMethodFlag,
-        protectedMethodFlag = protectedMethodFlag,
-        startingYear = startingYear,
-        endYear = endYear
+        missingValueMethodFlag = missingValueMethodFlag
     )
 
 }
