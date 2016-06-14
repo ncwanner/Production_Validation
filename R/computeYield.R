@@ -39,8 +39,7 @@ computeYield = function(data,
     ##                 zero, then yield should remain a missing value as we can
     ##                 not observe the yield.
     missingYield =
-        is.na(dataCopy[[formulaParameters$yieldValue]]) |
-        dataCopy[[formulaParameters$yieldObservationFlag]] == processingParameters$missingValueObservationFlag
+        is.na(dataCopy[[formulaParameters$yieldValue]])
     nonMissingProduction =
         !is.na(dataCopy[[formulaParameters$productionValue]]) &
         dataCopy[[formulaParameters$productionObservationFlag]] != processingParameters$missingValueObservationFlag

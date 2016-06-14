@@ -28,8 +28,7 @@ balanceAreaHarvested = function(data,
 
     ## Impute only when area and yield are available and production isn't
     missingAreaHarvested =
-        is.na(dataCopy[[formulaParameters$areaHarvestedValue]]) |
-        dataCopy[[formulaParameters$areaHarvestedObservationFlag]] == processingParameters$missingValueObservationFlag
+        is.na(dataCopy[[formulaParameters$areaHarvestedValue]])
     nonMissingProduction =
         !is.na(dataCopy[[formulaParameters$productionValue]]) &
         dataCopy[[formulaParameters$productionObservationFlag]] != processingParameters$missingValueObservationFlag
