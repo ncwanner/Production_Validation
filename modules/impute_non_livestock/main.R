@@ -197,8 +197,7 @@ for(iter in seq(selectedItemCode)){
             data = processedData,
             processingParameters = processingParameters,
             formulaParameters = formulaParameters,
-            imputationParameters = imputationParameters) %>%
-        subset(x = ., select = -ensembleVariance)
+            imputationParameters = imputationParameters)
 
 
     ## Check the imputation before saving.
