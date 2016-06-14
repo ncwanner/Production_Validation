@@ -5,7 +5,7 @@
 \title{Function to transfer values from parent to child.}
 \usage{
 transferParentToChild(parentData, childData, mappingTable,
-  parentToChild = TRUE)
+  parentToChild = TRUE, transferMethodFlag = "c")
 }
 \arguments{
 \item{parentData}{The data for animal commodity.}
@@ -16,6 +16,8 @@ transferParentToChild(parentData, childData, mappingTable,
 
 \item{parentToChild}{logical, if true, slaughtered animal are transferred
 from animal commodity to meat, otherwise the otherway around.}
+
+\item{transferMethodFlag}{The method flag to be assigned for the transfer}
 }
 \value{
 An updated dataset depending on the direction of the transfer. The
