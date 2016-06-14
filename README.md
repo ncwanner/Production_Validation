@@ -73,8 +73,7 @@ This module re-calculates the production identity, this ensures the
 relationship of `Production = Area Harvested x Yield` holds when new changes
 are introduced in the post validation phase.
 
-
-![production_workflow_horizontal](https://cloud.githubusercontent.com/assets/1054320/15775155/a8b18c82-2980-11e6-980a-8e223202c793.jpg)
+![Production Work Flow](production_workflow_horizontal.jpg?raw=true "Work Flow")
 
 ---
 
