@@ -26,6 +26,7 @@
 ##' @param mappingTable The mapping table between the parent and the child.
 ##' @param parentToChild logical, if true, slaughtered animal are transferred
 ##'     from animal commodity to meat, otherwise the otherway around.
+##' @param transferMethodFlag The method flag to be assigned for the transfer
 ##'
 ##' @return An updated dataset depending on the direction of the transfer. The
 ##'     output dataset is strictly greater than the original target dataset.
@@ -35,7 +36,8 @@
 transferParentToChild = function(parentData,
                                  childData,
                                  mappingTable,
-                                 parentToChild = TRUE){
+                                 parentToChild = TRUE,
+                                 transferMethodFlag = "c"){
 
     ## Input check
     ##
@@ -128,7 +130,7 @@ transferParentToChild = function(parentData,
                    "flagMethod_child"),
                  list(Value_parent * share,
                       flagObservationStatus_parent,
-                      "i"))]
+                      transferMethodFlag))]
 
         setnames(parentChildMergedData,
                  old = c("measuredItemChildCPC",
@@ -161,7 +163,7 @@ transferParentToChild = function(parentData,
                    "flagMethod_parent"),
                  list(Value_child/share,
                       flagObservationStatus_child,
-                      "i"))]
+                      transferMethodFlag))]
 
         setnames(parentChildMergedData,
                  old = c("measuredItemParentCPC",
