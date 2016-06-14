@@ -50,13 +50,13 @@
 ##'
 ##' | Procedure | Observation Status Flag | Method Flag|
 ##' | --- | --- | --- |
-##' | Tranasfer between animal and meat commodity | `<Same as origin>` | i |
+##' | Tranasfer between animal and meat commodity | `<Same as origin>` | c |
 ##' | Balance by Production Identity | I | i |
 ##' | Imputation | I | e |
 ##'
-##' **NOTE (Michael): Currently the transfer has flag 'i' indicating it is
-##' calculated via identity, however, they should be replaced with a new flag as
-##' the relationship is not an identity but an assumed relationship.**
+##' **NOTE (Michael): Currently the transfer has flag 'c' indicating it is
+##' copied, however, they should be replaced with a new flag as it is calculated by
+##' not by identity.**
 ##'
 ##' ---
 
