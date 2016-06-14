@@ -359,6 +359,9 @@ for(iter in seq(selectedMeatCode)){
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
                     fillEmptyRecords = TRUE) %>%
+        processProductionDomain(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters) %>%
         imputeProductionTriplet(data = .,
                                 processingParameters = processingParameters,
                                 imputationParameters = imputationParameters,
