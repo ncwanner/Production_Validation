@@ -143,7 +143,10 @@ imputeProductionTriplet = function(data,
                        imputationParameters = areaHarvestedImputationParameters)
         dataCopy[!is.na(get(formulaParameters$areaHarvestedValue)) &
                  !is.na(get(formulaParameters$productionValue)) &
-                 !(get(formulaParameters$yieldObservationFlag) %in% c("", "*")),
+                 !(combineFlag(.SD,
+                               formulaParameters$yieldObservationFlag,
+                               formulaParameters$yieldMethodFlag) %in%
+                   getProtectedFlag()),
                  `:=`(c(formulaParameters$yieldValue,
                         formulaParameters$yieldObservationFlag,
                         formulaParameters$yieldMethodFlag),
