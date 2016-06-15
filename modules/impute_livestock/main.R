@@ -352,13 +352,18 @@ for(iter in seq(selectedMeatCode)){
              )
 
     ## Perform imputation using the standard imputation function
-    message("\tPerfoming Imputation")
+    message("\tPerforming Imputation")
 
     meatImputed =
         slaughteredTransferedToMeatData %>%
+        expandYear(data = .,
+                   areaVar = processingParameters$areaVar,
+                   elementVar = processingParameters$elementVar,
+                   itemVar = processingParameters$itemVar,
+                   valueVar = processingParameters$valueVar) %>%
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
-                    fillEmptyRecords = TRUE) %>%
+                    fillEmptyRecord = TRUE) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters) %>%
@@ -366,7 +371,6 @@ for(iter in seq(selectedMeatCode)){
                                 processingParameters = processingParameters,
                                 imputationParameters = imputationParameters,
                                 formulaParameters = meatFormulaParameters) %>%
-        subset(., select = -ensembleVariance) %>%
         normalise
 
     ## ---------------------------------------------------------------------
@@ -399,12 +403,18 @@ for(iter in seq(selectedMeatCode)){
 
     ## ---------------------------------------------------------------------
     message("\tTesting transfers are applied correctly")
+    ## WARNING (Michael): We currently only check the synchronisation between
+    ##                    animal and the meat as this processed is applied.
+    ##                    However, we need to also ensure the synchronisation
+    ##                    happen between other the animal and non-meat child.
+    ##                    How to do this specifically, I have no immediate idea.
+    ##                    This is related to issue 178.
+    ##
     ensureCorrectTransfer(parentData = slaughteredTransferedBackToAnimalData,
-                          childData = rbind(meatImputed,
-                                            slaughteredTransferToNonMeatChildData),
-                          mappingTable = rbind(animalMeatMappingShare,
-                                               animalNonMeatMappingShare),
+                          childData = meatImputed,
+                          mappingTable = animalMeatMappingShare,
                           returnData = FALSE)
+
 
     message("\tSaving the synchronised and imputed data back")
     syncedData = rbind(meatImputed,
