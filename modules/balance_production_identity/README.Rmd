@@ -96,7 +96,7 @@ NOTE (Michael): There are differemt formulas for different
 
 ```{r }
 formulaTuples =
-    getYieldFormula(slot(slot(swsContext.datasets[[1]],
+    getProductionFormula(slot(slot(swsContext.datasets[[1]],
                               "dimensions")$measuredItemCPC, "keys"),
                     warn = TRUE)
 unique_formulas = unique(formulaTuples[, list(input, productivity, output,

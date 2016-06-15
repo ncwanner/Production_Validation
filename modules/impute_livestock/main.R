@@ -205,7 +205,7 @@ for(iter in seq(selectedMeatCode)){
             " (Meat)")
     ## Get the meat formula
     meatFormulaTable =
-        getYieldFormula(itemCode = currentMeatItem) %>%
+        getProductionFormula(itemCode = currentMeatItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
     if(nrow(meatFormulaTable) > 1)
@@ -253,7 +253,7 @@ for(iter in seq(selectedMeatCode)){
             " (Animal)")
     ## Get the animal formula
     animalFormulaTable =
-        getYieldFormula(itemCode = currentAnimalItem) %>%
+        getProductionFormula(itemCode = currentAnimalItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
     if(nrow(animalFormulaTable) > 1)
@@ -302,7 +302,7 @@ for(iter in seq(selectedMeatCode)){
             " (Non-meat Child)")
     ## Get the non Meat formula
     nonMeatFormulaTable =
-        getYieldFormula(itemCode = currentNonMeatItem) %>%
+        getProductionFormula(itemCode = currentNonMeatItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
     ## Build the non meat key

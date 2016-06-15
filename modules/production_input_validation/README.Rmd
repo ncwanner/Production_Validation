@@ -261,7 +261,7 @@ for(iter in seq(selectedItem)){
 
     ## Get the formula (elements) associated with the current item
     currentFormula =
-        getYieldFormula(currentItem) %>%
+        getProductionFormula(currentItem) %>%
         removeIndigenousBiologicalMeat
     currentElements = with(currentFormula, c(input, productivity, output))
 

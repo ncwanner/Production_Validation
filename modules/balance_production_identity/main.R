@@ -82,7 +82,7 @@ if(updateAllData){
 ##'                 commodities, so we loop through multiple formulas
 ##'                 to ensure all formulas are computed.
 formulaTuples =
-    getYieldFormula(slot(slot(swsContext.datasets[[1]],
+    getProductionFormula(slot(slot(swsContext.datasets[[1]],
                               "dimensions")$measuredItemCPC, "keys"),
                     warn = TRUE)
 unique_formulas = unique(formulaTuples[, list(input, productivity, output,

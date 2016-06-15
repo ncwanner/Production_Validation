@@ -126,7 +126,7 @@ for(iter in seq(selectedItemCode)){
     ##                 separate item with different item code rather than under
     ##                 different element under the meat code.
     formulaTable =
-        getYieldFormula(itemCode = currentItem) %>%
+        getProductionFormula(itemCode = currentItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
     if(nrow(formulaTable) > 1)
