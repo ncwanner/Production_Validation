@@ -148,8 +148,8 @@ for(iter in seq(selectedItemCode)){
     subKey@dimensions$measuredElement@keys =
         with(formulaParameters, c(productionCode, areaHarvestedCode, yieldCode))
 
-    cat("Imputation for item: ", currentItem, " (",  iter, " out of ",
-        length(selectedItemCode),")\n")
+    message("Imputation for item: ", currentItem, " (",  iter, " out of ",
+            length(selectedItemCode),")")
 
 
     ## Start the imputation
