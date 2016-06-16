@@ -162,7 +162,7 @@ sessionItems =
 selectedMeatCode =
     switch(imputationSelection,
            session = sessionItems,
-           all = nonLivestockImputationItems)
+           all = livestockImputationItems)
 
 
 ##' ---
@@ -240,13 +240,19 @@ for(iter in seq(selectedMeatCode)){
         meatKey %>%
         GetData(key = .) %>%
         preProcessing(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        createTriplet(data = ., formula = meatFormulaTable) %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement") %>%
+        createTriplet(data = .,
+                      formula = meatFormulaTable) %>%
+        processProductionDomain(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters) %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = meatFormulaParameters,
                                normalised = FALSE) %>%
-        normalise
+        normalise(denormalisedData = .,
+                  removeNonExistingRecords = FALSE)
 
     ## ---------------------------------------------------------------------
     message("\tExtracting production triplet for item ", currentAnimalItem,
@@ -288,13 +294,19 @@ for(iter in seq(selectedMeatCode)){
         animalKey %>%
         GetData(key = .) %>%
         preProcessing(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        createTriplet(data = ., formula = animalFormulaTable) %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement") %>%
+        createTriplet(data = .,
+                      formula = animalFormulaTable) %>%
+        processProductionDomain(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = animalFormulaParameters) %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = animalFormulaParameters,
                                normalised = FALSE) %>%
-        normalise
+        normalise(denormalisedData = .,
+                  removeNonExistingRecords = FALSE)
 
 
     message("\tExtracting production triplet for item ",
@@ -314,17 +326,22 @@ for(iter in seq(selectedMeatCode)){
                       currentMappingTable$measuredElementChild)))
 
     ## Get the non meat data
+    ##
+    ## HACK (Michael): Current we don't test the input of non-meat item. This is
+    ##                 because the processProductionDomain and
+    ##                 ensureProductionInputs only work for triplets of a single
+    ##                 item. However, in the non-meat data, there are more than
+    ##                 one item and thus we are unable to process and test them.
     nonMeatData =
         nonMeatKey %>%
         GetData(key = .) %>%
         preProcessing(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        createTriplet(data = ., formula = nonMeatFormulaTable) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters,
-                               normalised = FALSE) %>%
-        normalise
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement") %>%
+        createTriplet(data = .,
+                      formula = nonMeatFormulaTable) %>%
+        normalise(denormalisedData = .,
+                  removeNonExistingRecords = FALSE)
 
     ## ---------------------------------------------------------------------
     message("\tTransferring animal slaughtered from animal to meat commodity")
@@ -372,7 +389,12 @@ for(iter in seq(selectedMeatCode)){
                                 processingParameters = processingParameters,
                                 imputationParameters = imputationParameters,
                                 formulaParameters = meatFormulaParameters) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters,
+                                normalised = FALSE) %>%
         normalise
+
 
 
     ## ---------------------------------------------------------------------
@@ -383,6 +405,9 @@ for(iter in seq(selectedMeatCode)){
     ##
     ## NOTE (Michael): We only subset the new calculated or imputed values to be
     ##                 transfer back to the animal (parent) commodity.
+    ##
+    ## NOTE (Michael): Since the animal element is not imputed, we will not test
+    ##                 whether it is imputed.
     slaughteredTransferedBackToAnimalData =
         meatImputed %>%
         filter(., flagMethod == "i" |
@@ -391,7 +416,11 @@ for(iter in seq(selectedMeatCode)){
         transferParentToChild(parentData = animalData,
                               childData = .,
                               mappingTable = animalMeatMappingShare,
-                              parentToChild = FALSE)
+                              parentToChild = FALSE) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = animalFormulaParameters,
+                                testImputed = FALSE)
 
     ## ---------------------------------------------------------------------
     message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
@@ -412,11 +441,11 @@ for(iter in seq(selectedMeatCode)){
     ## ---------------------------------------------------------------------
     message("\tTesting transfers are applied correctly")
     ## WARNING (Michael): We currently only check the synchronisation between
-    ##                    animal and the meat as this processed is applied.
-    ##                    However, we need to also ensure the synchronisation
-    ##                    happen between other the animal and non-meat child.
-    ##                    How to do this specifically, I have no immediate idea.
-    ##                    This is related to issue 178.
+    ##                    animal and the meat as this processed is applied in
+    ##                    the module. However, we need to also ensure the
+    ##                    synchronisation happen between other the animal and
+    ##                    non-meat child. How to do this specifically, I have no
+    ##                    immediate idea. This is related to issue 178.
     ##
     ensureCorrectTransfer(parentData = slaughteredTransferedBackToAnimalData,
                           childData = meatImputed,
@@ -431,12 +460,10 @@ for(iter in seq(selectedMeatCode)){
 
     syncedData %>%
         ## NOTE (Michael): The transfer can over-write official and
-        ##                 semi-official figures as indicated by in the previous
-        ##                 synchronise slaughtered module.
+        ##                 semi-official figures in the processed commodities as
+        ##                 indicated by in the previous synchronise slaughtered
+        ##                 module.
         ##
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
