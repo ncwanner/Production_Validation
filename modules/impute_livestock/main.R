@@ -352,6 +352,7 @@ for(iter in seq(selectedMeatCode)){
              )
 
     ## Perform imputation using the standard imputation function
+    ##
     message("\tPerforming Imputation")
 
     meatImputed =
@@ -373,13 +374,20 @@ for(iter in seq(selectedMeatCode)){
                                 formulaParameters = meatFormulaParameters) %>%
         normalise
 
+
     ## ---------------------------------------------------------------------
     message("Step 3: Transfer animal slaughtered back from meat to animal commodity")
 
     ## Transfer the animal slaughtered from meat back to animal, this can be
     ## done by specifying parentToChild equal to FALSE.
+    ##
+    ## NOTE (Michael): We only subset the new calculated or imputed values to be
+    ##                 transfer back to the animal (parent) commodity.
     slaughteredTransferedBackToAnimalData =
         meatImputed %>%
+        filter(., flagMethod == "i" |
+                  (flagObservationStatus == "I" &
+                   flagMethod == "e")) %>%
         transferParentToChild(parentData = animalData,
                               childData = .,
                               mappingTable = animalMeatMappingShare,
@@ -440,3 +448,4 @@ for(iter in seq(selectedMeatCode)){
             rep("-", 80), "\n")
 
 }
+
