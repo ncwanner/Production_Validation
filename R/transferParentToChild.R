@@ -146,7 +146,8 @@ transferParentToChild = function(parentData,
     } else {
 
         ## TODO (Michael): If share is zero, then the value of the child should
-        ##                 be zero as well. An error should be thrown here.
+        ##                 be zero as well. An error should be thrown here if it
+        ##                 is not.
         isMapped =
             with(parentChildMergedData,
                  !is.na(measuredItemParentCPC) &
