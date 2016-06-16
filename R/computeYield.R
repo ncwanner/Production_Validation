@@ -58,7 +58,7 @@ computeYield = function(data,
     ## When area harvested (denominator) is zero, the calculation can be
     ## performed and returns NA. So a different flag should
     nonZeroAreaHarvestedFilter =
-        (dataCopy[[formulaParameters$productionValue]] != 0)
+        (dataCopy[[formulaParameters$areaHarvestedValue]] != 0)
 
     ## Calculate the yield
     dataCopy[feasibleFilter, `:=`(c(formulaParameters$yieldValue),
