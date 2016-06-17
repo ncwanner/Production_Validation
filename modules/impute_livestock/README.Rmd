@@ -58,6 +58,20 @@ due to the holy nature of the animal.
 copied, however, they should be replaced with a new flag as it is calculated
 by not by identity.**
 
+**Data scope**
+
+* GeographicAreaM49: All countries specified in the `Complete Key Table`.
+
+* measuredItemCPC: Depends on the session selection. If the selection is
+  "session", then only items selected in the session will be imputed. If the
+  selection is "all", then all the items listed in the `Livestock Element
+  Mapping Table` will be imputed.
+
+* measuredElement: Depends on the measuredItemCPC, all cooresponding
+  elements in the `Identity Formula Table` and also all elements listed in
+  the `Livestock Element Mapping Table`.
+
+* timePointYears: All years specified in the `Complete Key Table`.
 ---
 ## Initialisation
 

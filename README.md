@@ -75,6 +75,10 @@ The production modules in addition to the main production data
 (`agriculture:aproduction`) depends on several auxiliary datasets detailed
 below:
 
+* `Complete Key Table`: This table specifies the scope of the data that will be
+  processed. The table is a Datatable on the SWS as `fbs_production_comm_code`
+  and can be extracted with the function `faoswsUtil:getCompleteImputationKey`.
+
 * `Livestock Element Mapping Table`: This table provides the mapping of element
   codes between a parent commodity and child commodity. The table is currently
   on the Statistical Shared Drive under
