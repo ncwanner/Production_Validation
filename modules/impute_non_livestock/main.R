@@ -202,6 +202,7 @@ for(iter in seq(selectedItemCode)){
 
     ## Check the imputation before saving.
     imputed %>%
+        removeInvalidDates(data = ., context = sessionKey) %>%
         mutate(timePointYears = as.character(timePointYears)) %>%
         ensureProductionOutputs(data = .,
                                 processingParameters = processingParameters,
