@@ -188,7 +188,7 @@ for(iter in seq(selectedMeatCode)){
         currentAllDerivedProduct[currentAllDerivedProduct != currentMeatItem]
 
 
-    message("\tExtracting the commodity trees with shares")
+    message("\tExtracting the shares tree")
     shareData =
         getShareData(geographicAreaM49 =
                          getQueryKey("geographicAreaM49", completeImputationKey),
