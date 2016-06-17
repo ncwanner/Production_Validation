@@ -248,6 +248,31 @@ for(iter in seq(selectedMeatCode)){
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters) %>%
+        ## NOTE (Michael): The function name should be generalised, here we are
+        ##                 actually removing animal slaughtered values that were
+        ##                 previously copied from the animal (parent).
+        removeCalculated(data = .,
+                         valueVar =
+                             meatFormulaParameters$areaHarvestedValue,
+                         observationFlagVar =
+                             meatFormulaParameters$areaHarvestedObservationFlag,
+                         methodFlagVar =
+                             meatFormulaParameters$areaHarvestedMethodFlag,
+                         calculatedMethodFlag = "c") %>%
+        ## NOTE (Michael): Here we are removing manual estimates of animal
+        ##                 slaughtered of the meat. If there is to be any manual
+        ##                 estimates (which there shouldn't), it should be
+        ##                 inputted in the animal slaughtered element of the
+        ##                 animal (parent) commodity.
+        removeImputationEstimation(data = .,
+                                   valueVar =
+                                       meatFormulaParameters$areaHarvestedValue,
+                                   observationFlagVar =
+                                       meatFormulaParameters$areaHarvestedObservationFlag,
+                                   methodFlagVar =
+                                       meatFormulaParameters$areaHarvestedMethodFlag,
+                                   imputationEstimationObservationFlag = "E",
+                                   imputationEstimationMethodFlag = "f") %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = meatFormulaParameters,
@@ -341,6 +366,34 @@ for(iter in seq(selectedMeatCode)){
                     denormaliseKey = "measuredElement") %>%
         createTriplet(data = .,
                       formula = nonMeatFormulaTable) %>%
+        processProductionDomain(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters) %>%
+        ## NOTE (Michael): The function name should be generalised, here we are
+        ##                 actually removing animal slaughtered values that were
+        ##                 previously copied from the animal (parent).
+        removeCalculated(data = .,
+                         valueVar =
+                             meatFormulaParameters$areaHarvestedValue,
+                         observationFlagVar =
+                             meatFormulaParameters$areaHarvestedObservationFlag,
+                         methodFlagVar =
+                             meatFormulaParameters$areaHarvestedMethodFlag,
+                         calculatedMethodFlag = "c") %>%
+        ## NOTE (Michael): Here we are removing manual estimates of animal
+        ##                 slaughtered of the meat. If there is to be any manual
+        ##                 estimates (which there shouldn't), it should be
+        ##                 inputted in the animal slaughtered element of the
+        ##                 animal (parent) commodity.
+        removeImputationEstimation(data = .,
+                                   valueVar =
+                                       meatFormulaParameters$areaHarvestedValue,
+                                   observationFlagVar =
+                                       meatFormulaParameters$areaHarvestedObservationFlag,
+                                   methodFlagVar =
+                                       meatFormulaParameters$areaHarvestedMethodFlag,
+                                   imputationEstimationObservationFlag = "E",
+                                   imputationEstimationMethodFlag = "f") %>%
         normalise(denormalisedData = .,
                   removeNonExistingRecords = FALSE)
 
@@ -386,6 +439,7 @@ for(iter in seq(selectedMeatCode)){
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters) %>%
+
         imputeProductionTriplet(data = .,
                                 processingParameters = processingParameters,
                                 imputationParameters = imputationParameters,
@@ -405,7 +459,8 @@ for(iter in seq(selectedMeatCode)){
     ## done by specifying parentToChild equal to FALSE.
     ##
     ## NOTE (Michael): We only subset the new calculated or imputed values to be
-    ##                 transfer back to the animal (parent) commodity.
+    ##                 transfer back to the animal (parent) commodity. See issue
+    ##                 #180.
     ##
     ## NOTE (Michael): Since the animal element is not imputed nor balanced , we
     ##                 will not test whether it is imputed or the identity
