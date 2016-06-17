@@ -28,6 +28,7 @@
 ##' **Inputs:**
 ##'
 ##' * Production domain
+##' * Complete Key Table
 ##' * Livestock Element Mapping Table
 ##' * Identity Formula table
 ##' * Share table

@@ -18,7 +18,8 @@
 ##'
 ##' | Procedure | Observation Status Flag | Method Flag|
 ##' | --- | --- | --- |
-##' | Balance by Production Identity | `<flag aggregation>` | i | ##' | Imputation | I | e |
+##' | Balance by Production Identity | `<flag aggregation>` | i |
+##' | Imputation | I | e |
 ##'
 ##' **Data scope**
 ##'
