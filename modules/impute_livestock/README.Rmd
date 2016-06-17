@@ -55,8 +55,8 @@ due to the holy nature of the animal.
 | Imputation | I | e |
 
 **NOTE (Michael): Currently the transfer has flag 'c' indicating it is
-copied, however, they should be replaced with a new flag as it is calculated by
-not by identity.**
+copied, however, they should be replaced with a new flag as it is calculated
+by not by identity.**
 
 ---
 ## Initialisation
@@ -184,7 +184,7 @@ Select the range of items based on the computational parameter.
 selectedMeatCode =
     switch(imputationSelection,
            session = sessionItems,
-           all = nonLivestockImputationItems)
+           all = livestockImputationItems)
 ```
 
 ---
@@ -196,7 +196,8 @@ the description. Essentially, we are looping over different livestock trees.
 for(iter in seq(selectedMeatCode)){
     message("Processing livestock tree (", iter, " out of ",
             length(selectedMeatCode), ")")
-    message("Step 1: Extract Transfer Animal Slaughtered from animal commodity to Meat")
+    message("Step 1: Extract Transfer Animal Slaughtered from animal",
+            " commodity to Meat")
     currentMeatItem = selectedMeatCode[iter]
     currentMappingTable =
         animalMeatMappingTable[measuredItemChildCPC == currentMeatItem, ]
@@ -208,7 +209,7 @@ for(iter in seq(selectedMeatCode)){
         currentAllDerivedProduct[currentAllDerivedProduct != currentMeatItem]
 
 
-    message("\tExtracting the commodity trees with shares")
+    message("\tExtracting the shares tree")
     shareData =
         getShareData(geographicAreaM49 =
                          getQueryKey("geographicAreaM49", completeImputationKey),
@@ -261,13 +262,56 @@ for(iter in seq(selectedMeatCode)){
         meatKey %>%
         GetData(key = .) %>%
         preProcessing(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        createTriplet(data = ., formula = meatFormulaTable) %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement") %>%
+        createTriplet(data = .,
+                      formula = meatFormulaTable) %>%
+        processProductionDomain(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters) %>%
+        ## NOTE (Michael): The function name should be generalised, here we are
+        ##                 actually removing animal slaughtered values that were
+        ##                 previously copied from the animal (parent).
+        removeCalculated(data = .,
+                         valueVar =
+                             meatFormulaParameters$areaHarvestedValue,
+                         observationFlagVar =
+                             meatFormulaParameters$areaHarvestedObservationFlag,
+                         methodFlagVar =
+                             meatFormulaParameters$areaHarvestedMethodFlag,
+                         calculatedMethodFlag = "c") %>%
+        ## NOTE (Michael): Here we are removing manual estimates of animal
+        ##                 slaughtered of the meat. If there is to be any manual
+        ##                 estimates (which there shouldn't), it should be
+        ##                 inputted in the animal slaughtered element of the
+        ##                 animal (parent) commodity.
+        removeImputationEstimation(data = .,
+                                   valueVar =
+                                       meatFormulaParameters$areaHarvestedValue,
+                                   observationFlagVar =
+                                       meatFormulaParameters$areaHarvestedObservationFlag,
+                                   methodFlagVar =
+                                       meatFormulaParameters$areaHarvestedMethodFlag,
+                                   imputationEstimationObservationFlag = "E",
+                                   imputationEstimationMethodFlag = "f") %>%
+        ## NOTE (Michael): The function name should be generalised, here we are
+        ##                 actually removing values imported from the old
+        ##                 system. It was indicated that the values are old and
+        ##                 can be over-written.
+        removeCalculated(data = .,
+                         valueVar =
+                             meatFormulaParameters$areaHarvestedValue,
+                         observationFlagVar =
+                             meatFormulaParameters$areaHarvestedObservationFlag,
+                         methodFlagVar =
+                             meatFormulaParameters$areaHarvestedMethodFlag,
+                         calculatedMethodFlag = "-") %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = meatFormulaParameters,
                                normalised = FALSE) %>%
-        normalise
+        normalise(denormalisedData = .,
+                  removeNonExistingRecords = FALSE)
 
     ## ---------------------------------------------------------------------
     message("\tExtracting production triplet for item ", currentAnimalItem,
@@ -309,43 +353,63 @@ for(iter in seq(selectedMeatCode)){
         animalKey %>%
         GetData(key = .) %>%
         preProcessing(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        createTriplet(data = ., formula = animalFormulaTable) %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement") %>%
+        createTriplet(data = .,
+                      formula = animalFormulaTable) %>%
+        processProductionDomain(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = animalFormulaParameters) %>%
         ensureProductionInputs(data = .,
                                processingParameters = processingParameters,
                                formulaParameters = animalFormulaParameters,
                                normalised = FALSE) %>%
-        normalise
+        normalise(denormalisedData = .,
+                  removeNonExistingRecords = FALSE)
 
+    if(length(currentNonMeatItem) > 0){
 
-    message("\tExtracting production triplet for item ",
-            paste0(currentNonMeatItem, collapse = ", "),
-            " (Non-meat Child)")
-    ## Get the non Meat formula
-    nonMeatFormulaTable =
-        getProductionFormula(itemCode = currentNonMeatItem) %>%
-        removeIndigenousBiologicalMeat(formula = .)
+        ## NOTE (Michael): We need to test whether the commodity has non-meat
+        ##                 item. For example, the commodity "Other Rodent"
+        ##                 (02192.01) does not have non-meat derived products
+        ##                 and thus we do not need to perform the action.
 
-    ## Build the non meat key
-    nonMeatKey = completeImputationKey
-    nonMeatKey@dimensions$measuredItemCPC@keys = currentNonMeatItem
-    nonMeatKey@dimensions$measuredElement@keys =
-        with(nonMeatFormulaTable,
-             unique(c(input, output, productivity,
-                      currentMappingTable$measuredElementChild)))
+        message("\tExtracting production triplet for item ",
+                paste0(currentNonMeatItem, collapse = ", "),
+                " (Non-meat Child)")
+        ## Get the non Meat formula
+        nonMeatFormulaTable =
+            getProductionFormula(itemCode = currentNonMeatItem) %>%
+            removeIndigenousBiologicalMeat(formula = .)
 
-    ## Get the non meat data
-    nonMeatData =
-        nonMeatKey %>%
-        GetData(key = .) %>%
-        preProcessing(data = .) %>%
-        denormalise(normalisedData = ., denormaliseKey = "measuredElement") %>%
-        createTriplet(data = ., formula = nonMeatFormulaTable) %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters,
-                               normalised = FALSE) %>%
-        normalise
+        ## Build the non meat key
+        nonMeatKey = completeImputationKey
+        nonMeatKey@dimensions$measuredItemCPC@keys = currentNonMeatItem
+        nonMeatKey@dimensions$measuredElement@keys =
+            with(nonMeatFormulaTable,
+                 unique(c(input, output, productivity,
+                          currentMappingTable$measuredElementChild)))
+
+        ## Get the non meat data
+        ##
+        ## HACK (Michael): Current we don't test the input of non-meat item.
+        ##                 This is because the processProductionDomain and
+        ##                 ensureProductionInputs only work for triplets of a
+        ##                 single item. However, in the non-meat data, there are
+        ##                 more than one item and thus we are unable to process
+        ##                 and test them.
+        nonMeatData =
+            nonMeatKey %>%
+            GetData(key = .) %>%
+            preProcessing(data = .) %>%
+            denormalise(normalisedData = .,
+                        denormaliseKey = "measuredElement") %>%
+            createTriplet(data = .,
+                          formula = nonMeatFormulaTable) %>%
+            normalise(denormalisedData = .,
+                      removeNonExistingRecords = FALSE)
+
+    }
 
     ## ---------------------------------------------------------------------
     message("\tTransferring animal slaughtered from animal to meat commodity")
@@ -373,6 +437,7 @@ for(iter in seq(selectedMeatCode)){
              )
 
     ## Perform imputation using the standard imputation function
+    ##
     message("\tPerforming Imputation")
 
     meatImputed =
@@ -392,21 +457,50 @@ for(iter in seq(selectedMeatCode)){
                                 processingParameters = processingParameters,
                                 imputationParameters = imputationParameters,
                                 formulaParameters = meatFormulaParameters) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = meatFormulaParameters,
+                                normalised = FALSE) %>%
         normalise
+
+
 
     ## ---------------------------------------------------------------------
     message("Step 3: Transfer animal slaughtered back from meat to animal commodity")
 
     ## Transfer the animal slaughtered from meat back to animal, this can be
     ## done by specifying parentToChild equal to FALSE.
+    ##
+    ## NOTE (Michael): We only subset the new calculated or imputed values to be
+    ##                 transfer back to the animal (parent) commodity. See issue
+    ##                 #180.
+    ##
+    ## NOTE (Michael): Since the animal element is not imputed nor balanced , we
+    ##                 will not test whether it is imputed or the identity
+    ##                 calculated.
     slaughteredTransferedBackToAnimalData =
         meatImputed %>%
+        filter(., flagMethod == "i" |
+                  (flagObservationStatus == "I" &
+                   flagMethod == "e")) %>%
         transferParentToChild(parentData = animalData,
                               childData = .,
                               mappingTable = animalMeatMappingShare,
-                              parentToChild = FALSE)
+                              parentToChild = FALSE) %>%
+        ensureProductionOutputs(data = .,
+                                processingParameters = processingParameters,
+                                formulaParameters = animalFormulaParameters,
+                                testImputed = FALSE,
+                                testCalculated = FALSE)
 
     ## ---------------------------------------------------------------------
+
+    if(length(currentNonMeatItem) > 0){
+
+        ## NOTE (Michael): We need to test whether the commodity has non-meat
+        ##                 item. For example, the commodity "Other Rodent"
+        ##                 (02192.01) does not have non-meat derived products
+        ##                 and thus we do not need to perform the action.
     message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
 
     nonMeatMappingTable =
@@ -421,15 +515,19 @@ for(iter in seq(selectedMeatCode)){
                               childData = nonMeatData,
                               mappingTable = animalNonMeatMappingShare,
                               parentToChild = TRUE)
+    }
 
     ## ---------------------------------------------------------------------
     message("\tTesting transfers are applied correctly")
     ## WARNING (Michael): We currently only check the synchronisation between
-    ##                    animal and the meat as this processed is applied.
-    ##                    However, we need to also ensure the synchronisation
-    ##                    happen between other the animal and non-meat child.
-    ##                    How to do this specifically, I have no immediate idea.
-    ##                    This is related to issue 178.
+    ##                    animal and the meat as this processed is applied in
+    ##                    the module. The animal slaughtered si transferred from
+    ##                    animal to non-meat items, but not the reverse so we
+    ##                    can not expect them to be synchronised. However, we
+    ##                    need to also ensure the synchronisation happen between
+    ##                    other the animal and non-meat child. How to do this
+    ##                    specifically, I have no immediate idea. This is
+    ##                    related to issue 178.
     ##
     ensureCorrectTransfer(parentData = slaughteredTransferedBackToAnimalData,
                           childData = meatImputed,
@@ -438,18 +536,22 @@ for(iter in seq(selectedMeatCode)){
 
 
     message("\tSaving the synchronised and imputed data back")
-    syncedData = rbind(meatImputed,
-                       slaughteredTransferedBackToAnimalData,
-                       slaughteredTransferToNonMeatChildData)
+    if(length(currentNonMeatItem) > 0){
+        syncedData = rbind(meatImputed,
+                           slaughteredTransferedBackToAnimalData,
+                           slaughteredTransferToNonMeatChildData)
+    } else {
+        syncedData = rbind(meatImputed,
+                           slaughteredTransferedBackToAnimalData)
+    }
 
     syncedData %>%
         ## NOTE (Michael): The transfer can over-write official and
-        ##                 semi-official figures as indicated by in the previous
-        ##                 synchronise slaughtered module.
+        ##                 semi-official figures in the processed commodities as
+        ##                 indicated by in the previous synchronise slaughtered
+        ##                 module.
         ##
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
+        removeInvalidDates(data = ., context = sessionKey) %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
@@ -458,6 +560,7 @@ for(iter in seq(selectedMeatCode)){
     message("\nSynchronisation and Imputation Completed for\n",
             "Animal Parent: ", currentAnimalItem, "\n",
             "Meat Child: ", currentMeatItem, "\n",
+            "Non-meat Child: ", paste0(currentNonMeatItem, collapse = ", "), "\n",
             rep("-", 80), "\n")
 
 }

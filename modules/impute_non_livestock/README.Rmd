@@ -176,8 +176,8 @@ for(iter in seq(selectedItemCode)){
     subKey@dimensions$measuredElement@keys =
         with(formulaParameters, c(productionCode, areaHarvestedCode, yieldCode))
 
-    cat("Imputation for item: ", currentItem, " (",  iter, " out of ",
-        length(selectedItemCode),")\n")
+    message("Imputation for item: ", currentItem, " (",  iter, " out of ",
+            length(selectedItemCode),")")
 
 
     ## Start the imputation
@@ -208,16 +208,17 @@ for(iter in seq(selectedItemCode)){
     processedData =
         GetData(subKey) %>%
         preProcessing(data = .) %>%
-        ensureProductionInputs(data = .,
-                               processingParam = processingParameters,
-                               formulaParameters = formulaParameters) %>%
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
                     fillEmptyRecords = TRUE) %>%
         createTriplet(data = ., formula = formulaTable) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
-                                formulaParameters = formulaParameters)
+                                formulaParameters = formulaParameters) %>%
+        ensureProductionInputs(data = .,
+                               processingParam = processingParameters,
+                               formulaParameters = formulaParameters,
+                               normalised = FALSE)
 
     ## Perform imputation
     imputed =
@@ -230,6 +231,7 @@ for(iter in seq(selectedItemCode)){
 
     ## Check the imputation before saving.
     imputed %>%
+        removeInvalidDates(data = ., context = sessionKey) %>%
         mutate(timePointYears = as.character(timePointYears)) %>%
         ensureProductionOutputs(data = .,
                                 processingParameters = processingParameters,
