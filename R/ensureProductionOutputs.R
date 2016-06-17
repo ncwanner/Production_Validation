@@ -56,8 +56,8 @@ ensureProductionOutputs = function(data,
                                  returnData = FALSE)
 
 
-                 ## Ensure there is no production is zero while area harvested is non
-                 ## zero, vice versa.
+                 ## Ensure there is no production is zero while area harvested
+                 ## is non zero, vice versa.
                  ensureNoConflictingZero(data = dataCopy,
                                          valueColumn1 = productionValue,
                                          valueColumn2 = areaHarvestedValue,
@@ -80,6 +80,24 @@ ensureProductionOutputs = function(data,
                                   ensureColumn = productionValue,
                                   min = 0,
                                   max = Inf)
+
+
+                 ## Ensure missing values are correctly specified
+                 ensureCorrectMissingValue(data = dataCopy,
+                                           valueVar = yieldValue,
+                                           flagObservationStatusVar =
+                                               yieldObservationFlag,
+                                           returnData = FALSE)
+                 ensureCorrectMissingValue(data = dataCopy,
+                                           valueVar = areaHarvestedValue,
+                                           flagObservationStatusVar =
+                                               areaHarvestedObservationFlag,
+                                           returnData = FALSE)
+                 ensureCorrectMissingValue(data = dataCopy,
+                                           valueVar = productionValue,
+                                           flagObservationStatusVar =
+                                               productionObservationFlag,
+                                           returnData = FALSE)
 
                  ## Ensure flags are valid
                  ensureFlagValidity(data = dataCopy,
