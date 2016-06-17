@@ -180,16 +180,17 @@ for(iter in seq(selectedItemCode)){
     processedData =
         GetData(subKey) %>%
         preProcessing(data = .) %>%
-        ensureProductionInputs(data = .,
-                               processingParam = processingParameters,
-                               formulaParameters = formulaParameters) %>%
         denormalise(normalisedData = .,
                     denormaliseKey = "measuredElement",
                     fillEmptyRecords = TRUE) %>%
         createTriplet(data = ., formula = formulaTable) %>%
         processProductionDomain(data = .,
                                 processingParameters = processingParameters,
-                                formulaParameters = formulaParameters)
+                                formulaParameters = formulaParameters) %>%
+        ensureProductionInputs(data = .,
+                               processingParam = processingParameters,
+                               formulaParameters = formulaParameters,
+                               normalised = FALSE)
 
     ## Perform imputation
     imputed =
