@@ -46,12 +46,12 @@
 ##' 4. Transfer the slaughtered animal from the animal to all other child
 ##'    commodities. This includes items such as offals, fats and hides.
 ##'
-##' **Flag Changes:**
+##' **Flag assignment:**
 ##'
 ##' | Procedure | Observation Status Flag | Method Flag|
 ##' | --- | --- | --- |
 ##' | Tranasfer between animal and meat commodity | `<Same as origin>` | c |
-##' | Balance by Production Identity | I | i |
+##' | Balance by Production Identity | `<flag aggregation>` | i |
 ##' | Imputation | I | e |
 ##'
 ##' **NOTE (Michael): Currently the transfer has flag 'c' indicating it is
@@ -81,7 +81,6 @@ suppressMessages({
 ##' Get the shared path
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
 
-##' Load debugging setting if in debug mode.
 if(CheckDebug()){
 
     library(faoswsModules)
@@ -100,16 +99,15 @@ if(CheckDebug()){
 }
 
 
-##' Load the computation parameters
+##' Load and check the computation parameters
 imputationSelection = swsContext.computationParams$imputation_selection
-sessionKey = swsContext.datasets[[1]]
-datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
-                                 datasetCode = sessionKey@dataset)
-
-## Select the item list based on user input parameter
 if(!imputationSelection %in% c("session", "all"))
     stop("Incorrect imputation selection specified")
 
+##' Get data configuration and session
+sessionKey = swsContext.datasets[[1]]
+datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
+                                 datasetCode = sessionKey@dataset)
 
 ##' Build processing parameters
 processingParameters =
@@ -135,7 +133,8 @@ animalMeatMappingTable =
            measuredItemChildCPC, measuredElementChild)
 
 
-##' Here we expand the session to include all the parent and child items.
+##' Here we expand the session to include all the parent and child items. That
+##' is, we expand to the particular livestock tree.
 ##'
 ##' For example, if 02111 (Cattle) is in the session, then the session will be
 ##' expanded to also include 21111.01 (meat of cattle, freshor chilled), 21151
@@ -209,6 +208,13 @@ for(iter in seq(selectedMeatCode)){
         getProductionFormula(itemCode = currentMeatItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
+    ## NOTE (Michael): Imputation should be performed on only 1 formula, if
+    ##                 there are multiple formulas, they should be calculated
+    ##                 based on the values imputed. For example, if one of the
+    ##                 formula has production in tonnes while the other has
+    ##                 production in kilo-gram, then we should impute the
+    ##                 production in tonnes, then calculate the production in
+    ##                 kilo-gram.
     if(nrow(meatFormulaTable) > 1)
         stop("Imputation should only use one formula")
 
@@ -480,20 +486,21 @@ for(iter in seq(selectedMeatCode)){
         ##                 item. For example, the commodity "Other Rodent"
         ##                 (02192.01) does not have non-meat derived products
         ##                 and thus we do not need to perform the action.
-    message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
+        message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
 
-    nonMeatMappingTable =
-        animalMeatMappingTable[measuredItemChildCPC %in% currentNonMeatItem, ]
+        nonMeatMappingTable =
+            animalMeatMappingTable[measuredItemChildCPC %in% currentNonMeatItem, ]
 
-    animalNonMeatMappingShare =
-        merge(nonMeatMappingTable, shareData, all.x = TRUE,
-              by = c("measuredItemParentCPC", "measuredItemChildCPC"))
+        animalNonMeatMappingShare =
+            merge(nonMeatMappingTable, shareData, all.x = TRUE,
+                  by = c("measuredItemParentCPC", "measuredItemChildCPC"))
 
-    slaughteredTransferToNonMeatChildData =
-        transferParentToChild(parentData = slaughteredTransferedBackToAnimalData,
-                              childData = nonMeatData,
-                              mappingTable = animalNonMeatMappingShare,
-                              parentToChild = TRUE)
+        slaughteredTransferToNonMeatChildData =
+            transferParentToChild(parentData =
+                                      slaughteredTransferedBackToAnimalData,
+                                  childData = nonMeatData,
+                                  mappingTable = animalNonMeatMappingShare,
+                                  parentToChild = TRUE)
     }
 
     ## ---------------------------------------------------------------------
@@ -530,6 +537,10 @@ for(iter in seq(selectedMeatCode)){
         ##                 indicated by in the previous synchronise slaughtered
         ##                 module.
         ##
+        ## NOTE (Michael): Records containing invalid dates are excluded, for
+        ##                 example, South Sudan only came into existence in 2011.
+        ##                 Thus although we can impute it, they should not be saved
+        ##                 back to the database.
         removeInvalidDates(data = ., context = sessionKey) %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,

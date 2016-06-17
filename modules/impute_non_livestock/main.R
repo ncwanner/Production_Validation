@@ -5,10 +5,7 @@
 ##' **Description:**
 ##'
 ##' This module imputes the triplet (input, productivity and output) for a given
-##' non-livestock commodity. Instead of writing directly back to the databse,
-##' the module saves the imputed dataset to the Statistical Working System
-##' shared drive. The imputed values can then be loaded and saved back to the
-##' database in the "Fill Livestock" module.
+##' non-livestock commodity.
 ##'
 ##' **Inputs:**
 ##'
@@ -16,17 +13,22 @@
 ##' * Livestock Element Mapping Table
 ##' * Identity Formula Table
 ##'
-##' **Flag Changes:**
+##' **Flag assignment:**
 ##'
-##' No flag change as the data is not saved back.
+##' | Procedure | Observation Status Flag | Method Flag|
+##' | --- | --- | --- |
+##' | Balance by Production Identity | `<flag aggregation>` | i |
+##' | Imputation | I | e |
 ##'
 ##' ---
 
+## TODO (Michael): Merge the this module with the imputed slaughtered and
+##                 synchronise slaughtered as the logic are identical.
 
 ##' ## Initialisation
 ##'
 
-##' load the libraries
+##' Load the libraries
 suppressMessages({
     library(faosws)
     library(faoswsUtil)
@@ -39,11 +41,9 @@ suppressMessages({
     library(dplyr)
 })
 
-##' set up for the test environment and parameters
+##' Set up for the test environment and parameters
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
 
-##' This return FALSE if on the Statistical Working System
 if(CheckDebug()){
 
     library(faoswsModules)
@@ -65,29 +65,28 @@ if(CheckDebug()){
 
 ##' Get user specified imputation selection
 imputationSelection = swsContext.computationParams$imputation_selection
+
+##' Check the validity of the computational parameter
+if(!imputationSelection %in% c("session", "all"))
+    stop("Incorrect imputation selection specified")
+
+##' Get data configuration and session
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
-
-##' Select the item list based on user input parameter
-if(!imputationSelection %in% c("session", "all"))
-    stop("Incorrect imputation selection specified")
 
 ##' Build processing parameters
 processingParameters =
     productionProcessingParameters(datasetConfig = datasetConfig)
 
-
 ##' Get the full imputation Datakey
 completeImputationKey = getCompleteImputationKey("production")
 
 
-##' NOTE (Michael): Since the animal/meat are currently imputed by the
-##'                 imputed_slaughtered and synchronise slaughtered module, so
-##'                 they should not be imputed here.
+##' **NOTE (Michael): Since the animal/meat are currently imputed by the
+##'                   imputed_slaughtered and synchronise slaughtered module, so
+##'                   they should be excluded here.**
 ##'
-##' TODO (Michael): Merge the this module with the imputed slaughtered and
-##'                 synchronise slaughtered as the logic are identical.
 liveStockItems =
     getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
                          onlyMeatChildren = FALSE) %>%
@@ -129,6 +128,13 @@ for(iter in seq(selectedItemCode)){
         getProductionFormula(itemCode = currentItem) %>%
         removeIndigenousBiologicalMeat(formula = .)
 
+    ## NOTE (Michael): Imputation should be performed on only 1 formula, if
+    ##                 there are multiple formulas, they should be calculated
+    ##                 based on the values imputed. For example, if one of the
+    ##                 formula has production in tonnes while the other has
+    ##                 production in kilo-gram, then we should impute the
+    ##                 production in tonnes, then calculate the production in
+    ##                 kilo-gram.
     if(nrow(formulaTable) > 1)
         stop("Imputation should only use one formula")
 
@@ -148,11 +154,10 @@ for(iter in seq(selectedItemCode)){
     subKey@dimensions$measuredElement@keys =
         with(formulaParameters, c(productionCode, areaHarvestedCode, yieldCode))
 
+    ## Start the imputation
     message("Imputation for item: ", currentItem, " (",  iter, " out of ",
             length(selectedItemCode),")")
 
-
-    ## Start the imputation
     ## Build imputation parameter
     imputationParameters =
         with(formulaParameters,
@@ -160,21 +165,6 @@ for(iter in seq(selectedItemCode)){
                                      areaHarvestedCode = areaHarvestedCode,
                                      yieldCode = yieldCode)
              )
-
-    ## NOTE (Michael): We now impute the full triplet rather than
-    ##                 just production for non-primary
-    ##                 products. However, in the imputeModel
-    ##                 module, only the production will be
-    ##                 selected and imputed for non-primary
-    ##                 products.
-    ##
-    ##                 Nevertheless, we hope to change this and
-    ##                 impute the full triplet, for all the
-    ##                 commodity. We will need to transfer and
-    ##                 sync the inputs just like in the meat
-    ##                 case. This will allow us to merge the two
-    ##                 components.
-    ##
 
     ## Process the data.
     processedData =
@@ -201,8 +191,12 @@ for(iter in seq(selectedItemCode)){
             imputationParameters = imputationParameters)
 
 
-    ## Check the imputation before saving.
+    ## Save the imputation back to the database.
     imputed %>%
+        ## NOTE (Michael): Records containing invalid dates are excluded, for
+        ##                 example, South Sudan only came into existence in 2011.
+        ##                 Thus although we can impute it, they should not be saved
+        ##                 back to the database.
         removeInvalidDates(data = ., context = sessionKey) %>%
         mutate(timePointYears = as.character(timePointYears)) %>%
         ensureProductionOutputs(data = .,
@@ -210,6 +204,9 @@ for(iter in seq(selectedItemCode)){
                                 formulaParameters = formulaParameters,
                                 normalised = FALSE) %>%
         normalise(.) %>%
+        ## NOTE (Michael): Only data with method flag "i" for balanced, or flag
+        ##                 combination (I, e) for imputed are saved back to the
+        ##                 database.
         filter(., flagMethod == "i" |
                   (flagObservationStatus == "I" &
                    flagMethod == "e")) %>%
