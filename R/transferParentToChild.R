@@ -26,7 +26,10 @@
 ##' @param mappingTable The mapping table between the parent and the child.
 ##' @param parentToChild logical, if true, slaughtered animal are transferred
 ##'     from animal commodity to meat, otherwise the otherway around.
-##' @param transferMethodFlag The method flag to be assigned for the transfer
+##' @param transferMethodFlag The method flag to be assigned for the transfer.
+##' @param imputationObservationFlag This is the flag assigned to imputation.
+##'     This is a special case when share is zero, then the observation status
+##'     flag should not be the same as the parent.
 ##'
 ##' @return An updated dataset depending on the direction of the transfer. The
 ##'     output dataset is strictly greater than the original target dataset.
@@ -37,7 +40,8 @@ transferParentToChild = function(parentData,
                                  childData,
                                  mappingTable,
                                  parentToChild = TRUE,
-                                 transferMethodFlag = "c"){
+                                 transferMethodFlag = "c",
+                                 imputationObservationFlag = "I"){
 
     ## Input check
     ##
@@ -122,15 +126,28 @@ transferParentToChild = function(parentData,
             with(parentChildMergedData,
                  !is.na(Value_parent) &
                  !is.na(flagObservationStatus_parent))
+        nonZeroShare =
+            with(parentChildMergedData, share != 0)
 
         parentChildMergedData[
-            isMapped & origCellAvailable,
+            nonZeroShare & isMapped & origCellAvailable,
             `:=`(c("Value_child",
                    "flagObservationStatus_child",
                    "flagMethod_child"),
                  list(Value_parent * share,
                       flagObservationStatus_parent,
                       transferMethodFlag))]
+        ## NOTE (Michael): If share is zero, then the value of the child should
+        ##                 be zero as well.
+        parentChildMergedData[
+            !nonZeroShare,
+            `:=`(c("Value_child",
+                   "flagObservationStatus_child",
+                   "flagMethod_child"),
+                 list(0,
+                      imputationObservationFlag,
+                      transferMethodFlag))]
+
 
         setnames(parentChildMergedData,
                  old = c("measuredItemChildCPC",
@@ -145,9 +162,7 @@ transferParentToChild = function(parentData,
                          "flagMethod"))
     } else {
 
-        ## TODO (Michael): If share is zero, then the value of the child should
-        ##                 be zero as well. An error should be thrown here if it
-        ##                 is not.
+
         isMapped =
             with(parentChildMergedData,
                  !is.na(measuredItemParentCPC) &
@@ -157,8 +172,11 @@ transferParentToChild = function(parentData,
                  !is.na(Value_child) &
                  !is.na(flagObservationStatus_child))
 
+        nonZeroShare =
+            with(parentChildMergedData, share != 0)
+
         parentChildMergedData[
-            share != 0 & isMapped & origCellAvailable,
+            nonZeroShare & isMapped & origCellAvailable,
             `:=`(c("Value_parent",
                    "flagObservationStatus_parent",
                    "flagMethod_parent"),
