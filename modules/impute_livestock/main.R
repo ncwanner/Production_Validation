@@ -55,8 +55,8 @@
 ##' | Imputation | I | e |
 ##'
 ##' **NOTE (Michael): Currently the transfer has flag 'c' indicating it is
-##' copied, however, they should be replaced with a new flag as it is calculated by
-##' not by identity.**
+##' copied, however, they should be replaced with a new flag as it is calculated
+##' by not by identity.**
 ##'
 ##' ---
 
@@ -175,7 +175,8 @@ selectedMeatCode =
 for(iter in seq(selectedMeatCode)){
     message("Processing livestock tree (", iter, " out of ",
             length(selectedMeatCode), ")")
-    message("Step 1: Extract Transfer Animal Slaughtered from animal commodity to Meat")
+    message("Step 1: Extract Transfer Animal Slaughtered from animal",
+            " commodity to Meat")
     currentMeatItem = selectedMeatCode[iter]
     currentMappingTable =
         animalMeatMappingTable[measuredItemChildCPC == currentMeatItem, ]
@@ -406,8 +407,9 @@ for(iter in seq(selectedMeatCode)){
     ## NOTE (Michael): We only subset the new calculated or imputed values to be
     ##                 transfer back to the animal (parent) commodity.
     ##
-    ## NOTE (Michael): Since the animal element is not imputed, we will not test
-    ##                 whether it is imputed.
+    ## NOTE (Michael): Since the animal element is not imputed nor balanced , we
+    ##                 will not test whether it is imputed or the identity
+    ##                 calculated.
     slaughteredTransferedBackToAnimalData =
         meatImputed %>%
         filter(., flagMethod == "i" |
@@ -420,7 +422,8 @@ for(iter in seq(selectedMeatCode)){
         ensureProductionOutputs(data = .,
                                 processingParameters = processingParameters,
                                 formulaParameters = animalFormulaParameters,
-                                testImputed = FALSE)
+                                testImputed = FALSE,
+                                testCalculated = FALSE)
 
     ## ---------------------------------------------------------------------
     message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
@@ -442,10 +445,13 @@ for(iter in seq(selectedMeatCode)){
     message("\tTesting transfers are applied correctly")
     ## WARNING (Michael): We currently only check the synchronisation between
     ##                    animal and the meat as this processed is applied in
-    ##                    the module. However, we need to also ensure the
-    ##                    synchronisation happen between other the animal and
-    ##                    non-meat child. How to do this specifically, I have no
-    ##                    immediate idea. This is related to issue 178.
+    ##                    the module. The animal slaughtered si transferred from
+    ##                    animal to non-meat items, but not the reverse so we
+    ##                    can not expect them to be synchronised. However, we
+    ##                    need to also ensure the synchronisation happen between
+    ##                    other the animal and non-meat child. How to do this
+    ##                    specifically, I have no immediate idea. This is
+    ##                    related to issue 178.
     ##
     ensureCorrectTransfer(parentData = slaughteredTransferedBackToAnimalData,
                           childData = meatImputed,
@@ -464,6 +470,7 @@ for(iter in seq(selectedMeatCode)){
         ##                 indicated by in the previous synchronise slaughtered
         ##                 module.
         ##
+        removeInvalidDates(data = ., context = sessionKey) %>%
         postProcessing %>%
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
