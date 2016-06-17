@@ -72,6 +72,7 @@
 ##'   the `Livestock Element Mapping Table`.
 ##'
 ##' * timePointYears: All years specified in the `Complete Key Table`.
+##'
 ##' ---
 
 ##' ## Initialisation
