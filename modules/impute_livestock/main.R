@@ -74,6 +74,9 @@
 ##'
 ##' * timePointYears: All years specified in the `Complete Key Table`.
 ##'
+##'
+##' **Flow chart:**
+##' ![livestock Flow](livestock_flow.jpg?raw=true "livestock Flow")
 ##' ---
 
 ##' ## Initialisation
