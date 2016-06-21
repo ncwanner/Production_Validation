@@ -139,20 +139,22 @@ for(iter in seq(selectedItemCode)){
 
             ## Obtain the formula and remove indigenous and biological meat.
             ##
-            ## NOTE (Michael): Biological and indigenous meat are currently removed, as
-            ##                 they have incorrect data specification. They should be
-            ##                 separate item with different item code rather than under
-            ##                 different element under the meat code.
+            ## NOTE (Michael): Biological and indigenous meat are currently
+            ##                 removed, as they have incorrect data
+            ##                 specification. They should be separate item with
+            ##                 different item code rather than under different
+            ##                 element under the meat code.
             formulaTable =
                 getProductionFormula(itemCode = currentItem) %>%
                 removeIndigenousBiologicalMeat(formula = .)
 
-            ## NOTE (Michael): Imputation should be performed on only 1 formula, if
-            ##                 there are multiple formulas, they should be calculated
-            ##                 based on the values imputed. For example, if one of the
-            ##                 formula has production in tonnes while the other has
-            ##                 production in kilo-gram, then we should impute the
-            ##                 production in tonnes, then calculate the production in
+            ## NOTE (Michael): Imputation should be performed on only 1 formula,
+            ##                 if there are multiple formulas, they should be
+            ##                 calculated based on the values imputed. For
+            ##                 example, if one of the formula has production in
+            ##                 tonnes while the other has production in
+            ##                 kilo-gram, then we should impute the production
+            ##                 in tonnes, then calculate the production in
             ##                 kilo-gram.
             if(nrow(formulaTable) > 1)
                 stop("Imputation should only use one formula")
@@ -171,7 +173,8 @@ for(iter in seq(selectedItemCode)){
             subKey = completeImputationKey
             subKey@dimensions$measuredItemCPC@keys = currentItem
             subKey@dimensions$measuredElement@keys =
-                with(formulaParameters, c(productionCode, areaHarvestedCode, yieldCode))
+                with(formulaParameters,
+                     c(productionCode, areaHarvestedCode, yieldCode))
 
             ## Start the imputation
             message("Imputation for item: ", currentItem, " (",  iter, " out of ",
@@ -185,16 +188,25 @@ for(iter in seq(selectedItemCode)){
                                              yieldCode = yieldCode)
                      )
 
+            extractedData =
+                GetData(subKey)
+
+            if(nrow(extractedData) == 0){
+                message("Item : ", currentItem, " does not contain any data")
+                next
+            }
+
             ## Process the data.
             processedData =
-                GetData(subKey) %>%
+                extractedData %>%
                 preProcessing(data = .) %>%
                 denormalise(normalisedData = .,
                             denormaliseKey = "measuredElement",
                             fillEmptyRecords = TRUE) %>%
                 createTriplet(data = ., formula = formulaTable) %>%
                 processProductionDomain(data = .,
-                                        processingParameters = processingParameters,
+                                        processingParameters =
+                                            processingParameters,
                                         formulaParameters = formulaParameters) %>%
                 ensureProductionInputs(data = .,
                                        processingParam = processingParameters,
@@ -212,20 +224,22 @@ for(iter in seq(selectedItemCode)){
 
             ## Save the imputation back to the database.
             imputed %>%
-                ## NOTE (Michael): Records containing invalid dates are excluded, for
-                ##                 example, South Sudan only came into existence in 2011.
-                ##                 Thus although we can impute it, they should not be saved
-                ##                 back to the database.
+                ## NOTE (Michael): Records containing invalid dates are
+                ##                 excluded, for example, South Sudan only came
+                ##                 into existence in 2011. Thus although we can
+                ##                 impute it, they should not be saved back to
+                ##                 the database.
                 removeInvalidDates(data = ., context = sessionKey) %>%
                 mutate(timePointYears = as.character(timePointYears)) %>%
                 ensureProductionOutputs(data = .,
-                                        processingParameters = processingParameters,
+                                        processingParameters =
+                                            processingParameters,
                                         formulaParameters = formulaParameters,
                                         normalised = FALSE) %>%
                 normalise(.) %>%
-                ## NOTE (Michael): Only data with method flag "i" for balanced, or flag
-                ##                 combination (I, e) for imputed are saved back to the
-                ##                 database.
+                ## NOTE (Michael): Only data with method flag "i" for balanced,
+                ##                 or flag combination (I, e) for imputed are
+                ##                 saved back to the database.
                 filter(., flagMethod == "i" |
                           (flagObservationStatus == "I" &
                            flagMethod == "e")) %>%
@@ -236,7 +250,9 @@ for(iter in seq(selectedItemCode)){
                 SaveData(domain = sessionKey@domain,
                          dataset = sessionKey@dataset,
                          data = .)
+
         })
+
     if(inherits(imputationProcess, "try-error"))
         imputationResult =
             rbind(imputationResult,
@@ -254,7 +270,8 @@ if(nrow(imputationResult) > 0){
     from = "I_am_a_magical_unicorn@sebastian_quotes.com"
     to = swsContext.userEmail
     subject = "Imputation Result"
-    body = paste0("The following item failed")
+    body = paste0("The following item failed, please inform the maintainer "
+                  , "of the module")
 
     errorAttachmentName = "non_livestock_imputation_result.csv"
     errorAttachmentPath =
