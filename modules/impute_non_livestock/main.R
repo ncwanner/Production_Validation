@@ -200,6 +200,11 @@ for(iter in seq(selectedItemCode)){
             processedData =
                 extractedData %>%
                 preProcessing(data = .) %>%
+                expandYear(data = .,
+                           areaVar = processingParameters$areaVar,
+                           elementVar = processingParameters$elementVar,
+                           itemVar = processingParameters$itemVar,
+                           valueVar = processingParameters$valueVar) %>%
                 denormalise(normalisedData = .,
                             denormaliseKey = "measuredElement",
                             fillEmptyRecords = TRUE) %>%
