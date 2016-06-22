@@ -55,6 +55,7 @@ suppressMessages({
     library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
+    library(sendmailR)
 })
 
 ##' Set up for the test environment and parameters
@@ -72,11 +73,9 @@ if(CheckDebug()){
     SetClientFiles(SETTINGS[["certdir"]])
 
     ## Get session information from SWS. Token must be obtained from web interface
+
     GetTestEnvironment(baseUrl = SETTINGS[["server"]],
                        token = SETTINGS[["token"]])
-
-    savePath = SETTINGS[["save_imputation_path"]]
-
 }
 
 ##' Get user specified imputation selection
@@ -188,6 +187,7 @@ for(iter in seq(selectedItemCode)){
                                              yieldCode = yieldCode)
                      )
 
+            ## Extract the data, and skip the imputation if the data contains no entry.
             extractedData =
                 GetData(subKey)
 
@@ -258,6 +258,7 @@ for(iter in seq(selectedItemCode)){
 
         })
 
+    ## Capture the items that failed
     if(inherits(imputationProcess, "try-error"))
         imputationResult =
             rbind(imputationResult,
@@ -269,13 +270,12 @@ for(iter in seq(selectedItemCode)){
 ##' ---
 ##' ## Return Message
 
-
 if(nrow(imputationResult) > 0){
     ## Initiate email
     from = "I_am_a_magical_unicorn@sebastian_quotes.com"
     to = swsContext.userEmail
     subject = "Imputation Result"
-    body = paste0("The following item failed, please inform the maintainer "
+    body = paste0("The following items failed, please inform the maintainer "
                   , "of the module")
 
     errorAttachmentName = "non_livestock_imputation_result.csv"
