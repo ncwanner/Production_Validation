@@ -38,9 +38,6 @@
 ##'
 ##' ---
 
-## TODO (Michael): Merge the this module with the imputed slaughtered and
-##                 synchronise slaughtered as the logic are identical.
-
 ##' ## Initialisation
 ##'
 
