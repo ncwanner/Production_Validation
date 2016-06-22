@@ -8,11 +8,6 @@
 ##'     1. Required list of country, item, element and years provided
 ##'        by the user.
 ##'
-##'        NOTE (Michael): This list is currently obtained from the
-##'                        getMainKey() function, this should however
-##'                        be changed to read from the requirement
-##'                        database.
-##'
 ##'     2. The record need to exist in the system.
 ##'
 
@@ -23,7 +18,6 @@ suppressMessages({
     library(faosws)
     library(faoswsUtil)
     library(faoswsFlag)
-    library(faoswsImputation)
     library(faoswsProduction)
     library(faoswsProcessing)
     library(faoswsEnsure)
@@ -60,7 +54,6 @@ datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)
 
 ##' Get complete imputation range
-
 completeImputationKey = getCompleteImputationKey("production")
 
 ## NOTE (Michael): Probably better to get the data normalised
@@ -69,13 +62,8 @@ completeImputationData =
     GetData %>%
     preProcessing(data = .)
 
-saveRDS(completeImputationData, file = "completeImputationData.rds")
-
-completeProductionData = readRDS("completeImputationData.rds")
-
-combineFlag = function(flagObservationStatus, flagMethod){
-    paste0("(", flagObservationStatus, ", ", flagMethod, ")")
-}
+## saveRDS(completeImputationData, file = "completeImputationData.rds")
+## completeProductionData = readRDS("completeImputationData.rds")
 
 ## Flag distribution
 completeImputationData[, `:=`("flagCombination",
@@ -107,3 +95,7 @@ timeSeriesCount =
                 key = c("geographicAreaM49", "measuredElement", "measuredItemCPC"))
 
 ## Plot the triplet for all the items
+
+
+
+
