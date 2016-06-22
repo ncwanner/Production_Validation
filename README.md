@@ -34,11 +34,10 @@ the same auto-correction of data with given rules.
 ### 3. Imputation
 
 In this phase, the missing records will be imputed. All the process will be
-automised with algorithms. The imputation is consists of three modules. The
-livestock commodities can be imputed directly with the `Impute Livestock`
-module, while the non-livestock commodities requires the construction of the
-imputed dataset with the `Impute non-livestock` before loading them with
-`Fill non-ivestock`.
+automised with algorithms. The imputation is consists of two modules, each
+module performs imputation on a different basket of commodities depending on the
+nature. The module `Impute Livestock` performs imputation on the livestock item
+while the module `Impute Non-livestock` operates on non-liveestock commodities.
 
 #### [R module: Impute Livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/impute_livestock)
 
@@ -48,14 +47,7 @@ parent/child commodities.
 
 #### [R module: Impute Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/impute_non_livestock)
 
-This module craetes the imputed values for the non-livestock items, however,
-does not write back directly to the database. Instead the imputed values are
-saved to the shared drive.
-
-#### [R module: Fill Non-livestock](https://github.com/SWS-Methodology/faoswsProduction/tree/master/modules/fill_non_livestock)
-
-This module follows the `Impute Non-livestock` module and loads the impute
-value then fill in the imputation value then saves back to the database.
+This module craetes the imputed values for the non-livestock items.
 
 ### 4. Post validation
 
@@ -82,6 +74,10 @@ are introduced in the post validation phase.
 The production modules in addition to the main production data
 (`agriculture:aproduction`) depends on several auxiliary datasets detailed
 below:
+
+* `Complete Key Table`: This table specifies the scope of the data that will be
+  processed. The table is a Datatable on the SWS as `fbs_production_comm_code`
+  and can be extracted with the function `faoswsUtil:getCompleteImputationKey`.
 
 * `Livestock Element Mapping Table`: This table provides the mapping of element
   codes between a parent commodity and child commodity. The table is currently

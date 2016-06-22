@@ -5,25 +5,47 @@
 **Description:**
 
 This module imputes the triplet (input, productivity and output) for a given
-non-livestock commodity. Instead of writing directly back to the databse,
-the module saves the imputed dataset to the Statistical Working System
-shared drive. The imputed values can then be loaded and saved back to the
-database in the "Fill Livestock" module.
+non-livestock commodity.
 
 **Inputs:**
 
 * Production domain
+* Complete Key Table
 * Livestock Element Mapping Table
 * Identity Formula Table
 
-**Flag Changes:**
+**Flag assignment:**
 
-No flag change as the data is not saved back.
+| Procedure | Observation Status Flag | Method Flag|
+| --- | --- | --- |
+| Balance by Production Identity | `<flag aggregation>` | i |
+| Imputation | I | e |
+
+**Data scope**
+
+* GeographicAreaM49: All countries specified in the `Complete Key Table`.
+
+* measuredItemCPC: Depends on the session selection. If the selection is
+  "session", then only items selected in the session will be imputed. If the
+  selection is "all", then all the items listed in the `Complete Key Table`
+  excluding the live stock item in the `Livestock Element Mapping Table`
+  will be imputed.
+
+* measuredElement: Depends on the measuredItemCPC, all cooresponding
+  elements in the `Identity Formula Table`.
+
+* timePointYears: All years specified in the `Complete Key Table`.
 
 ---
+
+```{r }
+## TODO (Michael): Merge the this module with the imputed slaughtered and
+##                 synchronise slaughtered as the logic are identical.
+```
+
 ## Initialisation
 
-load the libraries
+Load the libraries
 
 ```{r }
 suppressMessages({
@@ -36,19 +58,15 @@ suppressMessages({
     library(faoswsEnsure)
     library(magrittr)
     library(dplyr)
+    library(sendmailR)
 })
 ```
 
-set up for the test environment and parameters
+Set up for the test environment and parameters
 
 ```{r }
 R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
-savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
-```
 
-This return FALSE if on the Statistical Working System
-
-```{r }
 if(CheckDebug()){
 
     library(faoswsModules)
@@ -61,11 +79,9 @@ if(CheckDebug()){
     SetClientFiles(SETTINGS[["certdir"]])
 
     ## Get session information from SWS. Token must be obtained from web interface
+
     GetTestEnvironment(baseUrl = SETTINGS[["server"]],
                        token = SETTINGS[["token"]])
-
-    savePath = SETTINGS[["save_imputation_path"]]
-
 }
 ```
 
@@ -73,16 +89,21 @@ Get user specified imputation selection
 
 ```{r }
 imputationSelection = swsContext.computationParams$imputation_selection
-sessionKey = swsContext.datasets[[1]]
-datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
-                                 datasetCode = sessionKey@dataset)
 ```
 
-Select the item list based on user input parameter
+Check the validity of the computational parameter
 
 ```{r }
 if(!imputationSelection %in% c("session", "all"))
     stop("Incorrect imputation selection specified")
+```
+
+Get data configuration and session
+
+```{r }
+sessionKey = swsContext.datasets[[1]]
+datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
+                                 datasetCode = sessionKey@dataset)
 ```
 
 Build processing parameters
@@ -98,12 +119,10 @@ Get the full imputation Datakey
 completeImputationKey = getCompleteImputationKey("production")
 ```
 
-NOTE (Michael): Since the animal/meat are currently imputed by the
-                imputed_slaughtered and synchronise slaughtered module, so
-                they should not be imputed here.
+**NOTE (Michael): Since the animal/meat are currently imputed by the
+                  imputed_slaughtered and synchronise slaughtered module, so
+                  they should be excluded here.**
 
-TODO (Michael): Merge the this module with the imputed slaughtered and
-                synchronise slaughtered as the logic are identical.
 
 ```{r }
 liveStockItems =
@@ -141,111 +160,147 @@ selectedItemCode =
 
 ---
 ## Perform Imputation
+
+```{r }
+imputationResult = data.table()
+```
+
 Loop through the commodities to impute the items individually.
 
 ```{r }
 for(iter in seq(selectedItemCode)){
-    currentItem = selectedItemCode[iter]
+    imputationProcess =
+        try({
+            currentItem = selectedItemCode[iter]
 
-    ## Obtain the formula and remove indigenous and biological meat.
-    ##
-    ## NOTE (Michael): Biological and indigenous meat are currently removed, as
-    ##                 they have incorrect data specification. They should be
-    ##                 separate item with different item code rather than under
-    ##                 different element under the meat code.
-    formulaTable =
-        getProductionFormula(itemCode = currentItem) %>%
-        removeIndigenousBiologicalMeat(formula = .)
+            ## Obtain the formula and remove indigenous and biological meat.
+            ##
+            ## NOTE (Michael): Biological and indigenous meat are currently
+            ##                 removed, as they have incorrect data
+            ##                 specification. They should be separate item with
+            ##                 different item code rather than under different
+            ##                 element under the meat code.
+            formulaTable =
+                getProductionFormula(itemCode = currentItem) %>%
+                removeIndigenousBiologicalMeat(formula = .)
 
-    if(nrow(formulaTable) > 1)
-        stop("Imputation should only use one formula")
+            ## NOTE (Michael): Imputation should be performed on only 1 formula,
+            ##                 if there are multiple formulas, they should be
+            ##                 calculated based on the values imputed. For
+            ##                 example, if one of the formula has production in
+            ##                 tonnes while the other has production in
+            ##                 kilo-gram, then we should impute the production
+            ##                 in tonnes, then calculate the production in
+            ##                 kilo-gram.
+            if(nrow(formulaTable) > 1)
+                stop("Imputation should only use one formula")
 
-    ## Create the formula parameter list
-    formulaParameters =
-        with(formulaTable,
-             productionFormulaParameters(datasetConfig = datasetConfig,
-                                         productionCode = output,
-                                         areaHarvestedCode = input,
-                                         yieldCode = productivity,
-                                         unitConversion = unitConversion)
-             )
+            ## Create the formula parameter list
+            formulaParameters =
+                with(formulaTable,
+                     productionFormulaParameters(datasetConfig = datasetConfig,
+                                                 productionCode = output,
+                                                 areaHarvestedCode = input,
+                                                 yieldCode = productivity,
+                                                 unitConversion = unitConversion)
+                     )
 
-    ## Update the item/element key according to the current commodity
-    subKey = completeImputationKey
-    subKey@dimensions$measuredItemCPC@keys = currentItem
-    subKey@dimensions$measuredElement@keys =
-        with(formulaParameters, c(productionCode, areaHarvestedCode, yieldCode))
+            ## Update the item/element key according to the current commodity
+            subKey = completeImputationKey
+            subKey@dimensions$measuredItemCPC@keys = currentItem
+            subKey@dimensions$measuredElement@keys =
+                with(formulaParameters,
+                     c(productionCode, areaHarvestedCode, yieldCode))
 
-    cat("Imputation for item: ", currentItem, " (",  iter, " out of ",
-        length(selectedItemCode),")\n")
+            ## Start the imputation
+            message("Imputation for item: ", currentItem, " (",  iter, " out of ",
+                    length(selectedItemCode),")")
+
+            ## Build imputation parameter
+            imputationParameters =
+                with(formulaParameters,
+                     getImputationParameters(productionCode = productionCode,
+                                             areaHarvestedCode = areaHarvestedCode,
+                                             yieldCode = yieldCode)
+                     )
+
+            ## Extract the data, and skip the imputation if the data contains no entry.
+            extractedData =
+                GetData(subKey)
+
+            if(nrow(extractedData) == 0){
+                message("Item : ", currentItem, " does not contain any data")
+                next
+            }
+
+            ## Process the data.
+            processedData =
+                extractedData %>%
+                preProcessing(data = .) %>%
+                expandYear(data = .,
+                           areaVar = processingParameters$areaVar,
+                           elementVar = processingParameters$elementVar,
+                           itemVar = processingParameters$itemVar,
+                           valueVar = processingParameters$valueVar) %>%
+                denormalise(normalisedData = .,
+                            denormaliseKey = "measuredElement",
+                            fillEmptyRecords = TRUE) %>%
+                createTriplet(data = ., formula = formulaTable) %>%
+                processProductionDomain(data = .,
+                                        processingParameters =
+                                            processingParameters,
+                                        formulaParameters = formulaParameters) %>%
+                ensureProductionInputs(data = .,
+                                       processingParam = processingParameters,
+                                       formulaParameters = formulaParameters,
+                                       normalised = FALSE)
+
+            ## Perform imputation
+            imputed =
+                imputeProductionTriplet(
+                    data = processedData,
+                    processingParameters = processingParameters,
+                    formulaParameters = formulaParameters,
+                    imputationParameters = imputationParameters)
 
 
-    ## Start the imputation
-    ## Build imputation parameter
-    imputationParameters =
-        with(formulaParameters,
-             getImputationParameters(productionCode = productionCode,
-                                     areaHarvestedCode = areaHarvestedCode,
-                                     yieldCode = yieldCode)
-             )
+            ## Save the imputation back to the database.
+            imputed %>%
+                ## NOTE (Michael): Records containing invalid dates are
+                ##                 excluded, for example, South Sudan only came
+                ##                 into existence in 2011. Thus although we can
+                ##                 impute it, they should not be saved back to
+                ##                 the database.
+                removeInvalidDates(data = ., context = sessionKey) %>%
+                mutate(timePointYears = as.character(timePointYears)) %>%
+                ensureProductionOutputs(data = .,
+                                        processingParameters =
+                                            processingParameters,
+                                        formulaParameters = formulaParameters,
+                                        normalised = FALSE) %>%
+                normalise(.) %>%
+                ## NOTE (Michael): Only data with method flag "i" for balanced,
+                ##                 or flag combination (I, e) for imputed are
+                ##                 saved back to the database.
+                filter(., flagMethod == "i" |
+                          (flagObservationStatus == "I" &
+                           flagMethod == "e")) %>%
+                ensureProtectedData(data = .,
+                                    domain = sessionKey@domain,
+                                    dataset = sessionKey@dataset) %>%
+                postProcessing(data = .) %>%
+                SaveData(domain = sessionKey@domain,
+                         dataset = sessionKey@dataset,
+                         data = .)
 
-    ## NOTE (Michael): We now impute the full triplet rather than
-    ##                 just production for non-primary
-    ##                 products. However, in the imputeModel
-    ##                 module, only the production will be
-    ##                 selected and imputed for non-primary
-    ##                 products.
-    ##
-    ##                 Nevertheless, we hope to change this and
-    ##                 impute the full triplet, for all the
-    ##                 commodity. We will need to transfer and
-    ##                 sync the inputs just like in the meat
-    ##                 case. This will allow us to merge the two
-    ##                 components.
-    ##
+        })
 
-    ## Process the data.
-    processedData =
-        GetData(subKey) %>%
-        preProcessing(data = .) %>%
-        ensureProductionInputs(data = .,
-                               processingParam = processingParameters,
-                               formulaParameters = formulaParameters) %>%
-        denormalise(normalisedData = .,
-                    denormaliseKey = "measuredElement",
-                    fillEmptyRecords = TRUE) %>%
-        createTriplet(data = ., formula = formulaTable) %>%
-        processProductionDomain(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = formulaParameters)
-
-    ## Perform imputation
-    imputed =
-        imputeProductionTriplet(
-            data = processedData,
-            processingParameters = processingParameters,
-            formulaParameters = formulaParameters,
-            imputationParameters = imputationParameters)
-
-
-    ## Check the imputation before saving.
-    imputed %>%
-        mutate(timePointYears = as.character(timePointYears)) %>%
-        ensureProductionOutputs(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = formulaParameters,
-                                normalised = FALSE) %>%
-        normalise(.) %>%
-        filter(., flagMethod == "i" |
-                  (flagObservationStatus == "I" &
-                   flagMethod == "e")) %>%
-        ensureProtectedData(data = .,
-                            domain = sessionKey@domain,
-                            dataset = sessionKey@dataset) %>%
-        postProcessing(data = .) %>%
-        SaveData(domain = sessionKey@domain,
-                 dataset = sessionKey@dataset,
-                 data = .)
+    ## Capture the items that failed
+    if(inherits(imputationProcess, "try-error"))
+        imputationResult =
+            rbind(imputationResult,
+                  data.table(item = currentItem,
+                             error = imputationProcess[1]))
 
 }
 ```
@@ -254,6 +309,31 @@ for(iter in seq(selectedItemCode)){
 ## Return Message
 
 ```{r }
-message("Imputation Completed Successfully")
+if(nrow(imputationResult) > 0){
+    ## Initiate email
+    from = "I_am_a_magical_unicorn@sebastian_quotes.com"
+    to = swsContext.userEmail
+    subject = "Imputation Result"
+    body = paste0("The following items failed, please inform the maintainer "
+                  , "of the module")
+
+    errorAttachmentName = "non_livestock_imputation_result.csv"
+    errorAttachmentPath =
+        paste0(R_SWS_SHARE_PATH, "/kao/", errorAttachmentName)
+    write.csv(imputationResult, file = errorAttachmentPath,
+              row.names = FALSE)
+    errorAttachmentObject = mime_part(x = errorAttachmentPath,
+                                      name = errorAttachmentName)
+
+    bodyWithAttachment = list(body, errorAttachmentObject)
+
+    sendmail(from = from, to = to, subject = subject, msg = bodyWithAttachment)
+    stop("Production imputation incomplete, check following email to see where ",
+         " it failed")
+} else {
+    msg = "Imputation Completed Successfully"
+    message(msg)
+    msg
+}
 ```
 

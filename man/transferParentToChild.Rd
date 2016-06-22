@@ -5,7 +5,8 @@
 \title{Function to transfer values from parent to child.}
 \usage{
 transferParentToChild(parentData, childData, mappingTable,
-  parentToChild = TRUE, transferMethodFlag = "c")
+  parentToChild = TRUE, transferMethodFlag = "c",
+  imputationObservationFlag = "I")
 }
 \arguments{
 \item{parentData}{The data for animal commodity.}
@@ -17,7 +18,11 @@ transferParentToChild(parentData, childData, mappingTable,
 \item{parentToChild}{logical, if true, slaughtered animal are transferred
 from animal commodity to meat, otherwise the otherway around.}
 
-\item{transferMethodFlag}{The method flag to be assigned for the transfer}
+\item{transferMethodFlag}{The method flag to be assigned for the transfer.}
+
+\item{imputationObservationFlag}{This is the flag assigned to imputation.
+This is a special case when share is zero, then the observation status
+flag should not be the same as the parent.}
 }
 \value{
 An updated dataset depending on the direction of the transfer. The
