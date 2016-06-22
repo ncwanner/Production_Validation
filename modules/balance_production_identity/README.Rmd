@@ -77,14 +77,16 @@ updateAllData =
     !is.null(swsContext.computationParams$computation_selection) &&
     swsContext.computationParams$computation_selection == "all"
 
-newKey = swsContext.datasets[[1]]
+datasetConfig = GetDatasetConfig("agriculture", "aproduction")
+
+sessionKey = swsContext.datasets[[1]]
 ```
 
 If all yields should be updated, extend the key
 
 ```{r }
 if(updateAllData){
-    newKey = getAllYieldKey()
+    sessionKey = getAllYieldKey()
 }
 ```
 
@@ -96,9 +98,9 @@ NOTE (Michael): There are differemt formulas for different
 
 ```{r }
 formulaTuples =
-    getProductionFormula(slot(slot(swsContext.datasets[[1]],
-                              "dimensions")$measuredItemCPC, "keys"),
-                    warn = TRUE)
+    getQueryKey("measuredItemCPC", sessionKey) %>%
+    getProductionFormula(itemCode = ., warn = TRUE)
+
 unique_formulas = unique(formulaTuples[, list(input, productivity, output,
                                               unitConversion)])
 ```
@@ -124,52 +126,66 @@ for(i in seq(nrow(unique_formulas))){
 
     ## Create a subset key and filter the context to just the revelant
     ## item/element keys
-    subKey = newKey
+    subKey = sessionKey
     subKey@dimensions$measuredElement@keys =
         as.character(current_formula[, list(input, output, productivity)])
     subKey@dimensions$measuredItemCPC@keys = currentCPC
 
     ## Obtain the processing parameter associated with the data
     processingParams =
-        productionProcessingParameters(
-            datasetConfig = GetDatasetConfig("agriculture", "aproduction"),
-            productionCode = current_formula[, output],
-            yieldCode = current_formula[, productivity],
-            areaHarvestedCode = current_formula[, input])
+        productionProcessingParameters(datasetConfig = datasetConfig)
+
+
+    ## Create the formula parameter list
+    formulaParameters =
+        with(current_formula,
+             productionFormulaParameters(datasetConfig = datasetConfig,
+                                         productionCode = output,
+                                         areaHarvestedCode = input,
+                                         yieldCode = productivity,
+                                         unitConversion = unitConversion)
+             )
 
     ## Get the yield data and perform the necessary pre-processing
+    ##
+    ## NOTE (Michael): Should we also remove all previously calculated data?
     yieldData =
-        getYieldData(subKey) %>%
-        .$query %>%
+        GetData(subKey) %>%
+        preProcessing(data = .) %>%
+        denormalise(normalisedData = .,
+                    denormaliseKey = "measuredElement") %>%
+        createTriplet(data = .,
+                      formula = current_formula) %>%
         ensureProductionInputs(data = .,
                                processingParam = processingParams,
-                               normalised = FALSE) %>%
-        preProcessing(data = .,
-                      normalised = FALSE) %>%
-        removeZeroYield(data = .,
-                        yieldValue = processingParams$yieldValue,
-                        yieldObsFlag =
-                            processingParams$yieldObservationFlag,
-                        yieldMethodFlag = processingParams$yieldMethodFlag)
+                               formulaParameters = formulaParameters,
+                               normalised = FALSE)
 
     ## Perform the yield module.
+    ##
+    ## NOTE (Michael): Maybe should have a while loop for this.
     computeYield(data = yieldData,
-                 processingParameters = processingParams)
+                 processingParameters = processingParams,
+                 formulaParameters = formulaParameters)
     balanceProduction(data = yieldData,
-                      processingParameters = processingParams)
+                      processingParameters = processingParams,
+                      formulaParameters = formulaParameters)
     balanceAreaHarvested(data = yieldData,
-                         processingParameters = processingParams)
+                         processingParameters = processingParams,
+                         formulaParameters = formulaParameters)
+
     ## Module testing
     cat("Module Testing and saving data back ... \n")
 
     yieldData %>%
         normalise(.) %>%
         postProcessing(.) %>%
-        filter(filter = flagMethod %in% c("i", "t", "e", "n", "u")) %>%
+        filter(filter = flagMethod == "i") %>%
         ensureProductionOutputs(data = .,
-                                processingParameters = processingParams) %>%
-        SaveData(domain = "agriculture",
-                 dataset = "aproduction",
+                                processingParameters = processingParams,
+                                formulaParameters = formulaParameters) %>%
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
                  data = .)
 
 }
