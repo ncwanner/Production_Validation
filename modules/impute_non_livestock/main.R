@@ -47,7 +47,7 @@ savePath = paste0(R_SWS_SHARE_PATH, "/kao/production/imputation_fit/")
 if(CheckDebug()){
 
     library(faoswsModules)
-    SETTINGS = ReadSettings("sws.yml")
+    SETTINGS = ReadSettings("modules/impute_non_livestock/sws.yml")
 
     ## If you're not on the system, your settings will overwrite any others
     R_SWS_SHARE_PATH = SETTINGS[["share"]]
@@ -65,6 +65,10 @@ if(CheckDebug()){
 
 ##' Get user specified imputation selection
 imputationSelection = swsContext.computationParams$imputation_selection
+
+## imputationSelection= "session"
+
+
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
                                  datasetCode = sessionKey@dataset)

@@ -76,7 +76,10 @@ if(CheckDebug()){
 
 ##' Obtain computation parameter, this parameter determines whether only
 ##' selected session should be validated or the complete production domain.
+##' specified in /modules/production_input_validation/main.xml#L18
 validationRange = swsContext.computationParams$validation_selection
+## validationRange = "session"
+## validationRange = "all"
 
 ##' Get session key and dataset configuration
 sessionKey = swsContext.datasets[[1]]
@@ -92,6 +95,7 @@ selectedKey =
     switch(validationRange,
            "session" = sessionKey,
            "all" = completeImputationKey)
+
 
 
 ##' Build processing parameters, the processing parameters contain parameters on
