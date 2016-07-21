@@ -131,7 +131,11 @@ imputationResult = data.table()
 for(iter in seq(selectedItemCode)){
     imputationProcess =
         try({
-            currentItem = selectedItemCode[iter]
+            
+            
+            set.seed(070416)
+            
+            currentItem = selectedItemCode[1]
 
             ## Obtain the formula and remove indigenous and biological meat.
             ##

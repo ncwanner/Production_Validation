@@ -1,6 +1,7 @@
+
 ##' # Production Input Validation Module
 ##'
-##' **Desscription:**
+##' **Description:**
 ##'
 ##' This module examins whether the production data are valid.
 ##'
@@ -113,7 +114,7 @@ processingParameters =
 
 ##' Function to perform flag correction
 autoFlagCorrection = function(data,
-                              flagObservationStatusVar = "flagObservationtatus",
+                              flagObservationStatusVar = "flagObservationStatus",
                               flagMethodVar = "flagMethod"){
     dataCopy = copy(data)
 
@@ -121,35 +122,62 @@ autoFlagCorrection = function(data,
     correctionFilter =
         dataCopy[[flagObservationStatusVar]] == "M" &
         dataCopy[[flagMethodVar]] == "-"
+    
+    
+    dim1=dim(dataCopy[correctionFilter,])
+    message("Number of (M,-) replaced with (M,u)", dim1[1])
+    
+    
     dataCopy[correctionFilter,
              `:=`(c(flagObservationStatusVar, flagMethodVar),
-                  c("M", "u"))]
+                  .("M", "u"))]
 
     ## Correction (2): (E, t) --> (E, -)
     correctionFilter =
         dataCopy[[flagObservationStatusVar]] == "E" &
         dataCopy[[flagMethodVar]] == "t"
+    
+    dim2=dim(dataCopy[correctionFilter,])
+    message("Number of (E, t) replaced with (E, -)", dim2[1])
+    
+    
+    
     dataCopy[correctionFilter,
              `:=`(c(flagObservationStatusVar, flagMethodVar),
-                  c("E", "-"))]
+                  .("E", "-"))]
 
     ## Correction (3): (E, e) --> (I, e)
     correctionFilter =
         dataCopy[[flagObservationStatusVar]] == "E" &
         dataCopy[[flagMethodVar]] == "e"
+    
+    
+    dim3=dim(dataCopy[correctionFilter,])
+    message("Number of (E, e) replaced with (I, e)", dim3[1])
+    
     dataCopy[correctionFilter,
              `:=`(c(flagObservationStatusVar, flagMethodVar),
-                  c("I", "e"))]
+                  .("I", "e"))]
 
     ## Correction (4): (E, p) --> (E, f)
     correctionFilter =
         dataCopy[[flagObservationStatusVar]] == "E" &
         dataCopy[[flagMethodVar]] == "p"
+    
+    
+    dim4=dim(dataCopy[correctionFilter,])
+    message("Number of (E, p) replaced with (E, f)", dim4[1])
+    
+    
     dataCopy[correctionFilter,
              `:=`(c(flagObservationStatusVar, flagMethodVar),
-                  c("E", "f"))]
+                  .("E", "f"))]
 
     dataCopy
+    
+ ##   data.table(dim1[1],dim2[1],dim3[1],dim4[1])
+    
+    
 }
 
 ##' Function to perform value correction
@@ -171,11 +199,16 @@ autoValueCorrection = function(data,
                                      missingObservationFlag =
                                          missingValueObservationFlag,
                                      missingMethodFlag =
-                                         missingValueMethodFlag) %>%
+                                         missingValueMethodFlag
+                                 ##     getSummary=TRUE
+                                     ) %>%
                   removeZeroYield(data = .,
                                   yieldValue = yieldValue,
                                   yieldObsFlag = yieldObservationFlag,
-                                  yieldMethodFlag = yieldMethodFlag)
+                                  yieldMethodFlag = yieldMethodFlag
+                                 ## getSummary=TRUE
+                                  
+                                  )
                   )
              )
     correctedData
@@ -190,32 +223,7 @@ autoValueCorrection = function(data,
 ##' commodity.
 selectedItem = getQueryKey("measuredItemCPC", selectedKey)
 
-##' The tests and test messages
-tests = c("flag_validity", "correct_missing_value",
-          "production_range", "areaHarvested_range", "yield_range", "balanced")
-
-##' Initialise the error list
-errorList = vector("list", length(tests))
-
-completeData =
-    GetData(selectedKey) %>%
-    preProcessing(data = .)
-
-##' Check the flags
-errorList[[1]] =
-    completeData %>%
-    ensureFlagValidity(data = .,
-                       getInvalidData = TRUE)
-
-##' Ensuring missing values are correctly specified
-errorList[[2]] =
-    completeData %>%
-    ensureCorrectMissingValue(data = .,
-                              valueVar = "Value",
-                              flagObservationStatusVar = "flagObservationStatus",
-                              missingObservationFlag = "M",
-                              returnData = FALSE,
-                              getInvalidData = TRUE)
+invalidFlagCombination=list()
 
 ##' Perform input validation item by item
 for(iter in seq(selectedItem)){
@@ -248,6 +256,11 @@ for(iter in seq(selectedItem)){
         currentKey %>%
         GetData(key = .)
 
+    
+    
+    
+
+    
     if(nrow(currentData) > 0){
         ## NOTE (Michael): The test should be conducted on the raw data, that is
         ##                 excluding any imputation, statistical estimation and
@@ -256,19 +269,68 @@ for(iter in seq(selectedItem)){
 
         ## Correct the flag and values here where available based on agreed
         ## correction rules.
-        autoCorrectedData =
+        
+        
+        
+        
+        ## Count non-valid flag combinations
+        
+        Flag=copy(flagValidTable)
+                Flag[,flagCombination := paste(flagObservationStatus,flagMethod, sep=";")]
+                currentData[,flagCombination:=paste(flagObservationStatus,flagMethod, sep=";")]
+                a=merge(Flag,currentData, by="flagCombination")
+                sum(a[,Valid])
+                dima=dim(a)
+        numberOfInvalid=dima[1]-sum(a[,Valid])
+                message("Number of invalid combination of flag=  ", numberOfInvalid )
+       
+       
+                
+                
+                
+        ## Flag autocorrection
+                
+                
+         autoCorrectedData =
             currentData %>%
             preProcessing(data = .) %>%
-            autoFlagCorrection(data = .) %>%
+            autoFlagCorrection(data = .) %>% 
             denormalise(normalisedData = .,
-                        denormaliseKey = processingParameters$elementVar) %>%
-            createTriplet(data = ., formula = currentFormula) %>%
-            autoValueCorrection(data = .,
-                                processingParameters = processingParameters,
-                                formulaParameters = formulaParameters)
+                         denormaliseKey = processingParameters$elementVar) %>%
+             createTriplet(data = ., formula = currentFormula) %>%
+             autoValueCorrection(data = .,
+                                 processingParameters = processingParameters,
+                                 formulaParameters = formulaParameters)
+            
+## Check if the autoFlagcorrection function is properly working
+                        
+    ##    test=    ensureFlagValidity(data =  autoCorrectedDataTest,
+    ##                           getInvalidData = FALSE)
+        
+            
+          
 
+        
+
+        
+## List of still unfeasible flag combinations item by item
+##        autoCorrectedData=normalise(autoCorrectedData)
+        
+##        invalidFlagCombination[[iter]]=unique(autoCorrectedData[,.(flagObservationStatus,flagMethod)]) 
+        
+##        autoCorrectedData=denormalise(normalisedData = autoCorrectedData,
+##                                      denormaliseKey = processingParameters$elementVar)
+
+        
+        
+        
+                
         ## Remove all values generated by previous production process (e.g.
         ## previous imputation/calculation) and also manual estimates.
+        
+       
+        
+        
         rawData =
             autoCorrectedData %>%
             processProductionDomain(data = .,
@@ -276,6 +338,41 @@ for(iter in seq(selectedItem)){
                                     formulaParameters = formulaParameters)
 
 
+        
+        
+        
+        ##' The tests and test messages
+        tests = c("flag_validity", "correct_missing_value",
+                  "production_range", "areaHarvested_range", "yield_range", "balanced")
+        
+        ##' Initialise the error list
+        errorList = vector("list", length(tests))
+        
+##        completeData =
+##            GetData(selectedKey) %>%
+##            preProcessing(data = .)
+        
+        ##' Check the flags
+        errorList[[1]] =
+            rawData %>%
+            normalise(.)%>%
+            ensureFlagValidity(data = .,
+                               getInvalidData = TRUE,
+                               normalised = TRUE) %>%
+            rbind(errorList[[1]], .)
+        
+        ##' Ensuring missing values are correctly specified
+        errorList[[2]] =
+            rawData %>%
+            normalise(.)%>%
+            ensureCorrectMissingValue(data = .,
+                                      valueVar = "Value",
+                                      flagObservationStatusVar = "flagObservationStatus",
+                                      missingObservationFlag = "M",
+                                      returnData = FALSE,
+                                      getInvalidData = TRUE)%>%
+                                      rbind(errorList[[2]], .)
+        
         ## Check production value
         errorList[[3]] =
             with(formulaParameters,
@@ -339,27 +436,34 @@ for(iter in seq(selectedItem)){
             autoCorrectedData %>%
                 ensureValueRange(data = .,
                                  ensureColumn = productionValue,
-                                 getInvalidData = TRUE) %>%
+                                 getInvalidData = FALSE, 
+                                 returnData = TRUE) %>%
                 ensureValueRange(data = .,
                                  ensureColumn = areaHarvestedValue,
-                                 getInvalidData = TRUE) %>%
+                                 getInvalidData = FALSE, 
+                                 returnData = TRUE) %>%
                 ensureValueRange(data = .,
                                  ensureColumn = yieldValue,
-                                 getInvalidData = TRUE) %>%
+                                 getInvalidData = FALSE, 
+                                 returnData = TRUE) %>%
                 ensureProductionBalanced(data = .,
                                          areaVar = areaHarvestedValue,
                                          yieldVar = yieldValue,
                                          prodVar = productionValue,
                                          conversion = unitConversion,
-                                         getInvalidData = TRUE,
+                                         getInvalidData = FALSE, 
+                                         returnData = TRUE,
                                          normalised = FALSE) %>%
-                normalise %>%
-                postProcessing %>%
+                normalise(.) %>%
+                postProcessing(.) %>%
                 ensureFlagValidity(data = .,
-                                   getInvalidData = TRUE) %>%
+                                   normalised = TRUE,
+                                   getInvalidData = FALSE, 
+                                   returnData = TRUE) %>%
                 SaveData(domain = sessionKey@domain,
                          dataset = sessionKey@dataset,
                          data = .)
+            "Module finished successfully"
         })
 
     } else {
