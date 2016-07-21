@@ -123,6 +123,7 @@ imputationSelection = swsContext.computationParams$imputation_selection
 if(!imputationSelection %in% c("session", "all"))
     stop("Incorrect imputation selection specified")
 
+
 ##' Get data configuration and session
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
@@ -195,6 +196,9 @@ for(iter in seq(selectedMeatCode)){
             length(selectedMeatCode), ")")
     message("Step 1: Extract Transfer Animal Slaughtered from animal",
             " commodity to Meat")
+    
+    set.seed(070416)
+    
     currentMeatItem = selectedMeatCode[iter]
     currentMappingTable =
         animalMeatMappingTable[measuredItemChildCPC == currentMeatItem, ]

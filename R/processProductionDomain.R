@@ -36,8 +36,27 @@ processProductionDomain = function(data,
                          returnData = FALSE)
          )
 
+    ## Keep only protected data and set to (NA, M, u ) the other items
 
-    ## Remove prior imputations
+
+    if(processingParameters$keepOnlyProtected){
+        ## Remove all flag combination
+        dataCopy =
+            removeNonProtectedFlag( dataCopy,
+                                    valueVar= "Value",
+                                    observationFlagVar="flagObservationStatus",
+                                    methodFlagVar="flagMethod",
+                                    missingObservationFlag = "M",
+                                    missingMethodFlag = "u",
+                                    normalised= FALSE,
+                                    denormalisedKey = "measuredElement",
+                                    flagValidTable= NULL)
+
+    }    
+    
+ 
+    
+    ## Remove prior imputation
     if(processingParameters$removePriorImputation){
         ## Remove current imputation (flag = I, e)
         dataCopy =
