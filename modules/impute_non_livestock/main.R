@@ -135,7 +135,7 @@ for(iter in seq(selectedItemCode)){
             
             set.seed(070416)
             
-            currentItem = selectedItemCode[1]
+            currentItem = selectedItemCode[iter]
 
             ## Obtain the formula and remove indigenous and biological meat.
             ##
