@@ -50,7 +50,7 @@ processProductionDomain = function(data,
                                     missingMethodFlag = "u",
                                     normalised= FALSE,
                                     denormalisedKey = "measuredElement",
-                                    flagValidTable= NULL)
+                                    flagValidTable= faoswsFlag::flagValidTable)
 
     }    
     
