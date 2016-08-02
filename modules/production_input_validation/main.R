@@ -21,7 +21,7 @@
 ##'
 ##' **Auto-corrections:**
 ##'
-##' 1. Flag (M, -) --> (M, u)
+##' 1. Flag (M, -) --> (M, u) this autocorrection has been removed
 ##' 2. Flag (E, t) --> (E, -)
 ##' 3. Flag (E, e) --> (I, e)
 ##' 4. Flag (E, p) --> (E, f)
