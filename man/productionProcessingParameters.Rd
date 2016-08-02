@@ -5,11 +5,11 @@
 \title{Default Processing Parameters}
 \usage{
 productionProcessingParameters(datasetConfig, dataset = "aproduction",
-  removePriorImputation = TRUE, removeManualEstimation = FALSE,
-  imputationObservationFlag = "I", imputationMethodFlag = "e",
-  balanceMethodFlag = "i", manualEstimationObservationFlag = "E",
-  manualEstimationMethodFlag = "f", missingValueObservationFlag = "M",
-  missingValueMethodFlag = "u")
+  removePriorImputation = FALSE, removeManualEstimation = FALSE,
+  keepOnlyProtected = TRUE, imputationObservationFlag = "I",
+  imputationMethodFlag = "e", balanceMethodFlag = "i",
+  manualEstimationObservationFlag = "E", manualEstimationMethodFlag = "f",
+  missingValueObservationFlag = "M", missingValueMethodFlag = "u")
 }
 \arguments{
 \item{datasetConfig}{The dataset configuration returned by the function
