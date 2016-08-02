@@ -22,14 +22,14 @@ computeYield = function(data,
 
     dataCopy = copy(data)
 
-    ## Data quality check
-    suppressMessages({
-        ensureProductionInputs(dataCopy,
-                               processingParameters = processingParameters,
-                               formulaParameters = formulaParameters,
-                               returnData = FALSE,
-                               normalised = FALSE)
-    })
+   ## Data quality check
+   suppressMessages({
+       ensureProductionInputs(dataCopy,
+                              processingParameters = processingParameters,
+                              formulaParameters = formulaParameters,
+                              returnData = FALSE,
+                              normalised = FALSE)
+   })
 
     ## Balance yield values only when they're missing, and both production and
     ## area harvested are not missing
@@ -56,7 +56,7 @@ computeYield = function(data,
         nonZeroProduction
 
     ## When area harvested (denominator) is zero, the calculation can be
-    ## performed and returns NA. So a different flag should
+    ## performed and returns NA. So a different flag should (see later)
     nonZeroAreaHarvestedFilter =
         (dataCopy[[formulaParameters$areaHarvestedValue]] != 0)
 
@@ -75,11 +75,13 @@ computeYield = function(data,
              `:=`(c(formulaParameters$yieldObservationFlag),
                   aggregateObservationFlag(get(formulaParameters$productionObservationFlag),
                                            get(formulaParameters$areaHarvestedObservationFlag)))]
+    
+    ##Assign Observation flag M to that ratio with areaHarvested=0
     dataCopy[feasibleFilter & !nonZeroAreaHarvestedFilter,
              `:=`(c(formulaParameters$yieldObservationFlag),
                   processingParameters$missingValueObservationFlag)]
 
-    ## Assign method flag
+    ## Assign method flag i to that ratio with areaHarvested=0
     dataCopy[feasibleFilter,
              `:=`(c(formulaParameters$yieldMethodFlag),
                   processingParameters$balanceMethodFlag)]
