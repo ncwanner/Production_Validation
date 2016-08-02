@@ -4,8 +4,9 @@ Title: Package to perform the imputation of area harvested, production and yield
     for the FAO production domain
 Version: 0.1.11
 Date: 2016-07-25
-Authors@R: c(person("Joshua M.", "Browning", role = c("aut", "cre"), email = "joshua.browning@fao.org"), person("Michael C. J.", "Kao", role = "aut", email = "michael.kao@fao.org"))
-Maintainer: Michael C. J. Kao <michael.kao@fao.org>
+Authors@R: c(person("Joshua M.", "Browning", role = "aut", email = "joshua.browning@fao.org"), 
+             person("Michael C. J.", "Kao", role = "aut", email = "michael.kao@fao.org"),
+             person("Francesca", "Rosa", role = "cre", email = "francesca.rosa@fao.org"))
 Description: This package provides all the functions to perform imputation of
     area, production and yield for the FAO production domain.
 URL: https://github.com/SWS-Methodology/faoswsProduction
