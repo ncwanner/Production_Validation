@@ -79,7 +79,6 @@ if(CheckDebug()){
 ##' selected session should be validated or the complete production domain.
 validationRange = swsContext.computationParams$validation_selection
 
-##validationRange="all"
 
 ##' Get session key and dataset configuration
 sessionKey = swsContext.datasets[[1]]

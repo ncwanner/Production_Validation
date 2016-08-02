@@ -218,6 +218,8 @@ for(iter in seq(selectedItemCode)){
                                        processingParam = processingParameters,
                                        formulaParameters = formulaParameters,
                                        normalised = FALSE)
+    
+            
 
             ## Perform imputation
             imputed =
@@ -227,6 +229,8 @@ for(iter in seq(selectedItemCode)){
                     formulaParameters = formulaParameters,
                     imputationParameters = imputationParameters)
 
+        
+            
 
             ## Save the imputation back to the database.
             imputed %>%
@@ -237,12 +241,17 @@ for(iter in seq(selectedItemCode)){
                 ##                 the database.
                 removeInvalidDates(data = ., context = sessionKey) %>%
                 mutate(timePointYears = as.character(timePointYears)) %>%
-                ensureProductionOutputs(data = .,
-                                        processingParameters =
-                                            processingParameters,
-                                        formulaParameters = formulaParameters,
-                                        normalised = FALSE) %>%
+             ## ensureProductionOutputs(data = .,
+             ##                         processingParameters =
+             ##                             processingParameters,
+             ##                         formulaParameters = formulaParameters,
+             ##                         normalised = FALSE) %>%
                 normalise(.) %>%
+                
+                
+                
+                
+                
                 ## NOTE (Michael): Only data with method flag "i" for balanced,
                 ##                 or flag combination (I, e) for imputed are
                 ##                 saved back to the database.
