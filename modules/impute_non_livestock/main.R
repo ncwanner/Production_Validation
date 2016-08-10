@@ -260,7 +260,9 @@ for(iter in seq(selectedItemCode)){
                            flagMethod == "e")) %>%
                 ensureProtectedData(data = .,
                                     domain = sessionKey@domain,
-                                    dataset = sessionKey@dataset) %>%
+                                    dataset = sessionKey@dataset,
+                                    returnData = TRUE,
+                                    getInvalidData = FALSE) %>%
                 postProcessing(data = .) %>%
                 SaveData(domain = sessionKey@domain,
                          dataset = sessionKey@dataset,
@@ -273,7 +275,7 @@ for(iter in seq(selectedItemCode)){
         imputationResult =
             rbind(imputationResult,
                   data.table(item = currentItem,
-                             error = imputationProcess[1]))
+                             error = imputationProcess[iter]))
 
 }
 

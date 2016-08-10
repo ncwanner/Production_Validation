@@ -23,13 +23,13 @@ computeYield = function(data,
     dataCopy = copy(data)
 
    ## Data quality check
-   suppressMessages({
-       ensureProductionInputs(dataCopy,
-                              processingParameters = processingParameters,
-                              formulaParameters = formulaParameters,
-                              returnData = FALSE,
-                              normalised = FALSE)
-   })
+  suppressMessages({
+      ensureProductionInputs(dataCopy,
+                             processingParameters = processingParameters,
+                             formulaParameters = formulaParameters,
+                             returnData = FALSE,
+                             normalised = FALSE)
+  })
 
     ## Balance yield values only when they're missing, and both production and
     ## area harvested are not missing

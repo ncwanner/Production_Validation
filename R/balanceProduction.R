@@ -17,13 +17,13 @@ balanceProduction = function(data,
     dataCopy = copy(data)
 
    ## Data quality check
-   suppressMessages({
-       ensureProductionInputs(dataCopy,
-                              processingParameters = processingParameters,
-                              formulaParameters = formulaParameters,
-                              returnData = FALSE,
-                              normalised = FALSE)
-   })
+  suppressMessages({
+      ensureProductionInputs(dataCopy,
+                             processingParameters = processingParameters,
+                             formulaParameters = formulaParameters,
+                             returnData = FALSE,
+                             normalised = FALSE)
+  })
 
     ## Impute only when area and yield are available and production isn't
     missingProduction =

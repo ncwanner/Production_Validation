@@ -23,8 +23,8 @@
 ensureProductionOutputs = function(data,
                                    processingParameters,
                                    formulaParameters,
-                                   testImputed = TRUE,
-                                   testCalculated = TRUE,
+                                   testImputed = FALSE,
+                                   testCalculated = FALSE,
                                    domain = "agriculture",
                                    dataset = "aproduction",
                                    returnData = TRUE,
@@ -122,7 +122,8 @@ ensureProductionOutputs = function(data,
                      ensureTimeSeriesImputed(data = dataCopy,
                                              key = c(areaVar, itemVar, elementVar),
                                              returnData = FALSE,
-                                             normalised = FALSE)
+                                             normalised = FALSE,
+                                             getInvalidData = FALSE)
                  })
              }
 
@@ -134,7 +135,8 @@ ensureProductionOutputs = function(data,
                                               yieldVar = yieldValue,
                                               prodVar = productionValue,
                                               returnData = FALSE,
-                                              normalised = FALSE)
+                                              normalised = FALSE,
+                                              getInvalidData = FALSE)
                  })
              }
 
