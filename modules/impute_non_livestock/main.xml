@@ -2,9 +2,11 @@
 <RScript xmlns="http://www.fao.org/rScript">
     <Name> Non-livestock Imputation </Name>
     <Description>
-	  Create datasets which contains imputaed values in order
+	  Create datasets which contains imputed values in order
 	  to be filled-in in the imputation module. Note that this
-	  module runs for ALL COUNTRIES and ALL COMMODITIES.
+	  module runs for ALL COUNTRIES and ALL COMMODITIES by default. 
+	  Selecting session only restricts the commodities. 
+	  The control file for this module is SUA/FBS Domain|fbs_production_comm_codes
 	</Description>
     <Category>Imputation</Category>
     <Authors>
@@ -16,7 +18,7 @@
     <Params>
         <Param xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="List">
             <Code>imputation_selection</Code>
-            <Label>Perform Imputation on </Label>
+            <Label>Perform Imputation on</Label>
             <Description>
 			  Please specify the selection to perform imputation.
 		  </Description>
@@ -31,6 +33,22 @@
                     <Value>all</Value>
                 </Option>
             </Options>
+        </Param>
+        <Param xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="Number">
+            <Code>startWrite</Code>
+            <Label>Write only years from</Label>
+            <Description>Years which, regardless of imputation, are written. Must be not be before start of imputation range.</Description>
+            <Compulsory>false</Compulsory>
+            <Min>1960</Min>
+            <Max>2050</Max>
+        </Param>
+        <Param xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="Number">
+            <Code>endWrite</Code>
+            <Label>Write only years to</Label>
+            <Description>Years which, regardless of imputation, are written. Must be not be before start of imputation range.</Description>
+            <Compulsory>false</Compulsory>
+            <Min>1960</Min>
+            <Max>2050</Max>
         </Param>
     </Params>
     <Datasets>

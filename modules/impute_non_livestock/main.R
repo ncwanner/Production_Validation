@@ -115,6 +115,22 @@ processingParameters =
 ##' Get the full imputation Datakey
 completeImputationKey = getCompleteImputationKey("production")
 
+##' Check validity of write restrictions
+imputeYears = as.integer(completeImputationKey@dimensions$timePointYears@keys)
+minImpute = min(imputeYears)
+maxImpute = max(imputeYears)
+
+startWrite = ifelse(is.null(swsContext.computationParams$startWrite), 
+                    minImpute,
+                    as.integer(swsContext.computationParams$startWrite))
+endWrite = ifelse(is.null(swsContext.computationParams$endWrite), 
+                  maxImpute,
+                  as.integer(swsContext.computationParams$endWrite))
+
+stopifnot(startWrite <= endWrite)
+
+stopifnot(minImpute <= startWrite, maxImpute >= endWrite)
+
 
 ##' **NOTE (Michael): Since the animal/meat are currently imputed by the
 ##'                   imputed_slaughtered and synchronise slaughtered module, so
@@ -263,7 +279,7 @@ for(iter in seq(selectedItemCode)){
                       file.path(fp, sprintf("%s.csv", format(Sys.time(), "%Y-%m-%d_%H-%M-%S"))), 
                       row.names = FALSE)
             # Hardcode subset
-            imputed <- imputed[timePointYears %in% 1999:2014]
+            imputed <- imputed[timePointYears >= startWrite & timePointYears <= endWrite]
             
             ## Save the imputation back to the database.
             imputed %>%
