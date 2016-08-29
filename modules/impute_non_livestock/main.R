@@ -56,23 +56,44 @@ suppressMessages({
 })
 
 ##' Set up for the test environment and parameters
-R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
+PROFILING = FALSE
 
 if(CheckDebug()){
-
+    
     library(faoswsModules)
-    SETTINGS = ReadSettings("sws.yml")
-
+    SETTINGS = ReadSettings("modules/impute_non_livestock/sws.yml")
+    
     ## If you're not on the system, your settings will overwrite any others
-    R_SWS_SHARE_PATH = SETTINGS[["share"]]
-
+    Sys.setenv(R_SWS_SHARE_PATH=SETTINGS[["share"]])
+    
     ## Define where your certificates are stored
     SetClientFiles(SETTINGS[["certdir"]])
-
+    
     ## Get session information from SWS. Token must be obtained from web interface
-
+    
     GetTestEnvironment(baseUrl = SETTINGS[["server"]],
                        token = SETTINGS[["token"]])
+}
+
+R_SWS_SHARE_PATH = Sys.getenv("R_SWS_SHARE_PATH")
+
+if(!CheckDebug()){
+    
+    options(error = function(){
+        dump.frames()
+        SWS_USER = regmatches(swsContext.username,
+                              regexpr("(?<=/).+$", swsContext.username, perl = TRUE))
+        filename <- file.path(Sys.getenv("R_SWS_SHARE_PATH"), SWS_USER, "impute_non_livestock")
+        dir.create(filename, showWarnings = FALSE, recursive = TRUE)
+        save(last.dump, file=file.path(filename, "last.dump.RData"))
+    })
+}
+
+if(PROFILING){
+    SWS_USER = regmatches(swsContext.username,
+                          regexpr("(?<=/).+$", swsContext.username, perl = TRUE))
+    Rprof(file.path(Sys.getenv("R_SWS_SHARE_PATH"), SWS_USER, "impute_non_livestock", "Rprof.out"),
+          line.profiling = TRUE)
 }
 
 ##' Get user specified imputation selection
@@ -136,7 +157,7 @@ for(iter in seq(selectedItemCode)){
             set.seed(070416)
             
             currentItem = selectedItemCode[iter]
-
+            
             ## Obtain the formula and remove indigenous and biological meat.
             ##
             ## NOTE (Michael): Biological and indigenous meat are currently
@@ -147,7 +168,7 @@ for(iter in seq(selectedItemCode)){
             formulaTable =
                 getProductionFormula(itemCode = currentItem) %>%
                 removeIndigenousBiologicalMeat(formula = .)
-
+            
             ## NOTE (Michael): Imputation should be performed on only 1 formula,
             ##                 if there are multiple formulas, they should be
             ##                 calculated based on the values imputed. For
@@ -158,7 +179,7 @@ for(iter in seq(selectedItemCode)){
             ##                 kilo-gram.
             if(nrow(formulaTable) > 1)
                 stop("Imputation should only use one formula")
-
+            
             ## Create the formula parameter list
             formulaParameters =
                 with(formulaTable,
@@ -167,36 +188,36 @@ for(iter in seq(selectedItemCode)){
                                                  areaHarvestedCode = input,
                                                  yieldCode = productivity,
                                                  unitConversion = unitConversion)
-                     )
-
+                )
+            
             ## Update the item/element key according to the current commodity
             subKey = completeImputationKey
             subKey@dimensions$measuredItemCPC@keys = currentItem
             subKey@dimensions$measuredElement@keys =
                 with(formulaParameters,
                      c(productionCode, areaHarvestedCode, yieldCode))
-
+            
             ## Start the imputation
             message("Imputation for item: ", currentItem, " (",  iter, " out of ",
                     length(selectedItemCode),")")
-
+            
             ## Build imputation parameter
             imputationParameters =
                 with(formulaParameters,
                      getImputationParameters(productionCode = productionCode,
                                              areaHarvestedCode = areaHarvestedCode,
                                              yieldCode = yieldCode)
-                     )
-
+                )
+            
             ## Extract the data, and skip the imputation if the data contains no entry.
             extractedData =
                 GetData(subKey)
-
+            
             if(nrow(extractedData) == 0){
                 message("Item : ", currentItem, " does not contain any data")
                 next
             }
-
+            
             ## Process the data.
             processedData =
                 extractedData %>%
@@ -218,9 +239,9 @@ for(iter in seq(selectedItemCode)){
                                        processingParam = processingParameters,
                                        formulaParameters = formulaParameters,
                                        normalised = FALSE)
-    
             
-
+            
+            
             ## Perform imputation
             imputed =
                 imputeProductionTriplet(
@@ -228,10 +249,22 @@ for(iter in seq(selectedItemCode)){
                     processingParameters = processingParameters,
                     formulaParameters = formulaParameters,
                     imputationParameters = imputationParameters)
-
-        
             
-
+            
+            
+            
+            ## Save output to csv and filter out undesirable imputation
+            warning("Hardcoded solution present to filter out years outside 1990-2015")
+            SWS_USER = regmatches(swsContext.username,
+                                  regexpr("(?<=/).+$", swsContext.username, perl = TRUE))
+            fp <- file.path(R_SWS_SHARE_PATH, SWS_USER, "impute_non_livestock")
+            dir.create(fp, recursive = TRUE, showWarnings = FALSE)
+            write.csv(imputed, 
+                      file.path(fp, sprintf("%s.csv", format(Sys.time(), "%Y-%m-%d_%H-%M-%S"))), 
+                      row.names = FALSE)
+            # Hardcode subset
+            imputed <- imputed[timePointYears %in% 1999:2014]
+            
             ## Save the imputation back to the database.
             imputed %>%
                 ## NOTE (Michael): Records containing invalid dates are
@@ -241,11 +274,11 @@ for(iter in seq(selectedItemCode)){
                 ##                 the database.
                 removeInvalidDates(data = ., context = sessionKey) %>%
                 mutate(timePointYears = as.character(timePointYears)) %>%
-             ## ensureProductionOutputs(data = .,
-             ##                         processingParameters =
-             ##                             processingParameters,
-             ##                         formulaParameters = formulaParameters,
-             ##                         normalised = FALSE) %>%
+                ## ensureProductionOutputs(data = .,
+                ##                         processingParameters =
+                ##                             processingParameters,
+                ##                         formulaParameters = formulaParameters,
+                ##                         normalised = FALSE) %>%
                 normalise(.) %>%
                 
                 
@@ -256,8 +289,8 @@ for(iter in seq(selectedItemCode)){
                 ##                 or flag combination (I, e) for imputed are
                 ##                 saved back to the database.
                 filter(., flagMethod == "i" |
-                          (flagObservationStatus == "I" &
-                           flagMethod == "e")) %>%
+                           (flagObservationStatus == "I" &
+                                flagMethod == "e")) %>%
                 ensureProtectedData(data = .,
                                     domain = sessionKey@domain,
                                     dataset = sessionKey@dataset,
@@ -267,16 +300,16 @@ for(iter in seq(selectedItemCode)){
                 SaveData(domain = sessionKey@domain,
                          dataset = sessionKey@dataset,
                          data = .)
-
+            
         })
-
+    
     ## Capture the items that failed
     if(inherits(imputationProcess, "try-error"))
         imputationResult =
             rbind(imputationResult,
                   data.table(item = currentItem,
                              error = imputationProcess[iter]))
-
+    
 }
 
 ##' ---
@@ -284,12 +317,12 @@ for(iter in seq(selectedItemCode)){
 
 if(nrow(imputationResult) > 0){
     ## Initiate email
-    from = "I_am_a_magical_unicorn@sebastian_quotes.com"
+    from = "impute_non_livestock@productionmodule.com"
     to = swsContext.userEmail
     subject = "Imputation Result"
     body = paste0("The following items failed, please inform the maintainer "
                   , "of the module")
-
+    
     errorAttachmentName = "non_livestock_imputation_result.csv"
     errorAttachmentPath =
         paste0(R_SWS_SHARE_PATH, "/kao/", errorAttachmentName)
@@ -297,9 +330,9 @@ if(nrow(imputationResult) > 0){
               row.names = FALSE)
     errorAttachmentObject = mime_part(x = errorAttachmentPath,
                                       name = errorAttachmentName)
-
+    
     bodyWithAttachment = list(body, errorAttachmentObject)
-
+    
     sendmail(from = from, to = to, subject = subject, msg = bodyWithAttachment)
     stop("Production imputation incomplete, check following email to see where ",
          " it failed")
