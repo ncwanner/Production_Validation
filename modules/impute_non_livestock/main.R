@@ -332,26 +332,35 @@ for(iter in seq(selectedItemCode)){
 ##' ## Return Message
 
 if(nrow(imputationResult) > 0){
-    ## Initiate email
-    from = "impute_non_livestock@productionmodule.com"
-    to = swsContext.userEmail
-    subject = "Imputation Result"
-    body = paste0("The following items failed, please inform the maintainer "
-                  , "of the module")
+    ## Initiate email only if on server
+    if(!CheckDebug()) {
+        
+        from = "impute_non_livestock@productionmodule.com"
+        to = swsContext.userEmail
+        subject = "Imputation Result"
+        body = paste0("The following items failed, please inform the maintainer "
+                      , "of the module")
+        
+        errorAttachmentName = "non_livestock_imputation_result.csv"
+        errorAttachmentPath =
+            paste0(R_SWS_SHARE_PATH, "/kao/", errorAttachmentName)
+        write.csv(imputationResult, file = errorAttachmentPath,
+                  row.names = FALSE)
+        errorAttachmentObject = mime_part(x = errorAttachmentPath,
+                                          name = errorAttachmentName)
+        
+        bodyWithAttachment = list(body, errorAttachmentObject)
+        
+        sendmail(from = from, to = to, subject = subject, msg = bodyWithAttachment)
+        
+        stop("Production imputation incomplete, check following email to see where ",
+             " it failed")
+    } else {
+        stop("Production imputation incomplete. See imputationResult object for details")
+    }
     
-    errorAttachmentName = "non_livestock_imputation_result.csv"
-    errorAttachmentPath =
-        paste0(R_SWS_SHARE_PATH, "/kao/", errorAttachmentName)
-    write.csv(imputationResult, file = errorAttachmentPath,
-              row.names = FALSE)
-    errorAttachmentObject = mime_part(x = errorAttachmentPath,
-                                      name = errorAttachmentName)
+
     
-    bodyWithAttachment = list(body, errorAttachmentObject)
-    
-    sendmail(from = from, to = to, subject = subject, msg = bodyWithAttachment)
-    stop("Production imputation incomplete, check following email to see where ",
-         " it failed")
 } else {
     msg = "Imputation Completed Successfully"
     message(msg)
