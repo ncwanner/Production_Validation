@@ -87,7 +87,8 @@ ensureProductionOutputs = function(data,
                                            valueVar = yieldValue,
                                            flagObservationStatusVar =
                                                yieldObservationFlag,
-                                           returnData = FALSE)
+                                           returnData = FALSE,
+                                           getInvalidData = FALSE)
                  ensureCorrectMissingValue(data = dataCopy,
                                            valueVar = areaHarvestedValue,
                                            flagObservationStatusVar =

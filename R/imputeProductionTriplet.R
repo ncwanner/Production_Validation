@@ -146,16 +146,18 @@ imputeProductionTriplet = function(data,
         ##                 Issue #88
         imputeVariable(data = dataCopy,
                        imputationParameters = areaHarvestedImputationParameters)
-        dataCopy[!is.na(get(formulaParameters$areaHarvestedValue)) &
-                 !is.na(get(formulaParameters$productionValue)) &
-                 !(combineFlag(.SD,
-                               formulaParameters$yieldObservationFlag,
-                               formulaParameters$yieldMethodFlag) %in%
-                   getProtectedFlag()),
-                 `:=`(c(formulaParameters$yieldValue,
-                        formulaParameters$yieldObservationFlag,
-                        formulaParameters$yieldMethodFlag),
-                      list(NA, "M", "u"))]
+        
+        
+    ##   dataCopy[!is.na(get(formulaParameters$areaHarvestedValue)) &
+    ##            !is.na(get(formulaParameters$productionValue)) &
+    ##            !(combineFlag(.SD,
+    ##                          formulaParameters$yieldObservationFlag,
+    ##                          formulaParameters$yieldMethodFlag) %in%
+    ##              getProtectedFlag()),
+    ##            `:=`(c(formulaParameters$yieldValue,
+    ##                   formulaParameters$yieldObservationFlag,
+    ##                   formulaParameters$yieldMethodFlag),
+    ##                 list(NA, "M", "u"))]
         dataCopy =
             computeYield(dataCopy,
                          processingParameters = processingParameters,
