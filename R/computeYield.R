@@ -19,18 +19,18 @@ computeYield = function(data,
                         processingParameters,
                         formulaParameters,
                         flagTable = faoswsFlagTable){
-
+    
     dataCopy = copy(data)
-
-   ## Data quality check
-  suppressMessages({
-      ensureProductionInputs(dataCopy,
-                             processingParameters = processingParameters,
-                             formulaParameters = formulaParameters,
-                             returnData = FALSE,
-                             normalised = FALSE)
-  })
-
+    
+    ## Data quality check
+    suppressMessages({
+        ensureProductionInputs(dataCopy,
+                               processingParameters = processingParameters,
+                               formulaParameters = formulaParameters,
+                               returnData = FALSE,
+                               normalised = FALSE)
+    })
+    
     ## Balance yield values only when they're missing, and both production and
     ## area harvested are not missing
     ##
@@ -48,24 +48,28 @@ computeYield = function(data,
         dataCopy[[formulaParameters$areaHarvestedObservationFlag]] != processingParameters$missingValueObservationFlag
     nonZeroProduction =
         (dataCopy[[formulaParameters$productionValue]] != 0)
-
+    
     feasibleFilter =
         missingYield &
         nonMissingProduction &
         nonMissingAreaHarvested &
         nonZeroProduction
-
+    
     ## When area harvested (denominator) is zero, the calculation can be
     ## performed and returns NA. So a different flag should (see later)
     nonZeroAreaHarvestedFilter =
         (dataCopy[[formulaParameters$areaHarvestedValue]] != 0)
-
+    
+    
+    
     ## Calculate the yield
     dataCopy[feasibleFilter, `:=`(c(formulaParameters$yieldValue),
                                   computeRatio(get(formulaParameters$productionValue),
                                                get(formulaParameters$areaHarvestedValue)) *
-                                  formulaParameters$unitConversion)]
-
+                                      formulaParameters$unitConversion)]
+    
+   
+    
     ## Assign observation flag.
     ##
     ## NOTE (Michael): If the denominator (area harvested is non-zero) then
@@ -80,9 +84,13 @@ computeYield = function(data,
     dataCopy[feasibleFilter & !nonZeroAreaHarvestedFilter,
              `:=`(c(formulaParameters$yieldObservationFlag),
                   processingParameters$missingValueObservationFlag)]
-
+    
+    dataCopy[feasibleFilter & !nonZeroAreaHarvestedFilter,
+             `:=`(c(formulaParameters$yieldMethodFlag),
+                  processingParameters$missingValueMethodFlag)]
+    
     ## Assign method flag i to that ratio with areaHarvested=0
-    dataCopy[feasibleFilter,
+    dataCopy[feasibleFilter & nonZeroAreaHarvestedFilter,
              `:=`(c(formulaParameters$yieldMethodFlag),
                   processingParameters$balanceMethodFlag)]
     return(dataCopy)
