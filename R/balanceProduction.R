@@ -59,7 +59,7 @@ balanceProduction = function(data,
                                            get(formulaParameters$yieldObservationFlag)))]
 
     ## Assign method flag
-    dataCopy[feasibleFilter, `:=`(c(formulaParameters$productionMethodFlag),
+    dataCopy[feasibleFilter & nonZeroYieldFilter, `:=`(c(formulaParameters$productionMethodFlag),
                                   processingParameters$balanceMethodFlag)]
     return(dataCopy)
 }
