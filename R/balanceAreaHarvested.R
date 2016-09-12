@@ -61,12 +61,18 @@ balanceAreaHarvested = function(data,
              `:=`(c(formulaParameters$areaHarvestedObservationFlag),
                   aggregateObservationFlag(get(formulaParameters$productionObservationFlag),
                                            get(formulaParameters$yieldObservationFlag)))]
+    
     dataCopy[feasibleFilter & !nonZeroYieldFilter,
              `:=`(c(formulaParameters$areaHarvestedObservationFlag),
                   processingParameters$missingValueObservationFlag)]
+    
+    
+    dataCopy[feasibleFilter & !nonZeroYieldFilter,
+             `:=`(c(formulaParameters$areaHarvestedMethodFlag),
+                  processingParameters$missingValueMethodFlag)]
 
     ## Assign method flag
-    dataCopy[feasibleFilter, `:=`(c(formulaParameters$areaHarvestedMethodFlag),
+    dataCopy[feasibleFilter & nonZeroYieldFilter, `:=`(c(formulaParameters$areaHarvestedMethodFlag),
                                   processingParameters$balanceMethodFlag)]
     return(dataCopy)
 }
