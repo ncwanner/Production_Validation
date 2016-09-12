@@ -130,12 +130,14 @@ imputationResult = data.table()
 ##' Loop through the commodities to impute the items individually.
 for(iter in seq(selectedItemCode)){
     imputationProcess =
-        try({
+       ## try
+        ({
             
             
             set.seed(070416)
             
             currentItem = selectedItemCode[iter]
+                                          
 
             ## Obtain the formula and remove indigenous and biological meat.
             ##
@@ -175,6 +177,7 @@ for(iter in seq(selectedItemCode)){
             subKey@dimensions$measuredElement@keys =
                 with(formulaParameters,
                      c(productionCode, areaHarvestedCode, yieldCode))
+            
 
             ## Start the imputation
             message("Imputation for item: ", currentItem, " (",  iter, " out of ",
@@ -220,7 +223,9 @@ for(iter in seq(selectedItemCode)){
                                        normalised = FALSE)
     
             
-
+            ##imputationParameters$productionParams$plotImputation="individual"
+            
+            
             ## Perform imputation
             imputed =
                 imputeProductionTriplet(
@@ -229,9 +234,9 @@ for(iter in seq(selectedItemCode)){
                     formulaParameters = formulaParameters,
                     imputationParameters = imputationParameters)
 
-        
+   
             
-
+            
             ## Save the imputation back to the database.
             imputed %>%
                 ## NOTE (Michael): Records containing invalid dates are
@@ -241,11 +246,11 @@ for(iter in seq(selectedItemCode)){
                 ##                 the database.
                 removeInvalidDates(data = ., context = sessionKey) %>%
                 mutate(timePointYears = as.character(timePointYears)) %>%
-             ## ensureProductionOutputs(data = .,
-             ##                         processingParameters =
-             ##                             processingParameters,
-             ##                         formulaParameters = formulaParameters,
-             ##                         normalised = FALSE) %>%
+              ensureProductionOutputs(data = .,
+                                      processingParameters =
+                                          processingParameters,
+                                      formulaParameters = formulaParameters,
+                                      normalised = FALSE) %>%
                 normalise(.) %>%
                 
                 
@@ -255,14 +260,11 @@ for(iter in seq(selectedItemCode)){
                 ## NOTE (Michael): Only data with method flag "i" for balanced,
                 ##                 or flag combination (I, e) for imputed are
                 ##                 saved back to the database.
+
+            
                 filter(., flagMethod == "i" |
                           (flagObservationStatus == "I" &
                            flagMethod == "e")) %>%
-                ensureProtectedData(data = .,
-                                    domain = sessionKey@domain,
-                                    dataset = sessionKey@dataset,
-                                    returnData = TRUE,
-                                    getInvalidData = FALSE) %>%
                 postProcessing(data = .) %>%
                 SaveData(domain = sessionKey@domain,
                          dataset = sessionKey@dataset,
