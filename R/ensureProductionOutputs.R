@@ -71,15 +71,17 @@ ensureProductionOutputs = function(data,
                                   ensureColumn = yieldValue,
                                   min = 0,
                                   max = Inf,
-                                  includeEndPoint = FALSE)
+                                  includeEndPoint = TRUE)
                  ensureValueRange(data = dataCopy,
                                   ensureColumn = areaHarvestedValue,
                                   min = 0,
-                                  max = Inf)
+                                  max = Inf,
+                                  includeEndPoint = TRUE)
                  ensureValueRange(data = dataCopy,
                                   ensureColumn = productionValue,
                                   min = 0,
-                                  max = Inf)
+                                  max = Inf,
+                                  includeEndPoint = TRUE)
 
 
                  ## Ensure missing values are correctly specified
@@ -108,13 +110,13 @@ ensureProductionOutputs = function(data,
                  ##
                  ## NOTE (Michael): This may be optional in input, but mandatory in
                  ##                 output
-                 ensureProductionBalanced(data = dataCopy,
-                                          areaVar = areaHarvestedValue,
-                                          yieldVar = yieldValue,
-                                          prodVar = productionValue,
-                                          conversion = unitConversion,
-                                          returnData = FALSE,
-                                          normalised = FALSE)
+                 ##ensureProductionBalanced(data = dataCopy,
+                 ##                         areaVar = areaHarvestedValue,
+                 ##                         yieldVar = yieldValue,
+                 ##                         prodVar = productionValue,
+                 ##                         conversion = unitConversion,
+                 ##                         returnData = FALSE,
+                 ##                         normalised = FALSE)
              })
 
              if(testImputed){

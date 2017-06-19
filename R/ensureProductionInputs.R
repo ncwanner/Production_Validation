@@ -30,8 +30,8 @@ ensureProductionInputs = function(data,
     }
 
 
-    with(formulaParameters,
-         with(processingParameters,
+    within(formulaParameters,
+           within(processingParameters,
          {
              suppressMessages({
                  ## Check data inputs
@@ -66,51 +66,59 @@ ensureProductionInputs = function(data,
                                   ensureColumn = yieldValue,
                                   min = 0,
                                   max = Inf,
-                                  includeEndPoint = FALSE)
+                                  includeEndPoint = TRUE)
                  ensureValueRange(data = dataCopy,
                                   ensureColumn = areaHarvestedValue,
                                   min = 0,
-                                  max = Inf)
+                                  max = Inf,
+                                  includeEndPoint = TRUE)
                  ensureValueRange(data = dataCopy,
                                   ensureColumn = productionValue,
                                   min = 0,
-                                  max = Inf)
+                                  max = Inf,
+                                  includeEndPoint = TRUE)
 
                  ## Ensure missing values are correctly specified
                  ensureCorrectMissingValue(data = dataCopy,
                                            valueVar = yieldValue,
                                            flagObservationStatusVar =
                                                yieldObservationFlag,
-                                           returnData = FALSE)
+                                           returnData = FALSE,
+                                           getInvalidData = FALSE)
                  ensureCorrectMissingValue(data = dataCopy,
                                            valueVar = areaHarvestedValue,
                                            flagObservationStatusVar =
                                                areaHarvestedObservationFlag,
-                                           returnData = FALSE)
+                                           returnData = FALSE,
+                                           getInvalidData = FALSE)
                  ensureCorrectMissingValue(data = dataCopy,
                                            valueVar = productionValue,
                                            flagObservationStatusVar =
                                                productionObservationFlag,
-                                           returnData = FALSE)
+                                           returnData = FALSE,
+                                           getInvalidData = FALSE)
 
-                 ## Ensure flags are valid
-                 ensureFlagValidity(data = dataCopy,
-                                    normalised = FALSE)
+                 
 
                  ## Ensure production is balanced
                  ##
                  ## NOTE (Michael): This may be optional in input, but mandatory in
                  ##                 output
-                 ensureProductionBalanced(data = dataCopy,
-                                          areaVar = areaHarvestedValue,
-                                          yieldVar = yieldValue,
-                                          prodVar = productionValue,
-                                          conversion = unitConversion,
-                                          returnData = FALSE,
-                                          normalised = FALSE)
+                ##ensureProductionBalanced(data = dataCopy,
+                ##                         areaVar = areaHarvestedValue,
+                ##                         yieldVar = yieldValue,
+                ##                         prodVar = productionValue,
+                ##                         conversion = unitConversion,
+                ##                         returnData = FALSE,
+                ##                         getInvalidData = TRUE,
+                ##                         normalised = FALSE)
              })
          }))
 
+    ## Ensure flags are valid
+    dataCopy=ensureFlagValidity(data = dataCopy,
+                                normalised = FALSE)
+    
     if(normalised){
         dataCopy = normalise(dataCopy)
     }
