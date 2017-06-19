@@ -40,7 +40,7 @@ processProductionDomain = function(data,
 
 
     if(processingParameters$keepOnlyProtected){
-        ## Remove all flag combination
+        ## Remove all non protected flag combination
         dataCopy =
             removeNonProtectedFlag( dataCopy,
                                     valueVar= "Value",
