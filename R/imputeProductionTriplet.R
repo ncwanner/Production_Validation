@@ -75,7 +75,7 @@ imputeProductionTriplet = function(data,
         ##                     gsub(yieldValue, "yieldValue",
         ##                          deparse(yieldFormula))))
 
-        imputeVariable(data = dataCopy,
+        dataCopy =imputeVariable(data = dataCopy,
                        imputationParameters = yieldImputationParameters)
         ## TODO (Michael): Remove imputed zero yield as yield can not be zero by
         ##                 definition. This probably should be handled in the
@@ -109,7 +109,7 @@ imputeProductionTriplet = function(data,
         n.missProduction = length(which(is.na(
             dataCopy[[formulaParameters$productionValue]])))
 
-        imputeVariable(data = dataCopy,
+        dataCopy = imputeVariable(data = dataCopy,
                        imputationParameters = productionImputationParameters)
         n.missProduction2 = length(which(is.na(
             dataCopy[[formulaParameters$productionValue]])))
@@ -144,7 +144,8 @@ imputeProductionTriplet = function(data,
         ##                 way.
         ##
         ##                 Issue #88
-        imputeVariable(data = dataCopy,
+       
+         dataCopy = imputeVariable(data = dataCopy,
                        imputationParameters = areaHarvestedImputationParameters)
         
         
@@ -162,7 +163,7 @@ imputeProductionTriplet = function(data,
             computeYield(dataCopy,
                          processingParameters = processingParameters,
                          formulaParameters = formulaParameters)
-        imputeVariable(data = dataCopy,
+        dataCopy = imputeVariable(data = dataCopy,
                        imputationParameters = yieldImputationParameters)
     } ## End of HACK.
     n.missAreaHarvested2 =
