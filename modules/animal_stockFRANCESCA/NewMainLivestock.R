@@ -445,7 +445,7 @@ for(iter in seq(selectedMeatCode)){
 
     
     
-    slaughteredParentData=computeTotStock(data = stockTrade, tradeElements, FormulaParameters=animalFormulaParameters, plot=FALSE)
+    slaughteredParentData=computeTotSlaughtered(data = stockTrade, tradeElements, FormulaParameters=animalFormulaParameters, plot=FALSE)
     
     
     ## ---------------------------------------------------------------------
