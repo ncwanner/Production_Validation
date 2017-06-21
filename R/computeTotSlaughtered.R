@@ -116,8 +116,7 @@ stockTrade=removeNoInfo(stockTrade,"takeOffRate", "TakeOffFlagObservationStatus"
                         byKey = c("geographicAreaM49", "measuredItemCPC" ))
 
 takeOffImputed=imputeVariable(stockTrade,
-                              imputationParameters=takeOffImputationParamenters,
-                              singleVariable=TRUE)
+                              imputationParameters=takeOffImputationParamenters)
 
 ## this is just to make an intermediate save of the takeOffRate
 takeOffImputed[,.(geographicAreaM49, timePointYears,takeOffRate,TakeOffFlagObservationStatus,TakeOffRateFlagMethod )]
@@ -252,16 +251,10 @@ if(plot){
 
 
 
-
-
-
-
-
 takeOffImputed[,flagComb:= paste(   get(animalFormulaParameters$areaHarvestedObservationFlag),  
                                     get(animalFormulaParameters$areaHarvestedMethodFlag), sep=";" )]
 
 
-write.csv(takeOffImputed, paste0("C:/Users/Rosa/Desktop/LIVESTOCK NEW/moduleWithOUTtrade/NewSlaughtered",currentMeatItem,".csv"))
 
 ## I have already deleted all the Non protected values from the animalSlaughtered series, 
 ## actually all the values associated to "I,c"/"E,c"/"E,h"/"T,p"/"T,h"/"T,-" flag combinations 
