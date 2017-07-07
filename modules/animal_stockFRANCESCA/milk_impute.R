@@ -14,7 +14,6 @@
 #'
 #' 
 
-
 message("Step 0: Setup")
 
 ##' Load the libraries
@@ -61,10 +60,6 @@ if(CheckDebug()){
 }
 
 
-##' Load and check the computation parameters
-imputationSelection = swsContext.computationParams$imputation_selection
-if(!imputationSelection %in% c("session", "all"))
-    stop("Incorrect imputation selection specified")
 
 
 ##' Get data configuration and session
@@ -79,7 +74,11 @@ processingParameters =
 ##' Obtain the complete imputation key
 completeImputationKey = getCompleteImputationKey("production")
 
-livestockItems=animalMilkCorrespondence[,animalItemCPC]
+
+animalMilkCorrespondence=rangeCarcassWeight=ReadDatatable("animal_milk_correspondence")
+
+
+livestockItems=animalMilkCorrespondence[,animal_item_cpc]
 
 
 livestockFormulaTable =
@@ -167,7 +166,7 @@ milkingAnimalsDataToModel=preProcessing(milkingAnimalsDataToModel)
 #'
 
 for(i in 1:length(milkItems)){
-    milkingAnimalsDataToModel[measuredItemCPC== animalMilkCorrespondence[,animalItemCPC][i], measuredItemCPC:=animalMilkCorrespondence[,milkItemCPC][i]]
+    milkingAnimalsDataToModel[measuredItemCPC== animalMilkCorrespondence[,animal_item_cpc][i], measuredItemCPC:=animalMilkCorrespondence[,milk_item_cpc][i]]
 }
 
 ## ---------------------------------------------------------------------  
@@ -198,6 +197,12 @@ milkingAnimalModel =
              timePointYears + 
              (0+log(get(livestockFormulaParameters$productionValue))|measuredItemCPC/measuredItemCPC:geographicAreaM49),
          data = milkingFinalDataToModel)
+
+
+## I had to filter out those lines where livestock numbers are not available and consequently milking animals cannot be computed
+## This issue arose when I had to go back to lme4 1.1-7 instead of 1.1-12
+
+milkingAnimalsDataToModel=milkingAnimalsDataToModel[!is.na(get(livestockFormulaParameters$productionValue))]
 
 milkingAnimalsDataToModel[, predicted:=exp(predict(milkingAnimalModel,
                                                    newdata = milkingAnimalsDataToModel,
@@ -255,7 +260,7 @@ milkLmeModel =
          data = milkProdFinalDataToModel)
 
 
-
+milkProductionDataToModel=milkProductionDataToModel[!is.na(get(milkFormulaParameters$areaHarvestedValue))]
 
 
 milkProductionDataToModel[, predicted:=exp(predict(milkLmeModel,
@@ -288,7 +293,7 @@ completeImputationKey@dimensions$measuredItemCPC@keys= milkItems
 milkYieldProductionData=GetData(completeImputationKey) 
 
 milkYieldProductionData= removeNonProtectedFlag(milkYieldProductionData)
-
+milkYieldProductionData= remove0M(milkYieldProductionData, valueVars = "Value",flagVars = "flagObservationStatus")
 
 completeTriplet=rbind(milkProductionFinalImputedData,
                       milkYieldProductionData)
@@ -304,21 +309,21 @@ milkYieldToBeImputed= is.na(completeTriplet[,get(milkFormulaParameters$yieldValu
 
 completeTriplet[milkYieldToBeImputed, Value_measuredElement_5417:=(get(milkFormulaParameters$productionValue)/get(milkFormulaParameters$areaHarvestedValue))*1000]
 
-milkYieldImputedFlags=milkYieldToBeImputed & !is.na(completeTriplet[,milkFormulaParameters$yieldValue])
+milkYieldImputedFlags=milkYieldToBeImputed & !is.na(completeTriplet[,get(milkFormulaParameters$yieldValue)] )
 
 completeTriplet[milkYieldImputedFlags, flagObservationStatus_measuredElement_5417:=aggregateObservationFlag(get(milkFormulaParameters$productionObservationFlag),
                                                                                                             get(milkFormulaParameters$areaHarvestedObservationFlag))]
 completeTriplet[milkYieldImputedFlags, flagMethod_measuredElement_5417:=processingParameters$balanceMethodFlag]
 
 
-ensureProductionOutputs(completeTriplet,
-                        processingParameters = processingParameters,
-                        formulaParameters =  milkFormulaParameters,
-                        normalised = FALSE,
-                        testImputed = TRUE,
-                        testCalculated = FALSE,
-                        returnData = FALSE
-)
+##ensureProductionOutputs(completeTriplet,
+##                        processingParameters = processingParameters,
+##                        formulaParameters =  milkFormulaParameters,
+##                        normalised = FALSE,
+##                        testImputed = TRUE,
+##                        testCalculated = FALSE,
+##                        returnData = FALSE
+##)
 ## ---------------------------------------------------------------------  
 ## Push data back into the SWS
 
@@ -327,16 +332,14 @@ ensureProductionOutputs(completeTriplet,
 ## ensureProtectedData
 ## ensureProductionOutput
 
-completeTriplet%>%
-    normalise(.)%>%
-    filter(., flagMethod == "i" |
-               (flagObservationStatus == "I" &
-                    flagMethod == "e")) %>%
-    removeInvalidDates(data = ., context = sessionKey) %>%
-    postProcessing %>%
+completeTriplet=    normalise(completeTriplet)
+completeTriplet=    completeTriplet[flagMethod == "i" |(flagObservationStatus == "I" & flagMethod == "e"),]
+completeTriplet=    removeInvalidDates(data = completeTriplet, context = sessionKey) 
+completeTriplet=    postProcessing (completeTriplet)
+
     SaveData(domain = sessionKey@domain,
              dataset = sessionKey@dataset,
-             data = .)
+             data = completeTriplet)
 
 
 message("Module finished successfully")
