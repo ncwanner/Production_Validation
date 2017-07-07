@@ -1,3 +1,50 @@
+
+##' # Production Input Validation Module
+##'
+##' **Description:**
+##'
+##' This module examins whether the production data are valid.
+##'
+##' **Author: Francesca Rosa**
+##'
+##' **Validation:**
+##'
+##' 
+##'
+##'
+##'
+##' 
+##' 
+##' 
+##' 
+##'
+##'
+##' 
+##'
+##' 
+##' 
+##' 
+##' 
+##' 
+##' 
+##'
+##' 
+##'
+##' 
+##' 
+##' 
+##' 
+##' 
+##
+##' ---
+
+
+##' ## Initialisation
+##'
+
+
+
+
 suppressMessages({
     library(faosws)
     library(faoswsFlag)
@@ -62,7 +109,7 @@ unique_formulas = unique(formulaTuples[, list(input, productivity, output,
 ##' Loop through the formulas
 for(i in seq(nrow(unique_formulas))){
     ## Subset the formula table
-    current_formula = unique_formulas[10, ]
+    current_formula = unique_formulas[i, ]
     with(current_formula,
          cat("Updating formula: ", output, " = ", input, " * ", productivity,
              "(", i, " out of ", nrow(unique_formulas), ")\n")
@@ -143,8 +190,10 @@ for(i in seq(nrow(unique_formulas))){
     
     ## fourth situation Output=M- Output is PROTECTED
     
-    AtLeastOne[flagCombOutput=="M;-" & flagCombInput %in% flagProtected[,comb], formulaParameters$productionObservationFlag:="M"]
-    AtLeastOne[flagCombOutput=="M;-" & flagCombInput %in% flagProtected[,comb], formulaParameters$productionMethodFlag:="u"]
+    AtLeastOne[flagCombOutput=="M;-" & flagCombInput %in% flagProtected[,comb],
+               formulaParameters$productionObservationFlag:="M"]
+    AtLeastOne[flagCombOutput=="M;-" & flagCombInput %in% flagProtected[,comb],
+               formulaParameters$productionMethodFlag:="u"]
     
 
     

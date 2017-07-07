@@ -366,8 +366,8 @@ for(iter in seq(selectedMeatCode)){
    
    
    
-   itemCodeKey = fread("S:/browningj/elementCodes.csv")
-   tradeElements=itemCodeKey[itemType== unique(data[,type]),c(imports, exports)]
+   itemCodeKey = ReadDatatable("element_codes")
+   tradeElements=itemCodeKey[itemtype== unique(data[,type]),c(import, export)]
    ##Pull trade data for the current Animal Item    
 ##   
 ##   GetCodeList2 <- function(dimension = NA) {
@@ -439,8 +439,7 @@ for(iter in seq(selectedMeatCode)){
     
    
     stockTrade=imputeVariable(stockTrade,
-                              imputationParameters = animalStockImputationParameters,
-                              singleVariable=TRUE)	
+                              imputationParameters = animalStockImputationParameters)	
     
 
     
@@ -661,6 +660,9 @@ for(iter in seq(selectedMeatCode)){
         
         ##meatImputed[get(meatFormulaParameters$areaHarvestedObservationFlag)=="SSS",meatFormulaParameters$areaHarvestedObservationFlag:=""]
         
+        rangeCarcassWeight=ReadDatatable("range_carcass_weight")
+        
+        
         meatFormulaParameters=c(meatFormulaParameters,list(areaHarvestedFlagComb=paste0("flagComb", meatFormulaParameters$areaHarvestedCode),
                                                            productionFlagComb=paste0("flagComb", meatFormulaParameters$productionCode),
                                                            yieldFlagComb=paste0("flagComb", meatFormulaParameters$yieldCode)))
@@ -705,8 +707,10 @@ for(iter in seq(selectedMeatCode)){
         ## This part should be improved thanks to more accurate and region-specific carcass weights.
         
         
-        meatImputed[yield> rangeCarcassWeight[meatItemCPC==currentMeatItem, carcassWeightMax] |
-                    yield< rangeCarcassWeight[meatItemCPC==currentMeatItem, carcassWeightMin] ,":="(
+        
+        
+        meatImputed[yield> rangeCarcassWeight[meat_item_cpc==currentMeatItem, carcass_weight_max] |
+                    yield< rangeCarcassWeight[meat_item_cpc==currentMeatItem, carcass_weight_max] ,":="(
                         c(meatFormulaParameters$areaHarvestedValue,meatFormulaParameters$areaHarvestedObservationFlag,meatFormulaParameters$areaHarvestedMethodFlag),
                             list(NA,"M","u"))]        
         
@@ -951,7 +955,7 @@ for(iter in seq(selectedMeatCode)){
     #' We are currently use the 
     
     
-    currentRange=rangeCarcassWeight[meatItemCPC==currentMeatItem,] 
+    currentRange=rangeCarcassWeight[meat_item_cpc==currentMeatItem,] 
     
     meatData=meatImputed[!is.na(Value),]
     
@@ -964,8 +968,8 @@ for(iter in seq(selectedMeatCode)){
                       
                       ,]
     
-    outOfRange=meatData[get(imputationParameters$yieldParams$imputationValueColumn) >  currentRange[,carcassWeightMax] |
-                            get(imputationParameters$yieldParams$imputationValueColumn) <  currentRange[,carcassWeightMin],]
+    outOfRange=meatData[get(imputationParameters$yieldParams$imputationValueColumn) >  currentRange[,carcass_weight_min] |
+                            get(imputationParameters$yieldParams$imputationValueColumn) <  currentRange[,carcass_weight_min],]
     
     numberOfOutOfRange= dim(outOfRange)
     
@@ -981,15 +985,15 @@ for(iter in seq(selectedMeatCode)){
     ## Impose the outOfRange values below the minimum equal to the
     ## lower extreme of the range and  the outOfRange Values up the max equal to upper extreme of the range
     
-    outOfRange[get(imputationParameters$yieldParams$imputationValueColumn) >  currentRange[,carcassWeightMax]
+    outOfRange[get(imputationParameters$yieldParams$imputationValueColumn) >  currentRange[,carcass_weight_max]
                & get(imputationParameters$yieldParams$imputationFlagColumn) !="M",
                ":="(c(imputationParameters$yieldParams$imputationValueColumn), 
-                    c(currentRange[,carcassWeightMax]))]
+                    c(currentRange[,carcass_weight_max]))]
     
-    outOfRange[get(imputationParameters$yieldParams$imputationValueColumn) <  currentRange[,carcassWeightMin]
+    outOfRange[get(imputationParameters$yieldParams$imputationValueColumn) <  currentRange[,carcass_weight_min]
                & get(imputationParameters$yieldParams$imputationFlagColumn) !="M",
                ":="(c(imputationParameters$yieldParams$imputationValueColumn), 
-                    currentRange[,carcassWeightMin])]
+                    currentRange[,carcass_weight_min])]
     
     ##Adjust the Flags for the new carcass weights
     
