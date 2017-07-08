@@ -1,6 +1,6 @@
 ##' # Imputation and Synchronisation of Livestock Commodities
 ##'
-##' **Author: Josh Browning, Michael C. J. Kao**
+##' **Author: Francesca Rosa**
 ##'
 ##' **Description:**
 ##'
@@ -32,20 +32,27 @@
 ##' * Livestock Element Mapping Table
 ##' * Identity Formula table
 ##' * Share table
+##' * Elements code table
+##' * Range Carcass Weight table
 ##'
 ##' **Steps:**
+##' 
+##' 1. Impute Livestock Numbers
+##' 
+##' 2. Impute Number of Slaughtered animal (assiciated to the animal item)
 ##'
-##' 1. Transfer the animal slaughtered from animal commodity (parent) to the
+##' 3. Transfer the animal slaughtered from animal commodity (parent) to the
 ##'    meat commodity (child)
 ##'
-##' 2. Impute the meat triplet (production/animal slaughtered/carcass weight)
+##' 4. Impute the meat triplet (production/animal slaughtered/carcass weight)
 ##'    based on the same logic as all other production imputation procedure.
 ##'
-##' 3. Transfer the slaughtered animal from the meat back to the animal, as now
-##'    certain slaughtered animal is imputed in step 2.
+##' 5. Transfer the slaughtered animal from the meat back to the animal, as now
+##'    certain slaughtered animal is imputed in step 3.
 ##'
-##' 4. Transfer the slaughtered animal from the animal to all other child
-##'    commodities. This includes items such as offals, fats and hides.
+##' 6. Transfer the slaughtered animal from the animal to all other child
+##'    commodities. This includes items such as offals, fats and hides and 
+##'    impute missing values for non-meat commodities.
 ##'
 ##' **Flag assignment:**
 ##'
@@ -203,8 +210,7 @@ sink(file = logConsole1, append = TRUE, type = c( "message"))
 for(iter in seq(selectedMeatCode)){
     message("Processing livestock tree (", iter, " out of ",
             length(selectedMeatCode), ")")
-    message("Step 1: Extract Transfer Animal Slaughtered from animal",
-            " commodity to Meat")
+    
     
     set.seed(070416)
   ## Extact the current ANIMAL,MEAT and NON-MEATcodes with their relative formula and mapping table
@@ -437,12 +443,16 @@ for(iter in seq(selectedMeatCode)){
     ##This code is to see the charts of the emsemble approach
     ##animalStockImputationParameters$plotImputation="prompt"
     
-   
+    message("\tStep 1: Impute missing values for livestock: item", currentAnimalItem,
+            " (Animal)")
+    
+    
     stockTrade=imputeVariable(stockTrade,
                               imputationParameters = animalStockImputationParameters)	
     
 
-    
+    message("\tStep 2: Impute Number of Slaughtered animal for", currentAnimalItem,
+            " (Animal)")
     
     slaughteredParentData=computeTotSlaughtered(data = stockTrade, tradeElements, FormulaParameters=animalFormulaParameters, plot=FALSE)
     
@@ -595,7 +605,7 @@ for(iter in seq(selectedMeatCode)){
  ##  }
     
     ## ---------------------------------------------------------------------
-    message("\tTransferring animal slaughtered from animal to meat commodity")
+    message("\tStep 3: Transferring animal slaughtered from animal to meat commodity")
     animalMeatMappingShare =
         merge(currentMappingTable, shareData, all.x = TRUE,
               by = c("measuredItemParentCPC", "measuredItemChildCPC"))
@@ -610,7 +620,7 @@ for(iter in seq(selectedMeatCode)){
                               parentToChild = TRUE)
     
     ## ---------------------------------------------------------------------
-    message("Step 2: Perform Imputation on the Meat Triplet")
+    message("Step 4: Perform Imputation on the Meat Triplet")
     
     ## Start the imputation
     ## Build imputation parameter
@@ -801,6 +811,13 @@ for(iter in seq(selectedMeatCode)){
     
     if(length(currentNonMeatItem) > 0){
         nonMeatImputedList=list()
+        
+        
+        message("/tStep 6: Transfer the slaughtered animal from the animal to all other child
+                 commodities. This includes items such as offals, fats and hides and 
+                 impute missing values for non-meat commodities.")
+        
+        
         for(j in c(1:length(currentNonMeatItem))){
             currentNonMeatItemLoop= currentNonMeatItem[j]
             
@@ -849,7 +866,7 @@ for(iter in seq(selectedMeatCode)){
             ##                 item. For example, the commodity "Other Rodent"
             ##                 (02192.01) does not have non-meat derived products
             ##                 and thus we do not need to perform the action.
-            message("Step 4: Transfer Animal Slaughtered to All Child Commodities")
+            message("Transfer Animal Slaughtered to All Child Commodities")
             
             nonMeatMappingTable =
                 animalMeatMappingTable[measuredItemChildCPC %in% currentNonMeatItemLoop, ]
@@ -899,7 +916,7 @@ for(iter in seq(selectedMeatCode)){
     
     slaughteredTransferToNonMeatChildData=rbindlist(nonMeatImputedList)
     ## ---------------------------------------------------------------------
-    message("\tTesting transfers are applied correctly")
+    ##message("\tTesting transfers are applied correctly")
     ## WARNING (Michael): We currently only check the synchronisation between
     ##                    animal and the meat as this processed is applied in
     ##                    the module. The animal slaughtered si transferred from
