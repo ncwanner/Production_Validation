@@ -48,9 +48,9 @@ flagValidTable1[flagObservationStatus=="I" & flagMethod=="c", Protected:=FALSE]
 flagValidTable1[flagObservationStatus=="E" & flagMethod=="c", Protected:=FALSE]
 ##flagValidTable1[flagObservationStatus=="E" & flagMethod=="f", Protected:=FALSE]
 flagValidTable1[flagObservationStatus=="E" & flagMethod=="h", Protected:=FALSE]
-flagValidTable1[flagObservationStatus=="T" & flagMethod=="p", Protected:=FALSE]
-flagValidTable1[flagObservationStatus=="T" & flagMethod=="h", Protected:=FALSE]
-flagValidTable1[flagObservationStatus=="T" & flagMethod=="-", Protected:=FALSE]
+##flagValidTable1[flagObservationStatus=="T" & flagMethod=="p", Protected:=FALSE]
+##flagValidTable1[flagObservationStatus=="T" & flagMethod=="h", Protected:=FALSE]
+##flagValidTable1[flagObservationStatus=="T" & flagMethod=="-", Protected:=FALSE]
 flagValidTable1[flagMethod=="h", Protected:=FALSE]
 
 
@@ -120,7 +120,7 @@ takeOffImputed=imputeVariable(stockTrade,
 
 ## this is just to make an intermediate save of the takeOffRate
 takeOffImputed[,.(geographicAreaM49, timePointYears,takeOffRate,TakeOffFlagObservationStatus,TakeOffRateFlagMethod )]
-##write.csv(takeOffImputed, paste0("C:/Users/Rosa/Desktop/LIVESTOCK NEW/moduleWithOUTtrade/",currentMeatItem,".csv"))
+write.csv(takeOffImputed, paste0("C:/Users/Rosa/Desktop/LivestockFinalDebug/takeOffImputed",currentMeatItem,".csv"))
 
 
 
@@ -186,7 +186,7 @@ if(plot){
     }
     
     
-    pdf(paste0("C:/Users/Rosa/Desktop/LIVESTOCK NEW/moduleWithOUTtrade/chartSlaughtered",currentMeatItem,".pdf"),
+    pdf(paste0("C:/Users/Rosa/Desktop/LivestockFinalDebug/chartSlaughtered",currentMeatItem,".pdf"),
         paper = "a4",width=9, height=15)  
     
     geo=unique(data_melt[, geographicAreaM49])
