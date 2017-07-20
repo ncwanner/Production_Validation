@@ -120,7 +120,7 @@ takeOffImputed=imputeVariable(stockTrade,
 
 ## this is just to make an intermediate save of the takeOffRate
 takeOffImputed[,.(geographicAreaM49, timePointYears,takeOffRate,TakeOffFlagObservationStatus,TakeOffRateFlagMethod )]
-write.csv(takeOffImputed, paste0("C:/Users/Rosa/Desktop/LivestockFinalDebug/takeOffImputed",currentMeatItem,".csv"))
+##write.csv(takeOffImputed, paste0("C:/Users/Rosa/Desktop/LivestockFinalDebug/takeOffImputed",currentMeatItem,".csv"))
 
 
 
