@@ -132,6 +132,11 @@ if(!imputationSelection %in% c("session", "all"))
     stop("Incorrect imputation selection specified")
 
 
+
+imputationTimeWindow = swsContext.computationParams$imputation_timeWindow
+if(!imputationTimeWindow %in% c("all", "lastThree"))
+    stop("Incorrect imputation selection specified")
+
 ##' Get data configuration and session
 sessionKey = swsContext.datasets[[1]]
 datasetConfig = GetDatasetConfig(domainCode = sessionKey@domain,
@@ -195,6 +200,7 @@ selectedMeatCode =
            session = sessionItems,
            all = livestockImputationItems)
 
+lastYear=max(as.numeric(completeImputationKey@dimensions$timePointYears@keys))
 
 ##' ---
 ##' ## Perform Synchronisation and Imputation
@@ -284,6 +290,12 @@ for(iter in seq(selectedMeatCode)){
         animalKey %>%
         GetData(key = .) %>%
         preProcessing(data = .) %>%
+        expandYear(data = .,
+                   areaVar = processingParameters$areaVar,
+                   elementVar = processingParameters$elementVar,
+                   itemVar = processingParameters$itemVar,
+                   valueVar = processingParameters$valueVar,
+                   newYears=NULL) %>%
         removeNonProtectedFlag(.)   
     
    
@@ -503,8 +515,13 @@ for(iter in seq(selectedMeatCode)){
     meatData =
         meatKey %>%
         GetData(key = .) %>%
-        preProcessing(data = .) 
-    
+        preProcessing(data = .) %>%
+        expandYear(data = .,
+               areaVar = processingParameters$areaVar,
+               elementVar = processingParameters$elementVar,
+               itemVar = processingParameters$itemVar,
+               valueVar = processingParameters$valueVar,
+               newYears=NULL) 
 
         meatData = denormalise(normalisedData = meatData,
                     denormaliseKey = "measuredElement") %>%
@@ -855,6 +872,12 @@ for(iter in seq(selectedMeatCode)){
                 currentNonMeatKey %>%
                 GetData(key = .) %>%
                 preProcessing(data = .) %>%
+                expandYear(data = .,
+                           areaVar = processingParameters$areaVar,
+                           elementVar = processingParameters$elementVar,
+                           itemVar = processingParameters$itemVar,
+                           valueVar = processingParameters$valueVar,
+                           newYears=NULL)%>%
                 denormalise(normalisedData = .,
                             denormaliseKey = "measuredElement") %>%
                 createTriplet(data = .,
@@ -904,6 +927,14 @@ for(iter in seq(selectedMeatCode)){
                                                  yieldCode = productivity,
                                                  unitConversion = unitConversion)
                 )
+            
+            slaughteredTransferToNonMeatChildDataPROD=slaughteredTransferToNonMeatChildData[measuredElement==nonMeatMeatFormulaParameters$productionCode]
+            slaughteredTransferToNonMeatChildDataNoPROD=slaughteredTransferToNonMeatChildData[(measuredElement!=nonMeatMeatFormulaParameters$productionCode)]
+            
+            slaughteredTransferToNonMeatChildDataPROD =  removeNonProtectedFlag(slaughteredTransferToNonMeatChildDataPROD)
+            
+            
+            slaughteredTransferToNonMeatChildData=rbind(slaughteredTransferToNonMeatChildDataNoPROD,slaughteredTransferToNonMeatChildDataPROD)
             
             slaughteredTransferToNonMeatChildData=denormalise(slaughteredTransferToNonMeatChildData, denormalise="measuredElement",fillEmptyRecords=TRUE )
             
@@ -962,13 +993,24 @@ for(iter in seq(selectedMeatCode)){
         ##                 example, South Sudan only came into existence in 2011.
         ##                 Thus although we can impute it, they should not be saved
         ##                 back to the database.
-        syncedData %>%
-        removeInvalidDates(data = ., context = sessionKey) %>%
-        postProcessing %>%
+        syncedData=  removeInvalidDates(data = syncedData, context = sessionKey)
+        
+        
+        if(imputationTimeWindow=="lastThree")
+        {
+         
+            syncedData=syncedData[get(processingParameters$yearVar) %in% c(lastYear, lastYear-1, lastYear-2)]
+            
+            syncedData= postProcessing(data =  syncedData) 
+            SaveData(domain = sessionKey@domain,
+                     dataset = sessionKey@dataset,
+                     data = syncedData)
+        }else{ 
+        syncedData= postProcessing(data =  syncedData) 
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
-                 data = .)
-    
+                 data = syncedData)
+        }
     
     ## --------------------------------------------------------------------- 
     #' Check if the resulting Carcass weights are within a feasible range!
@@ -1089,10 +1131,25 @@ for(iter in seq(selectedMeatCode)){
 
     
     updatedFigures=rbind(slaughteredTransferedBackToAnimalData,outOfRange)
-    updatedFigures = removeInvalidDates(data =updatedFigures, context = sessionKey)%>%
+    updatedFigures = removeInvalidDates(data =updatedFigures, context = sessionKey)
+    
+    if(imputationTimeWindow=="lastThree")
+    {
+        
+        updatedFigures=updatedFigures[get(processingParameters$yearVar) %in% c(lastYear, lastYear-1, lastYear-2)]
+        
+        updatedFigures= postProcessing(data =  updatedFigures) 
         SaveData(domain = sessionKey@domain,
                  dataset = sessionKey@dataset,
-                 data = .)
+                 data = updatedFigures)
+    }else{ 
+        updatedFigures= postProcessing(data =  updatedFigures) 
+        SaveData(domain = sessionKey@domain,
+                 dataset = sessionKey@dataset,
+                 data = updatedFigures)
+    }
+    
+
     ## --------------------------------------------------------------------- 
     
     message("\nSynchronisation and Imputation Completed for\n",
