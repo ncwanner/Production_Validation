@@ -77,6 +77,8 @@ if(CheckDebug()){
 
 ##' Get user specified imputation selection
 imputationSelection = swsContext.computationParams$imputation_selection
+imputationTimeWindow = swsContext.computationParams$imputation_timeWindow
+
 
 ##' Check the validity of the computational parameter
 if(!imputationSelection %in% c("session", "all"))
@@ -101,10 +103,10 @@ completeImputationKey = getCompleteImputationKey("production")
 ##'
 liveStockItems =
     getAnimalMeatMapping(R_SWS_SHARE_PATH = R_SWS_SHARE_PATH,
-                         onlyMeatChildren = FALSE) %>%
-    select(measuredItemParentCPC, measuredItemChildCPC) %>%
-    unlist(x = ., use.names = FALSE) %>%
-    unique(x = .)
+                         onlyMeatChildren = FALSE) 
+    liveStockItems = liveStockItems[,.(measuredItemParentCPC, measuredItemChildCPC)]
+    liveStockItems = unlist(x = liveStockItems, use.names = FALSE)
+    liveStockItems = unique(x = liveStockItems )
 
 
 ##' This is the complete list of items that are in the imputation list
@@ -126,6 +128,12 @@ selectedItemCode =
 ##' ---
 ##' ## Perform Imputation
 imputationResult = data.table()
+
+lastYear=max(as.numeric(completeImputationKey@dimensions$timePointYears@keys))
+
+logConsole1=file("log.txt",open = "w")
+sink(file = logConsole1, append = TRUE, type = c( "message"))
+
 
 ##' Loop through the commodities to impute the items individually.
 for(iter in seq(selectedItemCode)){
@@ -194,6 +202,9 @@ for(iter in seq(selectedItemCode)){
             ## Extract the data, and skip the imputation if the data contains no entry.
             extractedData =
                 GetData(subKey)
+            
+            ##extractedData= expandDatasetYears(extractedData, processingParameters,
+            ##                                 swsContext.computationParams$startYear,swsContext.computationParams$endYear )
 
             if(nrow(extractedData) == 0){
                 message("Item : ", currentItem, " does not contain any data")
@@ -208,22 +219,48 @@ for(iter in seq(selectedItemCode)){
                            areaVar = processingParameters$areaVar,
                            elementVar = processingParameters$elementVar,
                            itemVar = processingParameters$itemVar,
-                           valueVar = processingParameters$valueVar) %>%
+                           valueVar = processingParameters$valueVar,
+                           newYears= lastYear) %>%
                 denormalise(normalisedData = .,
                             denormaliseKey = "measuredElement",
                             fillEmptyRecords = TRUE) %>%
-                createTriplet(data = ., formula = formulaTable) %>%
-                processProductionDomain(data = .,
-                                        processingParameters =
-                                            processingParameters,
+                createTriplet(data = ., formula = formulaTable)
+            
+            
+            if(imputationTimeWindow=="lastThree"){
+                
+                
+                
+                processedDataLast=processedData[get(processingParameters$yearVar) %in% c(lastYear, lastYear-1, lastYear-2)]
+                processedDataAll=processedData[!get(processingParameters$yearVar) %in% c(lastYear, lastYear-1, lastYear-2)]
+                
+                processedDataLast=processProductionDomain(data = processedDataLast,
+                                        processingParameters = processingParameters,
                                         formulaParameters = formulaParameters) %>%
                 ensureProductionInputs(data = .,
                                        processingParam = processingParameters,
                                        formulaParameters = formulaParameters,
                                        normalised = FALSE)
-    
+                
+                processedData=rbind(processedDataLast,processedDataAll)
+                
+                
+            }else{
+                
+                
+                processedData =  processProductionDomain(data = processedData,
+                                        processingParameters = processingParameters,
+                                        formulaParameters = formulaParameters) %>%
+                    ensureProductionInputs(data = .,
+                                           processingParam = processingParameters,
+                                           formulaParameters = formulaParameters,
+                                           normalised = FALSE)
+                
+                
+                      }
             
-            ##imputationParameters$productionParams$plotImputation="individual"
+         ##imputationParameters$productionParams$plotImputation="prompt"
+  
             
             
             ## Perform imputation
@@ -234,25 +271,23 @@ for(iter in seq(selectedItemCode)){
                     formulaParameters = formulaParameters,
                     imputationParameters = imputationParameters)
 
-   
             
-            
+          ## Filter timePointYears for which it has been requested to compute imputations
+          ## timeWindow= c(as.numeric(swsContext.computationParams$startYear):as.numeric(swsContext.computationParams$endYear))
+          ## imputed= imputed[timePointYears %in% timeWindow,]
+           
             ## Save the imputation back to the database.
-            imputed %>%
+         
                 ## NOTE (Michael): Records containing invalid dates are
                 ##                 excluded, for example, South Sudan only came
                 ##                 into existence in 2011. Thus although we can
                 ##                 impute it, they should not be saved back to
                 ##                 the database.
-                removeInvalidDates(data = ., context = sessionKey) %>%
-                mutate(timePointYears = as.character(timePointYears)) %>%
-              ensureProductionOutputs(data = .,
-                                      processingParameters =
-                                          processingParameters,
-                                      formulaParameters = formulaParameters,
-                                      normalised = FALSE) %>%
-                normalise(.) %>%
-                
+                imputed= removeInvalidDates(data = imputed, context = sessionKey)%>%
+                         ensureProductionOutputs(data = ., processingParameters = processingParameters,
+                                                 formulaParameters = formulaParameters,
+                                                 normalised = FALSE)%>%
+                         normalise(.) 
                 
                 
                 
@@ -262,13 +297,32 @@ for(iter in seq(selectedItemCode)){
                 ##                 saved back to the database.
 
             
-                filter(., flagMethod == "i" |
-                          (flagObservationStatus == "I" &
-                           flagMethod == "e")) %>%
-                postProcessing(data = .) %>%
+             
+                
+                imputed=  imputed[(flagMethod == "i" |
+                                      (flagObservationStatus == "I" &
+                                           flagMethod == "e")),]
+                
+        
+                
+                if(imputationTimeWindow=="lastThree")
+                {
+                    imputed=imputed[get(processingParameters$yearVar) %in% c(lastYear, lastYear-1, lastYear-2)]
+                    imputed= postProcessing(data =  imputed) 
+                    SaveData(domain = sessionKey@domain,
+                             dataset = sessionKey@dataset,
+                             data =  imputed)
+                    
+                    
+                }else{
+                
+                
+                imputed= postProcessing(data =  imputed) 
                 SaveData(domain = sessionKey@domain,
                          dataset = sessionKey@dataset,
-                         data = .)
+                         data =  imputed)
+                    
+                }
 
         })
 
