@@ -34,6 +34,8 @@ if(CheckDebug()){
     
 }
 
+oldData=FALSE
+
 load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/zeroWeight.RData")
 completeImputationKey=getCompleteImputationKey()
 
@@ -78,32 +80,32 @@ processedCPC=c("22249.01", "22241.01" ,"22254"  ,  "22253"  ,  "22110.02", "2611
 
 
 ##Time consuming operation:
-uniqueLevels=unique(tree[,.(geographicAreaM49, timePointYears)])
-primaryInvolved=list()
-for(i in seq_len(nrow(uniqueLevels))){
-    
-    
-    filter = uniqueLevels[i, ]
-    treeSubset=tree[filter,,on = c("geographicAreaM49", "timePointYears")]    
-    primaryInvolved[[i]]=getPrimary(processedCPC, treeSubset, params)
-}
+##uniqueLevels=unique(tree[,.(geographicAreaM49, timePointYears)])
+##primaryInvolved=list()
+##for(i in seq_len(nrow(uniqueLevels))){
+##    
+##    
+##    filter = uniqueLevels[i, ]
+##    treeSubset=tree[filter,,on = c("geographicAreaM49", "timePointYears")]    
+##    primaryInvolved[[i]]=getPrimary(processedCPC, treeSubset, params)
+##}
+##
+##primaryInvolvedList=unique(unlist(primaryInvolved))
+##
+##
+##primaryInvolvedDescendents=list()
+##
+##for(i in seq_len(length(primaryInvolvedList)))
+##{ 
+##    primaryInvolvedDescendents[[i]]=data.table(getChildren( commodityTree = tree,
+##                                                            parentColname ="measuredItemParentCPC",
+##                                                            childColname = "measuredItemChildCPC",
+##                                                            topNodes =primaryInvolvedList[i] ))
+##}
 
-primaryInvolvedList=unique(unlist(primaryInvolved))
-
-
-primaryInvolvedDescendents=list()
-
-for(i in seq_len(length(primaryInvolvedList)))
-{ 
-    primaryInvolvedDescendents[[i]]=data.table(getChildren( commodityTree = tree,
-                                                            parentColname ="measuredItemParentCPC",
-                                                            childColname = "measuredItemChildCPC",
-                                                            topNodes =primaryInvolvedList[i] ))
-}
-
-primaryInvolvedDescendents= rbindlist(primaryInvolvedDescendents)
-## I need a vector of all the primary descendents:
-primaryInvolvedDescendents=primaryInvolvedDescendents$V1
+##primaryInvolvedDescendents= rbindlist(primaryInvolvedDescendents)
+#### I need a vector of all the primary descendents:
+##primaryInvolvedDescendents=primaryInvolvedDescendents$V1
 
 
 
@@ -121,7 +123,7 @@ completeImputationKey@dimensions$measuredItemCPC@keys=primaryInvolvedDescendents
 dataProcessed=GetData(completeImputationKey)
 dataProcessed=expandYear(dataProcessed)
 dataProcessed=dataProcessed[,SWSdata:=Value]
-dataProcessed[timePointYears %in% c("1991", "1996", "2001", "2006", "2011"),
+dataProcessed[timePointYears %in% c("1991","1996","2001", "2006","2011"),
               ":="(c("flagObservationStatus","flagMethod"), list("E","h"))]
 
 dataProcessed=removeInvalidFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
@@ -136,13 +138,25 @@ setnames(dataProcessed, "measuredItemCPC", "measuredItemChildCPC")
 dataProcessed=dataProcessed[timePointYears %in% c(2000:2013)]
 ##-------------------------------------------------------------------------------------------------------------------------------------
 load(file.path("C:/Users/Rosa/Favorites/Github/sws_project/StandardizationFiles/localFile", "data_AllTradeFAOSTAT.RData"))
+
+##if(oldData){
+##
+##load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/dataoldSua.RData")
+##data=data[measuredElementSuaFbs!="foodManufacturing", ]
+##}
+
+
 data=data[measuredItemSuaFbs %in% primaryInvolvedDescendents]
 data=data[!is.na(measuredElementSuaFbs),]
 setnames(data,"measuredItemSuaFbs","measuredItemParentCPC")
 ##pilotCountries=c("380", "764", "276","840", "484", "686","800", "152","704" )
 
-##tree=tree[geographicAreaM49 %in% c("380", "764", "276","840", "484", "686","800", "152","704" )]
-tree=tree[geographicAreaM49 %in% c("360" )]
+tree=tree[geographicAreaM49 %in% c("380", "764", "276","840", "484", "686","800", "152","704" )]
+
+##tree=tree[geographicAreaM49 %in% c("116")]
+
+##tree=tree[geographicAreaM49 %in% c("320","724","188","222","191" )]
+##tree=tree[geographicAreaM49 %in% c("360" )]
 ##
 
 levels=unique(tree[, processingLevel])
@@ -195,7 +209,9 @@ for(lev in (seq(levels)-1))  {
     
     ##-------------------------------------------------------------------------------------------------------
     ##Deviate the negative agailability to be manually checked
-    nagativeAvailability=dataMergeTree[availability<0]
+    nagativeAvailability=dataMergeTree[availability<1]
+    nagativeAvailability=nagativeAvailability[,.(measuredItemParentCPC,	geographicAreaM49, availability,timePointYears)]
+    nagativeAvailability=unique(nagativeAvailability)
     directory= "C:/Users/Rosa/Desktop/DERIVATIVES/negativeAvailability/"
     dir.create(paste0(directory, lev), recursive=TRUE)
     write.csv(nagativeAvailability, paste0(directory,lev, "/",currentGeo, "nagativeAvailability",".csv"), sep=";",row.names = F)
@@ -209,7 +225,7 @@ for(lev in (seq(levels)-1))  {
     dataMergeTree=dataMergeTree[,.(measuredItemParentCPC, geographicAreaM49, timePointYears ,  
                                           measuredItemChildCPC ,extractionRate,processingLevel, availability)] 
     dataMergeTree = dataMergeTree[,
-                      list(availability = mean(availability)),
+                      list(availability = mean(availability, na.rm = TRUE)),
                       by = c("measuredItemParentCPC","geographicAreaM49","timePointYears","measuredItemChildCPC","extractionRate","processingLevel")]
     
     
@@ -219,7 +235,7 @@ for(lev in (seq(levels)-1))  {
     
    
     
-    dataMergeTree[availability<0,availability:=0]				
+    dataMergeTree[availability<1,availability:=0]				
     
     dataMergeTree[,availabilitieChildEquivalent:=availability*extractionRate]
     dataMergeTree[, sumAvail:=sum(availabilitieChildEquivalent), by=c("measuredItemChildCPC","timePointYears","geographicAreaM49")]
@@ -271,12 +287,12 @@ for(lev in (seq(levels)-1))  {
     ##processingShareParamenters$ensembleModels$defaultArima=NULL
    
     ##finalInpute=copy(final)
-    final[,processingShareFlagObservationStatus:="T"]
-    final[,processingShareFlagMethod:="-"]
+    final[,processingShareFlagObservationStatus:="M"]
+    final[,processingShareFlagMethod:="u"]
     
     
-    final[is.na(processingShare),processingShareFlagObservationStatus:="M"]
-    final[is.na(processingShare),processingShareFlagMethod:="u"]
+    final[!is.na(processingShare),processingShareFlagObservationStatus:="T"]
+    final[!is.na(processingShare),processingShareFlagMethod:="-"]
     
     
     counts = final[,
@@ -304,26 +320,39 @@ for(lev in (seq(levels)-1))  {
     ## should be used in the following loop to compute the availabilities
     
     updateData=final[,.(geographicAreaM49, timePointYears, measuredItemChildCPC, output)]
-    updateData[, output:=sum(output), by=c("geographicAreaM49", "timePointYears", "measuredItemChildCPC")]
+    updateData[, output:=sum(output,na.rm = TRUE), by=c("geographicAreaM49", "timePointYears", "measuredItemChildCPC")]
     updateData=unique(updateData)
     ##I change the label bacause the commodities that now are children will be parent in the next loop
     setnames(updateData,"measuredItemChildCPC","measuredItemParentCPC")
 
     
     data=merge(data,updateData, by=c("geographicAreaM49", "timePointYears", "measuredItemParentCPC"), all.x=TRUE)
+    
+    ## Olnly non-protected 
     data[,flagComb:=paste(flagObservationStatus,flagMethod,sep=";")]   
     
     flagValidTable=copy(flagValidTable)
     flagValidTable=flagValidTable[Protected==TRUE,]
     protected=flagValidTable[,protectedComb:=paste(flagObservationStatus,flagMethod,sep=";")]
     protected=protected[,protectedComb]
+    
+    
     data[geographicAreaM49==currentGeo & !(flagComb %in% protected) & measuredElementSuaFbs=="production", ":="(c("Value","flagObservationStatus","flagMethod"),list("NA","M","u"))]
     
-    filter=data[,!is.na(output)] & data[,measuredElementSuaFbs=="production"] & data[,is.na(Value)] 
+    ##filter=!is.na(data[,output]) & data[,measuredElementSuaFbs=="production"] & data[,flagComb] %in% protected
     
-    data[geographicAreaM49==currentGeo & filter, Value:=output]     
-    data[geographicAreaM49==currentGeo & filter, flagObservationStatus:="I"]
-    data[geographicAreaM49==currentGeo & filter, flagMethod:="e"]
+    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(output), Value:=output]     
+    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(output), flagObservationStatus:="I"]
+    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(output), flagMethod:="e"]
+    
+    
+    if(oldData){
+    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !is.na(output)& Protected==FALSE, Value:=output]     
+    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !is.na(output)& Protected==FALSE, flagObservationStatus:="I"]
+    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !is.na(output)& Protected==FALSE, flagMethod:="e"]
+    }
+    
+    
     data[,output:=NULL]
     data[,flagComb:=NULL]
 }
