@@ -74,18 +74,18 @@ getTree=function(){
     # wheat germ shoul have ER max of 2% while here results in 100%
     
     # tree[is.na(extractionRate), extractionRate := 1]
-    tree=tree[!is.na(extractionRate)]
+    
     ## TO use collpseEdges we have to loop over country-year combinations
     ##tree=tree[geographicAreaM49=="380" & timePointYearsSP=="2010"]
     
-    
-    
     ## Francesca add some Extraction rates always equal to zero
+    
+    
     tree[measuredItemChildCPC=="22221.02", extractionRate:=0.4]
     tree[measuredItemChildCPC=="22230.04", extractionRate:=0.1]
     tree[measuredItemChildCPC=="22249.02", extractionRate:=0.1]
     
-    
+    tree=tree[!is.na(extractionRate)]
     
     tree = tree[!(measuredItemChildCPC=="22230.04" & measuredItemParentCPC=="22230.03")]
     

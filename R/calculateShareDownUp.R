@@ -27,7 +27,7 @@ dataMergeTree=merge(data,tree, by=c(params$parentVar, params$geoVar,params$yearV
 
 
 ##Simple availability that we interpret as FOOD PROCESSING
-dataMergeTree[, availability := sum(ifelse(is.na(Value), 0, Value) *
+dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
                                     ifelse(measuredElementSuaFbs == params$productionCode, 1,
                                     ifelse(measuredElementSuaFbs == params$importCode, 1,
                                     ifelse(measuredElementSuaFbs == params$exportCode , -1, 
@@ -67,14 +67,14 @@ dataMergeTree[measuredItemChildCPC %in% zeroWeight, weight:=0]
 ## In order to continue runnung the module evem if some availability are lower than
 ## we make the assumption that 
 
-dataMergeTree[get(params$availVar)<1,availability:=0]				
+dataMergeTree[get(params$availVar)<1,params$availVar:=0]				
 
 dataMergeTree[,availabilitieChildEquivalent:=get(params$availVar)* get(params$extractVar)]
 dataMergeTree[, sumAvail:=sum(availabilitieChildEquivalent), by=c(params$childVar,params$yearVar,params$geoVar)]
 
-dataMergeTree[,shareDownUp:=NA]
+dataMergeTree[,params$shareDownUp:=NA]
 
-dataMergeTree[,shareDownUp:=availabilitieChildEquivalent/sumAvail]
+dataMergeTree[,params$shareDownUp:=availabilitieChildEquivalent/sumAvail]
 
 
 return(dataMergeTree)
