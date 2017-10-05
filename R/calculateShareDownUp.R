@@ -16,10 +16,9 @@
 calculateShareDownUp=function(data,tree, printNegativeAvailability=FALSE, params)
 
 {
-    
-params$shareDownUp = "shareDownUp"
-    
-    
+##Checks
+stopifnot(c(params$parentVar,params$geoVar,params$yearVar,params$elementVarSUA,params$value)  %in% colnames(data) )    
+stopifnot(c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level) %in% colnames(tree))
     
 dataMergeTree=merge(data,tree, by=c(params$parentVar, params$geoVar,params$yearVar))
 ##allow.cartesian = TRUE)
@@ -58,14 +57,11 @@ dataMergeTree=dataMergeTree[,c(params$parentVar,  params$geoVar, params$yearVar,
 dataMergeTree = dataMergeTree[, list(availability = mean(get(params$availVar), na.rm = TRUE)),
                               by = c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level)]
 
+#dataMergeTree[, params$availVar := mean(get(params$availVar), na.rm = TRUE),
+#                              by = c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level)]
 
-
-dataMergeTree[, weight:=1]
-dataMergeTree[measuredItemChildCPC %in% zeroWeight, weight:=0]
-
-
-## In order to continue runnung the module evem if some availability are lower than
-## we make the assumption that 
+## In order to continue runnung the module even if some availability are lower than 0
+## we make the assumption that:
 
 dataMergeTree[get(params$availVar)<1,params$availVar:=0]				
 
@@ -75,7 +71,8 @@ dataMergeTree[, sumAvail:=sum(availabilitieChildEquivalent), by=c(params$childVa
 dataMergeTree[,params$shareDownUp:=NA]
 
 dataMergeTree[,params$shareDownUp:=availabilitieChildEquivalent/sumAvail]
-
+dataMergeTree[,availabilitieChildEquivalent:=NULL]
+dataMergeTree[,sumAvail:=NULL]
 
 return(dataMergeTree)
 

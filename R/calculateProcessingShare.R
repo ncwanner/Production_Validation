@@ -1,25 +1,24 @@
 ##' Function to compute Processing sharing: share that identify the quantity of primary availability 
 ##' that it is allocated in different productive processes.
 ##'
-##' @param data 
-##' @param printSharesGraterThan1 
-##' @param params   
+##' @param data data table containing all the columns to compute processingSharing
+##' @param printSharesGraterThan1 It is TRUE if we want to save some 
+##' @param params defaultProcessedItamParams parameters, object which contains the parameters  
 ##'
 ##' @export
 ##'
 
 
+calculateProcessingShare=function(data, printSharesGraterThan1=FALSE, param){
+    
+##Check that data contains all the necessary columns    
+stopifnot(c(param$geoVar, param$yearVar, param$childVar, param$parentVar,
+            param$extractVar, param$shareDownUp ,params$value, param$availVar) %in% colnames(data))
 
+data[, processingShare:=(((get(param$value)/get(param$extractVar))*get(param$shareDownUp))/get( param$availVar ))]
+data[,param$processingShare:= (( get(params$value)/get (param$extractVar) )* get(param$shareDownUp) )/get((param$availVar))]    
+    
 
-calculateProcessingShare=function(data, printSharesGraterThan1=FALSE){
-    
-##Check that data containd all the necessary columns    
-
-    
-    
-    
-data[, processingShare:=(((Value/extractionRate)*shareDownUp)/availability)]
-data[,weight:=NULL]
 
 
 ##-------------------------------------------------------------------------------------------------------
@@ -32,15 +31,8 @@ dir.create(paste0(directory, lev), recursive=TRUE)
 write.csv(processingShareGraterThan1, paste0(directory,lev, "/",currentGeo, "processingShareGraterThan1",".csv"), sep=";",row.names = F)
 }
 
-##------------------------------------------------------------------------------------------------------
-
-
-
-##-------------------------------------------------------------------------------------------------------------------------------------    
+##-------------------------------------------------------------------------------------------------------
 ##Here we should perform an imputation of the imputation on 
-
-
-
 processingShareParamenters=defaultImputationParameters()
 processingShareParamenters$imputationValueColumn="processingShare"
 processingShareParamenters$imputationFlagColumn="processingShareFlagObservationStatus"
@@ -66,16 +58,14 @@ data[,processingShareFlagMethod:="u"]
 data[!is.na(processingShare),processingShareFlagObservationStatus:="T"]
 data[!is.na(processingShare),processingShareFlagMethod:="-"]
 
-
-counts = data[,
-               sum(!is.na(processingShare)),
+##Remove series with no data
+counts = data[, sum(!is.na(processingShare)),
                by = c(processingShareParamenters$byKey)]
-counts[V1!=0]
 counts=counts[V1!=0]
-counts=counts[,.(geographicAreaM49, measuredItemChildCPC ,measuredItemParentCPC)]
-data=data[counts, ,on=c("geographicAreaM49", "measuredItemChildCPC", "measuredItemParentCPC")]
+counts=counts[,c(param$geoVar, param$childVar, param$parentVar), with=FALSE]
+data=data[counts, ,on=c(param$geoVar, param$childVar, param$parentVar)]
 
-
+## impute processingSharing
 data=imputeVariable(data,processingShareParamenters )
 return(data)
 

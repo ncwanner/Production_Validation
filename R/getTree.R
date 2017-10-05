@@ -1,46 +1,40 @@
+##' GetTree
+##'
+##' This function has been created in order to pull the commodity tree from the SWS.
+##' Despite such kind of function already exists (see getcommodityTree), we created this 
+##' additional function in order to modify/simplufy the commodity for
+##' the processed items production imputation process. In particular we need to remove some   
+##' connections, add some extraction rates and add the columns containing the processing level.
+##'
+##' @param data input data.table: SUA table
+##' @param tree Commodity tree, data.table
+##' @param printNegativeAvailability It is TRUE if you want to produce csv file containing nagative availabilities
+##' @param params computation parameters
+##'
+##' @export
 
 
 
 getTree=function(){
     ##Commodity Tree
     
-    
-    
     tree = getCommodityTree(timePointYears = completeImputationKey@dimensions$timePointYears@keys)
-    
     
     ### Francesca meat correction
     meat=c("21118.01","21139","21111.01" ,"21112","21113.01","21114","21115","21116","21117.01","21117.02","21118.02","21118.03","21119.01","21121","21122",
            "21123","21124","21125","21131","21132","21133","21134","21135","21136","21137","21137","21138","21138","21138","21141",
            "21142","21143","21144","21145","21170.01")
     animals= unique(tree[measuredItemChildCPC %in% meat, measuredItemParentCPC])
-    
-    
     tree=tree[!measuredItemParentCPC %in% animals,]
-    
     ### Francesca cassava correction
     tree=tree[measuredItemParentCPC!="01520",]
     
-    ############################################################
-    ##                                                        ##
-    ##                       Meat                             ##
-    ##                                                        ##
-    ############################################################
-    
-    
-    ##This connections are not meaningful
-    
+    ##This connections are not meaningful: Francesca MEAT (from file meat investigation
     tree= tree[!(measuredItemParentCPC=="21511.02" & measuredItemChildCPC %in% c("21184.02","21113.02"))]
-    
     tree= tree[!(measuredItemParentCPC=="21113.02" & measuredItemChildCPC %in% c("21181"))]
     tree[measuredItemParentCPC=="21121" & measuredItemChildCPC %in% c("23991.04"), extractionRate:=1]
     
-    
-    
-    
-    
-    
-    
+    ##Cristina: sugar
     tree = tree[!measuredItemParentCPC=="23670.01"] # All ER = NA (rows=3878)
     tree = tree[!measuredItemParentCPC=="2351"] # All ER = NA 0.9200 0.9300 0.9650 0.9600 0.9350 0.9430 0.9346 (rows=3878)
     tree = tree[!measuredItemParentCPC=="23511"] # All ER = NA (rows=3878)
@@ -79,8 +73,6 @@ getTree=function(){
     ##tree=tree[geographicAreaM49=="380" & timePointYearsSP=="2010"]
     
     ## Francesca add some Extraction rates always equal to zero
-    
-    
     tree[measuredItemChildCPC=="22221.02", extractionRate:=0.4]
     tree[measuredItemChildCPC=="22230.04", extractionRate:=0.1]
     tree[measuredItemChildCPC=="22249.02", extractionRate:=0.1]
@@ -88,9 +80,6 @@ getTree=function(){
     tree=tree[!is.na(extractionRate)]
     
     tree = tree[!(measuredItemChildCPC=="22230.04" & measuredItemParentCPC=="22230.03")]
-    
-    
-    
     
     ##Francesca: avoid that the same item appears in more that one single level
     
@@ -103,24 +92,23 @@ getTree=function(){
     
     tree = tree[!(measuredItemParentCPC=="22110.02" & measuredItemChildCPC == "22230.01"),]
     
-    
-    
     tree = tree[!(measuredItemParentCPC=="22110.02" & measuredItemChildCPC == "22130.01"),]
     tree = tree[!(measuredItemParentCPC=="22110.05" & measuredItemChildCPC == "22130.01"),]
     
     
     tree = tree[!(measuredItemParentCPC=="22110.05" & measuredItemChildCPC == "22254"),]
-    
-    
-    
     tree = tree[!(measuredItemParentCPC=="21529.03" & measuredItemChildCPC == "21523"),]
     
     
+    ##Try to remove the dependence of margarine from those complicated commodities as
+    ##"fat preparation" and "hidrogenated oils and fats"
     
+    tree = tree[!(measuredItemParentCPC=="F1243" & measuredItemChildCPC == "21700.02"),]
+    tree = tree[!(measuredItemParentCPC=="F1275" & measuredItemChildCPC == "21700.02"),]
+    
+    ##Ad processing level to the commodity tree
     levels=findProcessingLevel(tree,"measuredItemParentCPC","measuredItemChildCPC")
     setnames(levels, "temp","measuredItemParentCPC")
     tree=merge(tree, levels, by="measuredItemParentCPC", all.x=TRUE)
-    
-    
     
 }

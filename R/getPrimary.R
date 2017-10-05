@@ -1,3 +1,12 @@
+##' Function trace back to the primary item starting from an edge-item.
+##' It uses the commodity tree to go back level by level untill the fisrt one.
+##'
+##' @param edge a CPC (or a vector of CPC codes) 
+##' @param tree Commodity tree, data.table
+##' @param standParams computation parameters
+##'
+##' @export
+##'
 
 getPrimary = function(edge, tree, standParams){
     
