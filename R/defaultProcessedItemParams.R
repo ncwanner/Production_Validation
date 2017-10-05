@@ -21,7 +21,7 @@
 ##' 
 
 
-defaultProcessedItamParams=function(){
+defaultProcessedItemParams=function(){
     geoVar = "geographicAreaM49"
     yearVar = "timePointYears"
     itemVar = "measuredItemCPC"
