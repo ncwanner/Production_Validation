@@ -2,8 +2,8 @@ Package: faoswsProduction
 Type: Package
 Title: Package to perform the imputation of area harvested, production and yield
     for the FAO production domain
-Version: 0.1.18
-Date: 2017-10-05
+Version: 0.1.19
+Date: 2017-10-13
 Authors@R: c(person("Joshua M.", "Browning", role = "aut", email = "joshua.browning@fao.org"), 
              person("Michael C. J.", "Kao", role = "aut", email = "michael.kao@fao.org"),
              person("Francesca", "Rosa", role = "cre", email = "francesca.rosa@fao.org"))
