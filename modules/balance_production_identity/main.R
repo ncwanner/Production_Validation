@@ -141,10 +141,10 @@ for(i in seq(nrow(unique_formulas))){
                     denormaliseKey = "measuredElement") %>%
         createTriplet(data = .,
                       formula = current_formula) %>%
-        ensureProductionInputs(data = .,
-                               processingParam = processingParams,
-                               formulaParameters = formulaParameters,
-                               normalised = FALSE)
+     ##  ensureProductionInputs(data = .,
+     ##                         processingParam = processingParams,
+     ##                         formulaParameters = formulaParameters,
+     ##                         normalised = FALSE)
 
     ## Perform the yield module.
     ##

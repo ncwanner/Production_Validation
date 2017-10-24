@@ -27,8 +27,15 @@ balanceAreaHarvested = function(data,
   })
 
     ## Impute only when area and yield are available and production isn't
+  
+    ##Note that missingAreaHarvested does not include the obeservation
+    ##with a methodFlag="-" : basically it means that all the missing areaHarvested
+    ##are computed ad identity (where it is possible), except fot those flagged 
+    ##as (M,-) 
+  
     missingAreaHarvested =
-        is.na(dataCopy[[formulaParameters$areaHarvestedValue]])
+        is.na(dataCopy[[formulaParameters$areaHarvestedValue]])&
+        dataCopy[[formulaParameters$areaHarvestedMethodFlag]]!="-"
     nonMissingProduction =
         !is.na(dataCopy[[formulaParameters$productionValue]]) &
         dataCopy[[formulaParameters$productionObservationFlag]] != processingParameters$missingValueObservationFlag
@@ -74,5 +81,33 @@ balanceAreaHarvested = function(data,
     ## Assign method flag
     dataCopy[feasibleFilter & nonZeroYieldFilter, `:=`(c(formulaParameters$areaHarvestedMethodFlag),
                                   processingParameters$balanceMethodFlag)]
+    
+    
+    ## If  Prod or yield is (M,-) also areaHarvested should be flagged as (M,-)
+    ## Note that only the "missingAreaHarvested" are overwritten!! with (M,-)
+    
+    MdashProduction =  dataCopy[,get(formulaParameters$productionObservationFlag)==processingParameters$missingValueObservationFlag
+                                & get(formulaParameters$productionMethodFlag)=="-"]
+    blockFilterProd= MdashProduction & missingAreaHarvested
+    
+    dataCopy[blockFilterProd ,
+             `:=`(c(formulaParameters$areaHarvestedValue,formulaParameters$areaHarvestedObservationFlag,formulaParameters$areaHarvestedMethodFlag),
+                  list(NA_real_,processingParameters$missingValueObservationFlag, "-"))]
+    
+    
+    
+    
+    MdashYield= dataCopy[,get(formulaParameters$yieldObservationFlag)==processingParameters$missingValueObservationFlag
+                                 & get(formulaParameters$yieldMethodFlag)=="-"]
+    
+    blockFilterYield= MdashYield & missingAreaHarvested
+    
+    dataCopy[blockFilterYield ,
+             `:=`(c(formulaParameters$areaHarvestedValue,formulaParameters$areaHarvestedObservationFlag,formulaParameters$areaHarvestedMethodFlag),
+                  list(NA_real_,processingParameters$missingValueObservationFlag, "-"))]
+    
+    
+    
+    
     return(dataCopy)
 }

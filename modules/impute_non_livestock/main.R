@@ -215,12 +215,12 @@ for(iter in seq(selectedItemCode)){
             processedData =
                 extractedData %>%
                 preProcessing(data = .) %>%
-                expandYear(data = .,
-                           areaVar = processingParameters$areaVar,
-                           elementVar = processingParameters$elementVar,
-                           itemVar = processingParameters$itemVar,
-                           valueVar = processingParameters$valueVar,
-                           newYears= lastYear) %>%
+               ## expandYear(data = .,
+               ##            areaVar = processingParameters$areaVar,
+               ##            elementVar = processingParameters$elementVar,
+               ##            itemVar = processingParameters$itemVar,
+               ##            valueVar = processingParameters$valueVar,
+               ##            newYears= lastYear) %>%
                 denormalise(normalisedData = .,
                             denormaliseKey = "measuredElement",
                             fillEmptyRecords = TRUE) %>%
@@ -260,9 +260,27 @@ for(iter in seq(selectedItemCode)){
                       }
             
          ##imputationParameters$productionParams$plotImputation="prompt"
-  
+##------------------------------------------------------------------------------------------------------------------------  
+            processedData= normalise(processedData)
+            expandYear(data = processedData,
+                       areaVar = processingParameters$areaVar,
+                       elementVar = processingParameters$elementVar,
+                       itemVar = processingParameters$itemVar,
+                       valueVar = processingParameters$valueVar,
+                       newYears= lastYear)
+            
+            ##Before imputing the missing value it is necessary to exclude those cell in the last year corresponding to closed series 
+             
+          
+            
+            filter=processedData[timePointYears==(lastYear-1) & get(processingParameters$flagObservationVar)=="M" & get(processingParameters$flagMethodVar)=="-",
+                          c("geographicAreaM49", "measuredItemCPC",  "measuredElement"), with=FALSE]
             
             
+            addMDash=processedData[filter, , on=c("geographicAreaM49", "measuredItemCPC",  "measuredElement"),]
+            
+            
+##------------------------------------------------------------------------------------------------------------------------            
             ## Perform imputation
             imputed =
                 imputeProductionTriplet(
@@ -299,7 +317,7 @@ for(iter in seq(selectedItemCode)){
             
              
                 
-                imputed=  imputed[(flagMethod == "i" |
+                imputed= imputed[(flagMethod == "i" |
                                       (flagObservationStatus == "I" &
                                            flagMethod == "e")),]
                 
