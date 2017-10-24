@@ -429,14 +429,15 @@ for(iter in seq(selectedMeatCode)){
     animalStockImputationParameters$imputationMethodColumn=animalFormulaParameters$productionMethodFlag
     animalStockImputationParameters$byKey=c("geographicAreaM49","measuredItemCPC")
     animalStockImputationParameters$estimateNoData=TRUE
-    ## I am  modifing the animalStockImputationParameters in order to exclude some modeles 
-   
-     ## from the ensemble approach
-    animalStockImputationParameters$ensembleModels$defaultExp=NULL
-    animalStockImputationParameters$ensembleModels$defaultLogistic=NULL
-    animalStockImputationParameters$ensembleModels$defaultLoess=NULL
-    animalStockImputationParameters$ensembleModels$defaultSpline=NULL
-    animalStockImputationParameters$ensembleModels$defaultMars=NULL
+
+    
+  ## I am  modifing the animalStockImputationParameters in order to exclude some modeles 
+  ## from the ensemble approach, this attempt seems to be less robust that the complete ensemble approach
+  # animalStockImputationParameters$ensembleModels$defaultExp=NULL
+  # animalStockImputationParameters$ensembleModels$defaultLogistic=NULL
+  # animalStockImputationParameters$ensembleModels$defaultLoess=NULL
+  # animalStockImputationParameters$ensembleModels$defaultSpline=NULL
+  # animalStockImputationParameters$ensembleModels$defaultMars=NULL
  
     ##This code is to see the charts of the emsemble approach
     ##animalStockImputationParameters$plotImputation="prompt"
@@ -521,7 +522,8 @@ for(iter in seq(selectedMeatCode)){
     meatData =
         meatKey %>%
         GetData(key = .) %>%
-        preProcessing(data = .) 
+        preProcessing(data = .) %>%
+        removeNonProtectedFlag(.)
         
 
         meatData = denormalise(normalisedData = meatData,
@@ -530,51 +532,51 @@ for(iter in seq(selectedMeatCode)){
                       formula = meatFormulaTable)%>%
         processProductionDomain(data  = .,
                                 processingParameters = processingParameters,
-                                formulaParameters = meatFormulaParameters) %>%
+                                formulaParameters = meatFormulaParameters) 
         ## NOTE (Michael): The function name should be generalised, here we are
         ##                 actually removing animal slaughtered values that were
         ##                 previously copied from the animal (parent).
-        removeCalculated(data = .,
-                         valueVar =
-                             meatFormulaParameters$areaHarvestedValue,
-                         observationFlagVar =
-                             meatFormulaParameters$areaHarvestedObservationFlag,
-                         methodFlagVar =
-                             meatFormulaParameters$areaHarvestedMethodFlag,
-                         calculatedMethodFlag = "c") %>%
-        ## NOTE (Michael): Here we are removing manual estimates of animal
-        ##                 slaughtered of the meat. If there is to be any manual
-        ##                 estimates (which there shouldn't), it should be
-        ##                 inputted in the animal slaughtered element of the
-        ##                 animal (parent) commodity.
-        removeImputationEstimation(data = .,
-                                   valueVar =
+            meatData =removeCalculated(data = meatData,
+                                       valueVar =
                                        meatFormulaParameters$areaHarvestedValue,
-                                   observationFlagVar =
+                                       observationFlagVar =
                                        meatFormulaParameters$areaHarvestedObservationFlag,
-                                   methodFlagVar =
+                                       methodFlagVar =
                                        meatFormulaParameters$areaHarvestedMethodFlag,
-                                   imputationEstimationObservationFlag = "E",
-                                   imputationEstimationMethodFlag = "f ") %>%
-        ## NOTE (Michael): The function name should be generalised, here we are
-        ##                 actually removing values imported from the old
-        ##                 system. It was indicated that the values are old and
-        ##                 can be over-written.
-        removeCalculated(data = .,
-                         valueVar =
-                             meatFormulaParameters$areaHarvestedValue,
-                         observationFlagVar =
-                             meatFormulaParameters$areaHarvestedObservationFlag,
-                         methodFlagVar =
-                             meatFormulaParameters$areaHarvestedMethodFlag,
-                         calculatedMethodFlag = "-") %>%
-        ensureProductionInputs(data = .,
-                               processingParameters = processingParameters,
-                               formulaParameters = meatFormulaParameters,
-                               normalised = FALSE) %>%
-        normalise(denormalisedData = .,
-                  removeNonExistingRecords = FALSE)
-    
+                                       calculatedMethodFlag = "c") 
+##       ## NOTE (Michael): Here we are removing manual estimates of animal
+##       ##                 slaughtered of the meat. If there is to be any manual
+##       ##                 estimates (which there shouldn't), it should be
+##       ##                 inputted in the animal slaughtered element of the
+##       ##                 animal (parent) commodity.
+##       removeImputationEstimation(data = .,
+##                                  valueVar =
+##                                      meatFormulaParameters$areaHarvestedValue,
+##                                  observationFlagVar =
+##                                      meatFormulaParameters$areaHarvestedObservationFlag,
+##                                  methodFlagVar =
+##                                      meatFormulaParameters$areaHarvestedMethodFlag,
+##                                  imputationEstimationObservationFlag = "E",
+##                                  imputationEstimationMethodFlag = "f ") %>%
+##       ## NOTE (Michael): The function name should be generalised, here we are
+##       ##                 actually removing values imported from the old
+##       ##                 system. It was indicated that the values are old and
+##       ##                 can be over-written.
+##       removeCalculated(data = .,
+##                        valueVar =
+##                            meatFormulaParameters$areaHarvestedValue,
+##                        observationFlagVar =
+##                            meatFormulaParameters$areaHarvestedObservationFlag,
+##                        methodFlagVar =
+##                            meatFormulaParameters$areaHarvestedMethodFlag,
+##                        calculatedMethodFlag = "-") %>%
+##       ensureProductionInputs(data = .,
+##                              processingParameters = processingParameters,
+##                              formulaParameters = meatFormulaParameters,
+##                              normalised = FALSE) %>%
+##       normalise(denormalisedData = .,
+##                 removeNonExistingRecords = FALSE)
+    meatData=normalise(meatData)
     
     meatData=expandYear(data = meatData,
                areaVar = processingParameters$areaVar,
@@ -598,6 +600,11 @@ for(iter in seq(selectedMeatCode)){
                               imputationObservationFlag = "I",
                               parentToChild = TRUE)
     
+    
+    ensureCorrectTransfer(parentData = slaughteredParentData,
+                                       childData = slaughteredTransferedToMeatData,
+                                       mappingTable = animalMeatMappingShare,
+                                       returnData = FALSE)
     ## ---------------------------------------------------------------------
     message("Step 4: Perform Imputation on the Meat Triplet")
     
@@ -610,8 +617,8 @@ for(iter in seq(selectedMeatCode)){
                                      yieldCode = yieldCode)
         )
     
-    ##In the livestock module yield is represented by carcass weight
-    ##that is a 
+   ##In the livestock module yield is represented by carcass weight
+   ##that is a 
    #imputationParameters$yieldParams$ensembleModels$defaultExp=NULL
    #imputationParameters$yieldParams$ensembleModels$defaultLogistic=NULL
    #imputationParameters$yieldParams$ensembleModels$defaultLoess=NULL
@@ -664,12 +671,17 @@ for(iter in seq(selectedMeatCode)){
         
         ##Obtain a vector containing all the protected flag combinations
         ProtectedFlag = faoswsFlag::flagValidTable[Protected == TRUE,]
+        
         ProtectedFlag= ProtectedFlag[, combination := combineFlag(ProtectedFlag,"flagObservationStatus", "flagMethod")]
+        ##I have to exclude (M,-) from the protected flag combinations. Doing the checks for the carcass weight to 
+        ##free, otherwise I risk to open closed series:
+        ProtectedFlag=ProtectedFlag[combination!="(M, -)" ]
+        
         ProtectedFlagComb=ProtectedFlag[,combination]
         
+       
         
         ##Add the flag combination column for each element of the triplet
-        
         meatImputed[,meatFormParams$areaHarvestedFlagComb:=combineFlag(meatImputed,meatFormParams$areaHarvestedObservationFlag,meatFormParams$areaHarvestedMethodFlag)]
         meatImputed[,meatFormParams$productionFlagComb:=combineFlag(meatImputed,meatFormParams$productionObservationFlag,meatFormParams$productionMethodFlag)]
         meatImputed[,meatFormParams$yieldFlagComb:=combineFlag(meatImputed,meatFormParams$yieldObservationFlag,meatFormParams$yieldMethodFlag)]
@@ -702,13 +714,13 @@ for(iter in seq(selectedMeatCode)){
         
       meatImputed[allProtectedEl , ":="(
                   c(meatFormParams$yieldValue,meatFormParams$yieldObservationFlag,meatFormParams$yieldMethodFlag),
-                  list(NA,"M","u"))]
+                  list(NA_real_,"M","u"))]
         
 
       ##If we uses the trade there were the possiblity to have some negative values:manage this kind of situation
       meatImputed[get(meatFormParams$areaHarvestedValue)<0,":="(
                             c(meatFormParams$areaHarvestedValue,meatFormParams$areaHarvestedObservationFlag,meatFormParams$areaHarvestedMethodFlag),
-                            list(NA,"M","u"))]   
+                            list(NA_real_,"M","u"))]   
         
         ## Free the number of animal slaughtered in order to remove the values of carcass weight out of the feasible range
         ## This part should be improved thanks to more accurate and region-specific carcass weights, at the momento a data.table contained in
@@ -721,11 +733,11 @@ for(iter in seq(selectedMeatCode)){
         ##                            flagObservationStatus_measuredElement_5320!="I" &flagObservationStatus_measuredElement_5320!="E" ,]
         
         ## If protected SLAUGHTER and protected PRODUCTION do not produce feasible CARASS WEIGHT I free SLAUGHTERED
-        
+        ## Here it is not possible to overwrite a figure flagged as (M,-) because in this case the yield would be NA:
         meatImputed[yield> currentRange[, carcass_weight_max] |
                     yield< currentRange[, carcass_weight_min] ,":="(
                         c(meatFormParams$areaHarvestedValue,meatFormParams$areaHarvestedObservationFlag,meatFormParams$areaHarvestedMethodFlag),
-                            list(NA,"M","u"))]        
+                            list(NA_real_,"M","u"))]        
         
         ##I remove the flagComb columns that  have created just to make these checks
         meatImputed[,meatFormParams$areaHarvestedFlagComb:=NULL]
@@ -835,8 +847,8 @@ for(iter in seq(selectedMeatCode)){
                            slaughteredTransferedBackToAnimalData
                            )
         
-    ##Maybe it better to send back also the (M,u) series otherwise it seems they are not updated!
-    syncedData=syncedData[flagObservationStatus!="M" & flagMethod!="u",]
+   ##Maybe it better to send back also the (M,u) series otherwise it seems they are not updated!
+   syncedData=syncedData[(flagMethod!="u"),]
     ##write.csv(syncedData, paste0("C:/Users/Rosa/Desktop/LivestockFinalDebug/syncedData/",currentMeatItem,".csv"), row.names = FALSE)
     
     
@@ -867,10 +879,13 @@ for(iter in seq(selectedMeatCode)){
                  dataset = sessionKey@dataset,
                  data = syncedData)
         }
-        ## ---------------------------------------------------------------------         
-        sendOnCSVfile1=meatImputed
-        sendOnCSVfile1=meatImputed[flagObservationStatus=="M"]    
-        write.csv(sendOnCSVfile1,paste0("C:\\Users\\Rosa\\Desktop\\livestock\\LivestockValidation\\emptyCell+yield not recomputed\\NonImputedSeries",currentMeatItem, ".csv"),row.name=TRUE)
+       # ## ---------------------------------------------------------------------         
+       # sendOnCSVfile1=meatImputed
+       # sendOnCSVfile1=meatImputed[flagObservationStatus=="M",]  
+       # sendOnCSVfile1=sendOnCSVfile1[flagMethod!="-",]
+       # sendOnCSVfile1=unique(sendOnCSVfile1[,.(geographicAreaM49,measuredItemCPC,measuredElement)])
+       # 
+       # write.csv(sendOnCSVfile1,paste0("C:\\Users\\Rosa\\Desktop\\livestock\\LivestockValidation\\emptyCell+yield not recomputed\\NonImputedSeries",currentMeatItem, ".csv"),row.name=TRUE)
         ## --------------------------------------------------------------------- 
         
 
@@ -884,7 +899,8 @@ for(iter in seq(selectedMeatCode)){
     message("\tCheck the Carcass weights")    
         
     ##currentRange=rangeCarcassWeight[meat_item_cpc==currentMeatItem,] 
-    
+    ## I am checking only those series where the Value is different from NA:
+    ## it means that is cannot overwrite (M,-) figures in the carcass weigth series.
     meatData=meatImputed[!is.na(Value),]
     meatData=denormalise(meatData, denormaliseKey = "measuredElement")
     ##Select rows where the all the elements of the triplet are NOT NA
@@ -904,17 +920,10 @@ for(iter in seq(selectedMeatCode)){
     
     if(nrow(outOfRange)>0){
     numberOfOutOfRange= dim(outOfRange)
-    
-    
     message("Number out rows out of range: ", numberOfOutOfRange[1])
-    
-    
-    
-    
+
     ## Replace the values of carcass weight outside from the range with the extremes of the range
-    
-    
-    
+
     ## Impose the outOfRange values below the minimum equal to the
     ## lower extreme of the range and  the outOfRange Values up the max equal to upper extreme of the range
     
@@ -1016,9 +1025,6 @@ for(iter in seq(selectedMeatCode)){
                  data = outOfRangeSync)
     }else{ 
         
-       
-        
-        
         outOfRangeSync= postProcessing(data =  outOfRangeSync) 
         
         
@@ -1054,195 +1060,197 @@ for(iter in seq(selectedMeatCode)){
     ##computig other derivatives
     
  ## ---------------------------------------------------------------------    
-    sendOnCSVfile2=denormalise(syncedData, denormaliseKey = "measuredElement")
-    sendOnCSVfile2[,yieldTest:=(Value_measuredElement_5510/Value_measuredElement_5320)*1000]
-    sendOnCSVfile2=sendOnCSVfile2[yieldTest>Value_measuredElement_5417+0.5 | yieldTest<Value_measuredElement_5417-0.5 ]
-    write.csv(sendOnCSVfile2, paste0("C:\\Users\\Rosa\\Desktop\\livestock\\LivestockValidation\\emptyCell+yield not recomputed\\NonMAtchingYield",currentMeatItem, ".csv"),row.name=TRUE)
+   #sendOnCSVfile2=denormalise(syncedData, denormaliseKey = "measuredElement")
+   #sendOnCSVfile2[,yieldTest:=(Value_measuredElement_5510/Value_measuredElement_5320)*1000]
+   #sendOnCSVfile2=sendOnCSVfile2[yieldTest>Value_measuredElement_5417+0.5 | yieldTest<Value_measuredElement_5417-0.5 ]
+   #write.csv(sendOnCSVfile2, paste0("C:\\Users\\Rosa\\Desktop\\livestock\\LivestockValidation\\emptyCell+yield not recomputed\\NonMAtchingYield",currentMeatItem, ".csv"),row.name=TRUE)
     
  ## ---------------------------------------------------------------------    
- ##   if(length(currentNonMeatItem) > 0){
- ##       nonMeatImputedList=list()
- ##       
- ##       
- ##       message("Step 6: Transfer the slaughtered animal from the animal to all other child
- ##               commodities. This includes items such as offals, fats and hides and 
- ##               impute missing values for non-meat commodities.")
- ##       
- ##       
- ##       for(j in c(1:length(currentNonMeatItem))){
- ##           currentNonMeatItemLoop= currentNonMeatItem[j]
- ##           
- ##           ## NOTE (Michael): We need to test whether the commodity has non-meat
- ##           ##                 item. For example, the commodity "Other Rodent"
- ##           ##                 (02192.01) does not have non-meat derived products
- ##           ##                 and thus we do not need to perform the action.
- ##           
- ##           message("\tExtracting production triplet for item ",
- ##                   paste0(currentNonMeatItem, collapse = ", "),
- ##                   " (Non-meat Child)")
- ##           ## Get the non Meat formula
- ##           currentNonMeatFormulaTable =
- ##               getProductionFormula(itemCode = currentNonMeatItemLoop) %>%
- ##               removeIndigenousBiologicalMeat(formula = .)
- ##           
- ##           ## Build the non meat key
- ##           currentNonMeatKey = completeImputationKey
- ##           currentNonMeatKey@dimensions$measuredItemCPC@keys = currentNonMeatItemLoop
- ##           currentNonMeatKey@dimensions$measuredElement@keys =
- ##               with(currentNonMeatFormulaTable,
- ##                    unique(c(input, output, productivity)))
- ##           
- ##           ## Get the non meat data
- ##           ##
- ##           ## HACK (Michael): Current we don't test the input of non-meat item.
- ##           ##                 This is because the processProductionDomain and
- ##           ##                 ensureProductionInputs only work for triplets of a
- ##           ##                 single item. However, in the non-meat data, there are
- ##           ##                 more than one item and thus we are unable to process
- ##           ##                 and test them.
- ##           nonMeatData =
- ##               currentNonMeatKey %>%
- ##               GetData(key = .) %>%
- ##               preProcessing(data = .) %>%
- ##               expandYear(data = .,
- ##                          areaVar = processingParameters$areaVar,
- ##                          elementVar = processingParameters$elementVar,
- ##                          itemVar = processingParameters$itemVar,
- ##                          valueVar = processingParameters$valueVar,
- ##                          newYears=lastYear)%>%
- ##               denormalise(normalisedData = .,
- ##                           denormaliseKey = "measuredElement") %>%
- ##               createTriplet(data = .,
- ##                             formula = currentNonMeatFormulaTable) %>%
- ##               normalise(denormalisedData = .,
- ##                         removeNonExistingRecords = FALSE)
- ##           
- ##           
- ##           
- ##           ## NOTE (Michael): We need to test whether the commodity has non-meat
- ##           ##                 item. For example, the commodity "Other Rodent"
- ##           ##                 (02192.01) does not have non-meat derived products
- ##           ##                 and thus we do not need to perform the action.
- ##           message("Transfer Animal Slaughtered to All Child Commodities")
- ##           
- ##           nonMeatMappingTable =
- ##               animalMeatMappingTable[measuredItemChildCPC %in% currentNonMeatItemLoop, ]
- ##           
- ##           animalNonMeatMappingShare =
- ##               merge(nonMeatMappingTable, shareData, all.x = TRUE,
- ##                     by = c("measuredItemParentCPC", "measuredItemChildCPC"))
- ##           
- ##           
- ##           ## Syncronize  slaughteredTransferedBackToAnimalData to the slaughtered element associated to the 
- ##           ## non-meat item
- ##           
- ##           nonMeatData=removeImputationEstimation (nonMeatData, "Value", "flagObservationStatus", "flagMethod")
- ##           nonMeatData=removeImputationEstimation (nonMeatData, "Value", "flagObservationStatus", "flagMethod",imputationEstimationMethodFlag="i")
- ##           
- ##           slaughteredTransferToNonMeatChildData =
- ##               transferParentToChild(parentData = slaughteredTransferedBackToAnimalData,
- ##                                     childData = nonMeatData,
- ##                                     transferMethodFlag="c",
- ##                                     imputationObservationFlag = "I",
- ##                                     mappingTable = animalNonMeatMappingShare,
- ##                                     parentToChild = TRUE)
- ##           
- ##           ## Imputation without removing the non protected figures					
- ##           
- ##           
- ##           nonMeatImputationParameters=		
- ##               with(currentNonMeatFormulaTable,
- ##                    getImputationParameters(productionCode = output,
- ##                                            areaHarvestedCode = input,
- ##                                            yieldCode = productivity)
- ##               )
- ##           
- ##           
- ##           nonMeatMeatFormulaParameters =
- ##               with(currentNonMeatFormulaTable,
- ##                    productionFormulaParameters(datasetConfig = datasetConfig,
- ##                                                productionCode = output,
- ##                                                areaHarvestedCode = input,
- ##                                                yieldCode = productivity,
- ##                                                unitConversion = unitConversion)
- ##               )
- ##           
- ##           ## Some checks are requested because we cannot remove all the non protected values. 
- ##           ## 1. SLAUGHTERED: synchronized
- ##           ## 2. YIELD: to stabilize imputations I have to keep non-protected figures 
- ##           ## 3. Non-MEAT PRODUCTION: remove non-protected figures, computed ad IDENTITY (where possible), IMPUTED 
- ##           
- ##           ##slaughteredTransferToNonMeatChildDataPROD=slaughteredTransferToNonMeatChildData[measuredElement==nonMeatMeatFormulaParameters$productionCode]
- ##           ##slaughteredTransferToNonMeatChildDataNoPROD=slaughteredTransferToNonMeatChildData[(measuredElement!=nonMeatMeatFormulaParameters$productionCode)]
- ##           ##Remove non protected flags just for PRODUCTION
- ##           ##slaughteredTransferToNonMeatChildDataPROD =  removeNonProtectedFlag(slaughteredTransferToNonMeatChildDataPROD)
- ##           
- ##           
- ##           ##slaughteredTransferToNonMeatChildData=rbind(slaughteredTransferToNonMeatChildDataNoPROD,slaughteredTransferToNonMeatChildDataPROD)
- ##           
- ##           
- ##           
- ##           
- ##           
- ##           slaughteredTransferToNonMeatChildData=denormalise(slaughteredTransferToNonMeatChildData, denormalise="measuredElement",fillEmptyRecords=TRUE )
- ##           
- ##           
- ##           
- ##           ##remove those yields where both PRODUCTION and SLAUGHTERED are protected
- ##           
-##
- ##           slaughteredTransferToNonMeatChildData[!is.na(get(nonMeatMeatFormulaParameters$productionValue)), ":="(c(nonMeatMeatFormulaParameters$yieldValue,
- ##                                                                                           nonMeatMeatFormulaParameters$yieldObservationFlag,
- ##                                                                                           nonMeatMeatFormulaParameters$yieldMethodFlag), list(NA_real_,"M","u"))]
- ##           
- ##           
- ##           
- ##           nonMeatImputed = imputeProductionTriplet(data = slaughteredTransferToNonMeatChildData,
- ##                                                    processingParameters = processingParameters,
- ##                                                    imputationParameters = nonMeatImputationParameters,
- ##                                                    formulaParameters = nonMeatMeatFormulaParameters) 				
- ##           
- ##           nonMeatImputedList[[j]] = normalise(nonMeatImputed)
- ##           
- ##           slaughteredTransferToNonMeatChildData=rbindlist(nonMeatImputedList)
- ##           
- ##     
- ##           slaughteredTransferToNonMeatChildData=slaughteredTransferToNonMeatChildData[flagObservationStatus!="M", ]
- ##       
- ##       if(imputationTimeWindow=="lastThree")
- ##       {
- ##           
- ##           slaughteredTransferToNonMeatChildData=slaughteredTransferToNonMeatChildData[get(processingParameters$yearVar) %in% c(lastYear, lastYear-1, lastYear-2)]
- ##           slaughteredTransferToNonMeatChildData = removeInvalidDates(data =slaughteredTransferToNonMeatChildData, context = sessionKey)
- ##           slaughteredTransferToNonMeatChildData= postProcessing(data =  slaughteredTransferToNonMeatChildData) 
- ##           SaveData(domain = sessionKey@domain,
- ##                    dataset = sessionKey@dataset,
- ##                    data = slaughteredTransferToNonMeatChildData)
- ##       }else{ 
- ##           slaughteredTransferToNonMeatChildData= postProcessing(data =  slaughteredTransferToNonMeatChildData) 
- ##           slaughteredTransferToNonMeatChildData = removeInvalidDates(data =slaughteredTransferToNonMeatChildData, context = sessionKey)
- ##           slaughteredTransferToNonMeatChildData= postProcessing(data =  slaughteredTransferToNonMeatChildData) 
- ##           SaveData(domain = sessionKey@domain,
- ##                    dataset = sessionKey@dataset,
- ##                    data = slaughteredTransferToNonMeatChildData)
- ##       }
- ##       
- ##       
- ##       
- ##       
- ##       
- ##       }
- ##       
- ##   
- ##   }
-##
- ##   ## --------------------------------------------------------------------- 
- ##   
- ##   message("\nSynchronisation and Imputation Completed for\n",
- ##           "Animal Parent: ", currentAnimalItem, "\n",
- ##           "Meat Child: ", currentMeatItem, "\n",
- ##           "Non-meat Child: ", paste0(currentNonMeatItem, collapse = ", "), "\n",
- ##           rep("-", 80), "\n")
+    if(length(currentNonMeatItem) > 0){
+        nonMeatImputedList=list()
+        
+        
+        message("Step 6: Transfer the slaughtered animal from the animal to all other child
+                commodities. This includes items such as offals, fats and hides and 
+                impute missing values for non-meat commodities.")
+        
+        
+        for(j in c(1:length(currentNonMeatItem))){
+            currentNonMeatItemLoop= currentNonMeatItem[j]
+            
+            ## NOTE (Michael): We need to test whether the commodity has non-meat
+            ##                 item. For example, the commodity "Other Rodent"
+            ##                 (02192.01) does not have non-meat derived products
+            ##                 and thus we do not need to perform the action.
+            
+            message("\tExtracting production triplet for item ",
+                    paste0(currentNonMeatItem, collapse = ", "),
+                    " (Non-meat Child)")
+            ## Get the non Meat formula
+            currentNonMeatFormulaTable =
+                getProductionFormula(itemCode = currentNonMeatItemLoop) %>%
+                removeIndigenousBiologicalMeat(formula = .)
+            
+            ## Build the non meat key
+            currentNonMeatKey = completeImputationKey
+            currentNonMeatKey@dimensions$measuredItemCPC@keys = currentNonMeatItemLoop
+            currentNonMeatKey@dimensions$measuredElement@keys =
+                with(currentNonMeatFormulaTable,
+                     unique(c(input, output, productivity)))
+            
+            ## Get the non meat data
+            ##
+            ## HACK (Michael): Current we don't test the input of non-meat item.
+            ##                 This is because the processProductionDomain and
+            ##                 ensureProductionInputs only work for triplets of a
+            ##                 single item. However, in the non-meat data, there are
+            ##                 more than one item and thus we are unable to process
+            ##                 and test them.
+            nonMeatData =
+                currentNonMeatKey %>%
+                GetData(key = .) %>%
+                preProcessing(data = .) %>%
+                expandYear(data = .,
+                           areaVar = processingParameters$areaVar,
+                           elementVar = processingParameters$elementVar,
+                           itemVar = processingParameters$itemVar,
+                           valueVar = processingParameters$valueVar,
+                           newYears=lastYear)%>%
+                denormalise(normalisedData = .,
+                            denormaliseKey = "measuredElement") %>%
+                createTriplet(data = .,
+                              formula = currentNonMeatFormulaTable) %>%
+                normalise(denormalisedData = .,
+                          removeNonExistingRecords = FALSE)
+            
+            
+            
+            ## NOTE (Michael): We need to test whether the commodity has non-meat
+            ##                 item. For example, the commodity "Other Rodent"
+            ##                 (02192.01) does not have non-meat derived products
+            ##                 and thus we do not need to perform the action.
+            message("Transfer Animal Slaughtered to All Child Commodities")
+            
+            nonMeatMappingTable =
+                animalMeatMappingTable[measuredItemChildCPC %in% currentNonMeatItemLoop, ]
+            
+            animalNonMeatMappingShare =
+                merge(nonMeatMappingTable, shareData, all.x = TRUE,
+                      by = c("measuredItemParentCPC", "measuredItemChildCPC"))
+            
+            
+            ## Syncronize  slaughteredTransferedBackToAnimalData to the slaughtered element associated to the 
+            ## non-meat item
+            
+            nonMeatData=removeImputationEstimation (nonMeatData, "Value", "flagObservationStatus", "flagMethod")
+            nonMeatData=removeImputationEstimation (nonMeatData, "Value", "flagObservationStatus", "flagMethod",imputationEstimationMethodFlag="i")
+            
+            slaughteredTransferToNonMeatChildData =
+                transferParentToChild(parentData = slaughteredTransferedBackToAnimalData,
+                                      childData = nonMeatData,
+                                      transferMethodFlag="c",
+                                      imputationObservationFlag = "I",
+                                      mappingTable = animalNonMeatMappingShare,
+                                      parentToChild = TRUE)
+            
+            
+            
+            nonMeatImputationParameters=		
+                with(currentNonMeatFormulaTable,
+                     getImputationParameters(productionCode = output,
+                                             areaHarvestedCode = input,
+                                             yieldCode = productivity)
+                )
+            
+            
+            nonMeatMeatFormulaParameters =
+                with(currentNonMeatFormulaTable,
+                     productionFormulaParameters(datasetConfig = datasetConfig,
+                                                 productionCode = output,
+                                                 areaHarvestedCode = input,
+                                                 yieldCode = productivity,
+                                                 unitConversion = unitConversion)
+                )
+            
+            ## Imputation without removing all the non protected figures for Production and carcass weight!					
+            
+            
+            ## Some checks are requested because we cannot remove all the non protected values. 
+            ## 1. SLAUGHTERED: synchronized
+            ## 2. YIELD: to stabilize imputations I have to keep non-protected figures 
+            ## 3. Non-MEAT PRODUCTION: remove non-protected figures, computed as IDENTITY (where possible), IMPUTED 
+            
+            ##slaughteredTransferToNonMeatChildDataPROD=slaughteredTransferToNonMeatChildData[measuredElement==nonMeatMeatFormulaParameters$productionCode]
+            ##slaughteredTransferToNonMeatChildDataNoPROD=slaughteredTransferToNonMeatChildData[(measuredElement!=nonMeatMeatFormulaParameters$productionCode)]
+            ##Remove non protected flags just for PRODUCTION
+            ##slaughteredTransferToNonMeatChildDataPROD =  removeNonProtectedFlag(slaughteredTransferToNonMeatChildDataPROD)
+            
+            
+            ##slaughteredTransferToNonMeatChildData=rbind(slaughteredTransferToNonMeatChildDataNoPROD,slaughteredTransferToNonMeatChildDataPROD)
+            
+            
+            
+            
+            
+            slaughteredTransferToNonMeatChildData=denormalise(slaughteredTransferToNonMeatChildData, denormalise="measuredElement",fillEmptyRecords=TRUE )
+            
+            
+            
+            ##remove those yields where both PRODUCTION and SLAUGHTERED are protected
+            
+
+            slaughteredTransferToNonMeatChildData[!is.na(get(nonMeatMeatFormulaParameters$productionValue)), ":="(c(nonMeatMeatFormulaParameters$yieldValue,
+                                                                                            nonMeatMeatFormulaParameters$yieldObservationFlag,
+                                                                                            nonMeatMeatFormulaParameters$yieldMethodFlag), list(NA_real_,"M","u"))]
+            
+            
+            
+            nonMeatImputed = imputeProductionTriplet(data = slaughteredTransferToNonMeatChildData,
+                                                     processingParameters = processingParameters,
+                                                     imputationParameters = nonMeatImputationParameters,
+                                                     formulaParameters = nonMeatMeatFormulaParameters) 				
+            
+            nonMeatImputedList[[j]] = normalise(nonMeatImputed)
+            
+            slaughteredTransferToNonMeatChildData=rbindlist(nonMeatImputedList)
+            
+      
+            slaughteredTransferToNonMeatChildData=slaughteredTransferToNonMeatChildData[flagObservationStatus!="M", ]
+        
+        if(imputationTimeWindow=="lastThree")
+        {
+            
+            slaughteredTransferToNonMeatChildData=slaughteredTransferToNonMeatChildData[get(processingParameters$yearVar) %in% c(lastYear, lastYear-1, lastYear-2)]
+            slaughteredTransferToNonMeatChildData = removeInvalidDates(data =slaughteredTransferToNonMeatChildData, context = sessionKey)
+            slaughteredTransferToNonMeatChildData= postProcessing(data =  slaughteredTransferToNonMeatChildData) 
+            SaveData(domain = sessionKey@domain,
+                     dataset = sessionKey@dataset,
+                     data = slaughteredTransferToNonMeatChildData)
+        }else{ 
+            slaughteredTransferToNonMeatChildData= postProcessing(data =  slaughteredTransferToNonMeatChildData) 
+            slaughteredTransferToNonMeatChildData = removeInvalidDates(data =slaughteredTransferToNonMeatChildData, context = sessionKey)
+            slaughteredTransferToNonMeatChildData= postProcessing(data =  slaughteredTransferToNonMeatChildData) 
+            SaveData(domain = sessionKey@domain,
+                     dataset = sessionKey@dataset,
+                     data = slaughteredTransferToNonMeatChildData)
+        }
+        
+        
+        
+        
+        
+        }
+        
+    
+    }
+#
+    ## --------------------------------------------------------------------- 
+    
+    message("\nSynchronisation and Imputation Completed for\n",
+            "Animal Parent: ", currentAnimalItem, "\n",
+            "Meat Child: ", currentMeatItem, "\n",
+            "Non-meat Child: ", paste0(currentNonMeatItem, collapse = ", "), "\n",
+            rep("-", 80), "\n")
     
 }
 
