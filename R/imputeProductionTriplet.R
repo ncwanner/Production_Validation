@@ -80,11 +80,14 @@ imputeProductionTriplet = function(data,
         ## TODO (Michael): Remove imputed zero yield as yield can not be zero by
         ##                 definition. This probably should be handled in the
         ##                 imputation parameter.
-        dataCopy =
-            removeZeroYield(dataCopy,
-                            yieldValue = formulaParameters$yieldValue,
-                            yieldObsFlag = formulaParameters$yieldObservationFlag,
-                            yieldMethodFlag = formulaParameters$yieldMethodFlag)
+        ## Francesca: there is no reson why the zero yields have to be deleted!!
+        ## It is the opposite: team B/C do not want to have yield when there is no production
+        ## no areaHarvested!
+        ##dataCopy =
+        ##    removeZeroYield(dataCopy,
+        ##                    yieldValue = formulaParameters$yieldValue,
+        ##                    yieldObsFlag = formulaParameters$yieldObservationFlag,
+        ##                    yieldMethodFlag = formulaParameters$yieldMethodFlag)
         n.missYield2 = length(which(is.na(
             dataCopy[[formulaParameters$yieldValue]])))
         message("Number of values imputed: ", n.missYield - n.missYield2)
@@ -148,7 +151,9 @@ imputeProductionTriplet = function(data,
          dataCopy = imputeVariable(data = dataCopy,
                        imputationParameters = areaHarvestedImputationParameters)
         
-        
+    ## It was this part that caused the double "i" in methodFlag in the same triplet:
+    ## beacuse I was deliting those non-protected yields even if I had used them to compute
+    ## as identity the other variables.   
     ##   dataCopy[!is.na(get(formulaParameters$areaHarvestedValue)) &
     ##            !is.na(get(formulaParameters$productionValue)) &
     ##            !(combineFlag(.SD,
@@ -165,6 +170,8 @@ imputeProductionTriplet = function(data,
                          formulaParameters = formulaParameters)
         dataCopy = imputeVariable(data = dataCopy,
                        imputationParameters = yieldImputationParameters)
+        
+       
     } ## End of HACK.
     n.missAreaHarvested2 =
         length(which(is.na(
