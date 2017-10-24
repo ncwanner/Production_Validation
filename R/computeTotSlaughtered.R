@@ -67,6 +67,8 @@ if(sum(c(tradeParameters[[1]],tradeParameters[[4]]) %in% colnames(data))!=0){
 
 
 data[takeOffRate==Inf,takeOffRate:=NA]
+
+##In case we use trade: that was not validated yet
 data=data[takeOffRate<0, takeOffRate:=NA]
 
 
@@ -108,11 +110,11 @@ takeOffImputationParamenters$estimateNoData=FALSE
 ##takeOffImputationParamenters$ensembleModels$defaultLm=NULL
 
 
-
-data=removeNoInfo(data,"takeOffRate", "TakeOffFlagObservationStatus",
-                        byKey = c("geographicAreaM49", "measuredItemCPC" ))
-
 takeOffImputed=data[,.(geographicAreaM49, measuredItemCPC, timePointYears,takeOffRate, TakeOffFlagObservationStatus, TakeOffRateFlagMethod)]
+
+takeOffImputed=removeNoInfo(takeOffImputed,"takeOffRate", "TakeOffFlagObservationStatus",
+                  byKey = c("geographicAreaM49", "measuredItemCPC" ))
+
 
 takeOffImputed=imputeVariable(takeOffImputed,
                               imputationParameters=takeOffImputationParamenters)
@@ -122,8 +124,10 @@ data[,takeOffRate:=NULL]
 data[,TakeOffFlagObservationStatus:=NULL]
 data[,TakeOffRateFlagMethod:=NULL]
 
+##When I make the merge I can recuperate those series when the slaughtered existes but there are no info for stock numbers (e.g. :Pacific Is)
+
 takeOffImputed=merge(data,takeOffImputed,
-                 by=c("geographicAreaM49", "measuredItemCPC", "timePointYears"))
+                 by=c("geographicAreaM49", "measuredItemCPC", "timePointYears"), all.x = TRUE)
 
 
 ##compute the new slaughtered
@@ -145,15 +149,22 @@ takeOffImputed[,newSlaughtered:=(takeOffRate * get(animalFormulaParameters$produ
 
 
 ##OverWrite the newSlaughter into the missing value of the slaughterd column:
-takeOffImputed[is.na(get(animalFormulaParameters$areaHarvestedValue)) & !is.na(newSlaughtered),
+##Be careful to not overwrite slaugheter that were (M,-)
+takeOffImputed[is.na(get(animalFormulaParameters$areaHarvestedValue)) &
+                   !is.na(newSlaughtered)&
+                   animalFormulaParameters$areaHarvestedMethodFlag!="-",
                animalFormulaParameters$areaHarvestedObservationFlag:="I"]
 
 
-takeOffImputed[is.na(get(animalFormulaParameters$areaHarvestedValue)) & !is.na(newSlaughtered),
+takeOffImputed[is.na(get(animalFormulaParameters$areaHarvestedValue)) &
+                   !is.na(newSlaughtered)&
+                   animalFormulaParameters$areaHarvestedMethodFlag!="-",
                animalFormulaParameters$areaHarvestedMethodFlag:="e"]
 
 
-takeOffImputed[is.na(get(animalFormulaParameters$areaHarvestedValue)) & !is.na(newSlaughtered),
+takeOffImputed[is.na(get(animalFormulaParameters$areaHarvestedValue)) &
+                   !is.na(newSlaughtered)&
+                   animalFormulaParameters$areaHarvestedMethodFlag!="-",
                animalFormulaParameters$areaHarvestedValue:=newSlaughtered]
 
 slaughteredParentData=takeOffImputed[,c("geographicAreaM49",
