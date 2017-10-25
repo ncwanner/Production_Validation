@@ -524,13 +524,22 @@ for(iter in seq(selectedMeatCode)){
         GetData(key = .) %>%
         preProcessing(data = .) %>%
         removeNonProtectedFlag(.)
-        
 
         meatData = denormalise(normalisedData = meatData,
-                    denormaliseKey = "measuredElement") %>%
-        createTriplet(data = .,
-                      formula = meatFormulaTable)%>%
-        processProductionDomain(data  = .,
+                    denormaliseKey = "measuredElement") 
+     
+        ## We have to remove (M,-) from the carcass weight: since carcass weght is usually computed ad identity,
+        ## it results inutial that it exists a last available protected value different from NA and when we perform
+        ## the function expandYear we risk to block the whole time series. I replace all the (M,-) carcass wight with
+        ## (M,-) the triplet will be sychronized by the imputeProductionTriplet function.
+        
+        meatData[get(meatFormulaParameters$yieldObservationFlag)==processingParameters$missingValueObservationFlag,
+                 ":="(c(meatFormulaParameters$yieldMethodFlag),list(processingParameters$missingValueMethodFlag)) ]
+        
+        
+        meatData= createTriplet(data = meatData,
+                      formula = meatFormulaTable)
+        meatData= processProductionDomain(data  = meatData,
                                 processingParameters = processingParameters,
                                 formulaParameters = meatFormulaParameters) 
         ## NOTE (Michael): The function name should be generalised, here we are
@@ -1002,6 +1011,8 @@ for(iter in seq(selectedMeatCode)){
     slaughteredToBeChecked2=postProcessing(slaughteredTransferedBackToAnimalDataC)
     slaughteredToBeChecked2=removeInvalidDates(slaughteredToBeChecked2 ,context = sessionKey)
     slaughteredToBeChecked2=ensureProtectedData(slaughteredToBeChecked2, getInvalidData = TRUE)
+    
+    ##Select just those figures flagged as official, semiofficial
     slaughteredToBeChecked2=slaughteredToBeChecked2[flagObservationStatus %in% c("","T")]
     
     
@@ -1075,7 +1086,7 @@ for(iter in seq(selectedMeatCode)){
                 impute missing values for non-meat commodities.")
         
         
-        for(j in c(1:length(currentNonMeatItem))){
+        for(j in seq(currentNonMeatItem)){
             currentNonMeatItemLoop= currentNonMeatItem[j]
             
             ## NOTE (Michael): We need to test whether the commodity has non-meat
@@ -1084,7 +1095,7 @@ for(iter in seq(selectedMeatCode)){
             ##                 and thus we do not need to perform the action.
             
             message("\tExtracting production triplet for item ",
-                    paste0(currentNonMeatItem, collapse = ", "),
+                    paste0(currentNonMeatItemLoop, collapse = ", "),
                     " (Non-meat Child)")
             ## Get the non Meat formula
             currentNonMeatFormulaTable =
@@ -1098,6 +1109,16 @@ for(iter in seq(selectedMeatCode)){
                 with(currentNonMeatFormulaTable,
                      unique(c(input, output, productivity)))
             
+            
+            nonMeatMeatFormulaParameters =
+                with(currentNonMeatFormulaTable,
+                     productionFormulaParameters(datasetConfig = datasetConfig,
+                                                 productionCode = output,
+                                                 areaHarvestedCode = input,
+                                                 yieldCode = productivity,
+                                                 unitConversion = unitConversion)
+                )
+            
             ## Get the non meat data
             ##
             ## HACK (Michael): Current we don't test the input of non-meat item.
@@ -1110,25 +1131,31 @@ for(iter in seq(selectedMeatCode)){
                 currentNonMeatKey %>%
                 GetData(key = .) %>%
                 preProcessing(data = .) %>%
-                expandYear(data = .,
-                           areaVar = processingParameters$areaVar,
-                           elementVar = processingParameters$elementVar,
-                           itemVar = processingParameters$itemVar,
-                           valueVar = processingParameters$valueVar,
-                           newYears=lastYear)%>%
                 denormalise(normalisedData = .,
                             denormaliseKey = "measuredElement") %>%
                 createTriplet(data = .,
-                              formula = currentNonMeatFormulaTable) %>%
-                normalise(denormalisedData = .,
+                              formula = currentNonMeatFormulaTable) 
+            
+            
+            ## We have to remove (M,-) from the carcass weight: since carcass weght is usually computed ad identity,
+            ## it results inutial that it exists a last available protected value different from NA and when we perform
+            ## the function expandYear we risk to block the whole time series. I replace all the (M,-) carcass wight with
+            ## (M,-) the triplet will be sychronized by the imputeProductionTriplet function.
+            
+            nonMeatData[get(nonMeatMeatFormulaParameters$yieldObservationFlag)==processingParameters$missingValueObservationFlag,
+                     ":="(c(nonMeatMeatFormulaParameters$yieldMethodFlag),list(processingParameters$missingValueMethodFlag)) ]
+            
+            
+            nonMeatData = normalise(denormalisedData =nonMeatData,
                           removeNonExistingRecords = FALSE)
             
-            
-            
-            ## NOTE (Michael): We need to test whether the commodity has non-meat
-            ##                 item. For example, the commodity "Other Rodent"
-            ##                 (02192.01) does not have non-meat derived products
-            ##                 and thus we do not need to perform the action.
+            nonMeatData= expandYear(data = nonMeatData,
+                                    areaVar = processingParameters$areaVar,
+                                    elementVar = processingParameters$elementVar,
+                                    itemVar = processingParameters$itemVar,
+                                    valueVar = processingParameters$valueVar,
+                                    newYears=lastYear)
+           
             message("Transfer Animal Slaughtered to All Child Commodities")
             
             nonMeatMappingTable =
@@ -1139,12 +1166,16 @@ for(iter in seq(selectedMeatCode)){
                       by = c("measuredItemParentCPC", "measuredItemChildCPC"))
             
             
-            ## Syncronize  slaughteredTransferedBackToAnimalData to the slaughtered element associated to the 
-            ## non-meat item
+            ## Delete those figures previously           
+            ## In this tipology of commodity are still present old FAOSTAT imputations flagged as (I,-).
+            ## At the moment the best we can is to keep those figures as protected.
+            ## We delete the figures flagged ad (I,e) coming from previus run of themodule:
             
             nonMeatData=removeImputationEstimation (nonMeatData, "Value", "flagObservationStatus", "flagMethod")
-            nonMeatData=removeImputationEstimation (nonMeatData, "Value", "flagObservationStatus", "flagMethod",imputationEstimationMethodFlag="i")
+            nonMeatData=removeCalculated(nonMeatData, "Value", "flagObservationStatus", "flagMethod")
             
+            ## Syncronize  slaughteredTransferedBackToAnimalData to the slaughtered element associated to the 
+            ## non-meat item
             slaughteredTransferToNonMeatChildData =
                 transferParentToChild(parentData = slaughteredTransferedBackToAnimalData,
                                       childData = nonMeatData,
@@ -1163,15 +1194,6 @@ for(iter in seq(selectedMeatCode)){
                 )
             
             
-            nonMeatMeatFormulaParameters =
-                with(currentNonMeatFormulaTable,
-                     productionFormulaParameters(datasetConfig = datasetConfig,
-                                                 productionCode = output,
-                                                 areaHarvestedCode = input,
-                                                 yieldCode = productivity,
-                                                 unitConversion = unitConversion)
-                )
-            
             ## Imputation without removing all the non protected figures for Production and carcass weight!					
             
             
@@ -1184,27 +1206,25 @@ for(iter in seq(selectedMeatCode)){
             ##slaughteredTransferToNonMeatChildDataNoPROD=slaughteredTransferToNonMeatChildData[(measuredElement!=nonMeatMeatFormulaParameters$productionCode)]
             ##Remove non protected flags just for PRODUCTION
             ##slaughteredTransferToNonMeatChildDataPROD =  removeNonProtectedFlag(slaughteredTransferToNonMeatChildDataPROD)
-            
-            
             ##slaughteredTransferToNonMeatChildData=rbind(slaughteredTransferToNonMeatChildDataNoPROD,slaughteredTransferToNonMeatChildDataPROD)
-            
-            
-            
-            
-            
+   
             slaughteredTransferToNonMeatChildData=denormalise(slaughteredTransferToNonMeatChildData, denormalise="measuredElement",fillEmptyRecords=TRUE )
             
             
+            ## In addition, since the number of animal slaugheterd might have changed, we delete also  the 
+            ## the figures previously calculated ad identity (flagMethod="i") if also production is available
             
-            ##remove those yields where both PRODUCTION and SLAUGHTERED are protected
+            ##remove those yields where both PRODUCTION and SLAUGHTERED are not NA:
             
-
-            slaughteredTransferToNonMeatChildData[!is.na(get(nonMeatMeatFormulaParameters$productionValue)), ":="(c(nonMeatMeatFormulaParameters$yieldValue,
+            noNAProd=slaughteredTransferToNonMeatChildData[,!is.na(get(nonMeatMeatFormulaParameters$productionValue))]
+            noNASlaughterd=slaughteredTransferToNonMeatChildData[,!is.na(get(nonMeatMeatFormulaParameters$areaHarvestedValue))]
+            filter= noNAProd & noNASlaughterd
+            
+            slaughteredTransferToNonMeatChildData[filter, ":="(c(nonMeatMeatFormulaParameters$yieldValue,
                                                                                             nonMeatMeatFormulaParameters$yieldObservationFlag,
                                                                                             nonMeatMeatFormulaParameters$yieldMethodFlag), list(NA_real_,"M","u"))]
             
-            
-            
+ 
             nonMeatImputed = imputeProductionTriplet(data = slaughteredTransferToNonMeatChildData,
                                                      processingParameters = processingParameters,
                                                      imputationParameters = nonMeatImputationParameters,
@@ -1215,7 +1235,7 @@ for(iter in seq(selectedMeatCode)){
             slaughteredTransferToNonMeatChildData=rbindlist(nonMeatImputedList)
             
       
-            slaughteredTransferToNonMeatChildData=slaughteredTransferToNonMeatChildData[flagObservationStatus!="M", ]
+            slaughteredTransferToNonMeatChildData=slaughteredTransferToNonMeatChildData[flagMethod!="u", ]
         
         if(imputationTimeWindow=="lastThree")
         {
@@ -1253,11 +1273,6 @@ for(iter in seq(selectedMeatCode)){
             rep("-", 80), "\n")
     
 }
-
-
-
-
-
 
 
 
