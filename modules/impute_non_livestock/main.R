@@ -279,6 +279,23 @@ for(iter in seq(selectedItemCode)){
                     formulaParameters = formulaParameters,
                     imputationParameters = imputationParameters)
 
+##------------------------------------------------------------------------------------------------------------------------                                    
+          ## By now we do not have touched those situation in which production or areaHarvested are ZERO:
+          ## we may have some yield different from zero even if productio or areaHarvested or the both are ZERO.
+          ##
+          ## I apply this modification to non zero yield only.
+          ##     
+            zeroProd=imputed[,get(formulaParameters$productionValue)==0 ] 
+            zeroreHArv=imputed[,get(formulaParameters$areaHarvestedValue)==0] 
+            
+            nonZeroYield=imputed[,   (get(formulaParameters$yieldValue)!=0)]
+            filter=(zeroProd|zeroreHArv) & nonZeroYield
+            
+            imputed[filter, ":="(c(formulaParameters$yieldValue),list(0))]
+            imputed[filter, ":="(c(formulaParameters$yieldObservationFlag),aggregateObservationFlag(get(formulaParameters$productionObservationFlag)
+                                                                                                  ,get(formulaParameters$areaHarvestedObservationFlag)))]
+            imputed[filter, ":="(c(formulaParameters$yieldMethodFlag),list(processingParameters$balanceMethodFlag))]
+##------------------------------------------------------------------------------------------------------------------------                       
             
           ## Filter timePointYears for which it has been requested to compute imputations
           ## timeWindow= c(as.numeric(swsContext.computationParams$startYear):as.numeric(swsContext.computationParams$endYear))
@@ -297,6 +314,8 @@ for(iter in seq(selectedItemCode)){
                                                  normalised = FALSE)%>%
                          normalise(.) 
                 
+            ## By now we do not have touched those situa    
+                
                 
                 
                 
@@ -305,14 +324,16 @@ for(iter in seq(selectedItemCode)){
                 ##                 saved back to the database.
                 ## Also the new (M,-) data have to be sent back, series must be blocked!!!
 
-                blokedValues=imputed[flagObservationStatus=="M" & flagMethod=="-"]
+               
                              
                 
                 imputed= imputed[(flagMethod == "i" |
                                       (flagObservationStatus == "I" &
-                                           flagMethod == "e")),]
+                                           flagMethod == "e"))|
+                                     (flagObservationStatus == "M" &
+                                          flagMethod == "-"),]
                 
-                imputed= rbind(imputed,blokedValues)
+               
                 
                 ##I should send to the data.base also the (M,-) value added in the last year in order to highlight that the series is closed.
                 
