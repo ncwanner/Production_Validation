@@ -283,7 +283,10 @@ for(iter in seq(selectedItemCode)){
           ## By now we do not have touched those situation in which production or areaHarvested are ZERO:
           ## we may have some yield different from zero even if productio or areaHarvested or the both are ZERO.
           ##
-          ## I apply this modification to non zero yield only.
+          ## I apply this modification to:
+          ##    1) Production = zero
+          ##    2) or AreaHarveste= zero
+          ##    3) and non zero yield only.
           ##     
             zeroProd=imputed[,get(formulaParameters$productionValue)==0 ] 
             zeroreHArv=imputed[,get(formulaParameters$areaHarvestedValue)==0] 
