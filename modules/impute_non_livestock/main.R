@@ -262,23 +262,13 @@ for(iter in seq(selectedItemCode)){
          ##imputationParameters$productionParams$plotImputation="prompt"
 ##------------------------------------------------------------------------------------------------------------------------  
             processedData= normalise(processedData)
-            expandYear(data = processedData,
+            processedData=expandYear(data = processedData,
                        areaVar = processingParameters$areaVar,
                        elementVar = processingParameters$elementVar,
                        itemVar = processingParameters$itemVar,
                        valueVar = processingParameters$valueVar,
                        newYears= lastYear)
-            
-            ##Before imputing the missing value it is necessary to exclude those cell in the last year corresponding to closed series 
-             
-          
-            
-            filter=processedData[timePointYears==(lastYear-1) & get(processingParameters$flagObservationVar)=="M" & get(processingParameters$flagMethodVar)=="-",
-                          c("geographicAreaM49", "measuredItemCPC",  "measuredElement"), with=FALSE]
-            
-            
-            addMDash=processedData[filter, , on=c("geographicAreaM49", "measuredItemCPC",  "measuredElement"),]
-            
+            processedData= denormalise(processedData, denormaliseKey = "measuredElement" )
             
 ##------------------------------------------------------------------------------------------------------------------------            
             ## Perform imputation
@@ -313,15 +303,18 @@ for(iter in seq(selectedItemCode)){
                 ## NOTE (Michael): Only data with method flag "i" for balanced,
                 ##                 or flag combination (I, e) for imputed are
                 ##                 saved back to the database.
+                ## Also the new (M,-) data have to be sent back, series must be blocked!!!
 
-            
-             
+                blokedValues=imputed[flagObservationStatus=="M" & flagMethod=="-"]
+                             
                 
                 imputed= imputed[(flagMethod == "i" |
                                       (flagObservationStatus == "I" &
                                            flagMethod == "e")),]
                 
-        
+                imputed= rbind(imputed,blokedValues)
+                
+                ##I should send to the data.base also the (M,-) value added in the last year in order to highlight that the series is closed.
                 
                 if(imputationTimeWindow=="lastThree")
                 {
@@ -358,7 +351,7 @@ for(iter in seq(selectedItemCode)){
 
 if(nrow(imputationResult) > 0){
     ## Initiate email
-    from = "I_am_a_magical_unicorn@sebastian_quotes.com"
+    from = "sws@fao.org"
     to = swsContext.userEmail
     subject = "Imputation Result"
     body = paste0("The following items failed, please inform the maintainer "
