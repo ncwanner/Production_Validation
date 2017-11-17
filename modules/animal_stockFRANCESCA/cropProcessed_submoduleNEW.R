@@ -17,7 +17,7 @@ suppressMessages({
     if(CheckDebug()){
         
         library(faoswsModules)
-        SETTINGS = ReadSettings("sws.yml")
+        SETTINGS = ReadSettings("modules/animal_stockFRANCESCA/sws.yml")
         
         ## If you're not on the system, your settings will overwrite any others
         R_SWS_SHARE_PATH = SETTINGS[["share"]]
@@ -33,6 +33,8 @@ suppressMessages({
 sessionKey = swsContext.datasets[[1]]
 oldData=FALSE
 
+#lastYear=
+
 
 load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/zeroWeight.RData")
 
@@ -44,7 +46,11 @@ completeImputationKey@dimensions$timePointYears@keys=c("2000","2001","2002",
                                                        "2003","2004","2005",
                                                        "2006","2007","2008",
                                                        "2009","2010","2011",
-                                                       "2012","2013")
+                                                       "2012","2013", "2014", "2015")
+
+
+
+completeImputationKey@dimensions$geographicAreaM49@keys=c("454", "686", "1248", "360", "392", "484")
 
 ##-------------------------------------------------------------------------------------------------------------------------------------
 ## Get default 
@@ -61,10 +67,27 @@ secondLoop=ReadDatatable("processed_item")[multiple_level==TRUE,measured_item_cp
 #       "22222.01", "22211", "22221.01", "22130.02", "22230.04", "22222.02", "22242.02", "22130.03", "22221.02", "22242.01", "22252",
 #       "22230.01", "22249.02")
 ##-------------------------------------------------------------------------------------------------------------------------------------
-tree=getTree()
+
+##  At the moment I am loading the new tree (made by Cristina) that I have locally stored in a local subfolder
+##  tree= load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\tree13112017.RData")
+##  I have internlly modified the getTree function in order to pull the tree from my local folder instead of from the SWS:
+
+##tree=getTree()
+ 
+
+##load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeTest6countries00_15_final.RData") 
+load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeToUploadSWS_v02.RData") 
+
+levels=findProcessingLevel(tree,"measuredItemParentCPC","measuredItemChildCPC")
+setnames(levels, "temp","measuredItemParentCPC")
+tree=merge(tree, levels, by="measuredItemParentCPC", all.x=TRUE)
+
+    
 setnames(tree,"timePointYearsSP","timePointYears")
 
-## Select all the commodity involved
+## Select all the commodity involved (what I need is just the dependence parent-child,
+##all the possibilities, no country-year specific)
+
 treeRestricted=tree[,.(measuredItemParentCPC,measuredItemChildCPC,processingLevel)]
 treeRestricted=treeRestricted[with(treeRestricted, order(measuredItemChildCPC))]
 treeRestricted=treeRestricted[!duplicated(treeRestricted)]
@@ -78,17 +101,17 @@ primaryInvolvedDescendents=getChildren( commodityTree = treeRestricted,
                                         childColname = "measuredItemChildCPC",
                                         topNodes =primaryInvolved )
 ##-------------------------------------------------------------------------------------------------------------------------------------
-# Get SUA data
+# Get SUA data: all components stored in the SWS
 
-if(oldData){
-    load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/dataoldSua.RData")
-    data=data[measuredElementSuaFbs!="foodManufacturing", ]
-}else{
-    load(file.path("C:/Users/Rosa/Favorites/Github/sws_project/StandardizationFiles/localFile", "data_AllTradeFAOSTAT.RData"))
-}
+##  if(oldData){
+##      load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/dataoldSua.RData")
+##      data=data[measuredElementSuaFbs!="foodManufacturing", ]
+##  }else{
+##      load(file.path("C:/Users/Rosa/Favorites/Github/sws_project/StandardizationFiles/localFile","dataTEST6_v02.RData"))
+##  }
 
-### Get SUA data from PRODUCTION
-##start.time <- Sys.time()
+##  # Get SUA data from PRODUCTION
+##  start.time <- Sys.time()
 ##  ##areaKeys = GetCodeList(domain = "suafbs", dataset = "sua", "geographicAreaM49")
 ##  areaKeys = completeImputationKey@dimensions$geographicAreaM49@keys
 ##  timeKeys = completeImputationKey@dimensions$timePointYears@keys
@@ -144,95 +167,157 @@ if(oldData){
 ##   
 ##   time.taken <- end.time - start.time
 ##------------------------------------------------------------------------------------------------------------
-##   # Get SUA data from QA
-##   
-##  
-##   
-##   start.time <- Sys.time()
-##   ##areaKeys = GetCodeList(domain = "suafbs", dataset = "sua", "geographicAreaM49")
-##   areaKeys = completeImputationKey@dimensions$geographicAreaM49@keys
-##   timeKeys = completeImputationKey@dimensions$timePointYears@keys
-##   elemKeys = GetCodeTree(domain = "suafbs", dataset = "sua_unbalanced", "measuredElementSuaFbs")
-##   
-##   #    code              description
-##   # 1:   51                   Output
-##   # 2:   61              Inflow (Qt)
-##   # 3:   71 Variation Intial Exstenc
-##   # 4:   91             Outflow (Qt)
-##   # 5:  101     Use For Animals (Qt)
-##   # 6:  111     Use For Same Product
-##   # 7:  121                   Losses
-##   # 8:  131 Reemployment Same Sector  (remove it)
-##   
-##   fs_elements <- c("51", "61", "71", "91", "101", "111", "121", "131")
-##   
-##   elemKeys = elemKeys[parent %in% fs_elements,
-##                       paste0(children, collapse = ", ")]
-##   
-##   # code                  description
-##   # 1: 5141                     Food [t]
-##   # 2: 5164 Tourist consumption [1000 t]
-##   # 3: 5165     Industrial uses [1000 t]
-##   
-##   
-##   sws_elements <- c("5141", "5164", "5165")
-##   
-##   elemKeys = c(strsplit(elemKeys, ", ")[[1]], sws_elements)
-##   ##itemKeys = GetCodeList(domain = "suafbs", dataset = "sua", "measuredItemFbsSua")
-##   itemKeys = primaryInvolvedDescendents[primaryInvolvedDescendents!="2351f"]
-##   
-##   key = DatasetKey(domain = "suafbs", dataset = "sua_unbalanced", dimensions = list(
-##       geographicAreaM49 = Dimension(name = "geographicAreaM49", keys = areaKeys),
-##       measuredElementSuaFbs = Dimension(name = "measuredElementSuaFbs", keys = elemKeys),
-##       measuredItemFbsSua = Dimension(name = "measuredItemFbsSua", keys = itemKeys),
-##       timePointYears = Dimension(name = "timePointYears", keys = timeKeys)
-##   ))
-##   
-##   message("Reading SUA data...")
-##   
-##   ## This gets the values for all countries, all elements which are children of the
-##   ## element classes listed above, all CPCs in suafbs and all years between those
-##   ## specified by the user.
-##   
-##   ##!! 3 warnings about things that need to be changed !!#
-##   data = elementCodesToNames(data = GetData(key), itemCol = "measuredItemFbsSua",
-##                              elementCol = "measuredElementSuaFbs")
-##   setnames(data, "measuredItemFbsSua", "measuredItemFbsSua")
-##   
-##   
-##   end.time <- Sys.time()
-##   
-##   time.taken <- end.time - start.time
+
+   # Get SUA data from QA
+   
+  
+   
+   start.time <- Sys.time()
+   ##areaKeys = GetCodeList(domain = "suafbs", dataset = "sua", "geographicAreaM49")
+   areaKeys = completeImputationKey@dimensions$geographicAreaM49@keys
+   timeKeys = completeImputationKey@dimensions$timePointYears@keys
+   elemKeys = GetCodeTree(domain = "suafbs", dataset = "sua_unbalanced", "measuredElementSuaFbs")
+   
+   #    code              description
+   # 1:   51                   Output
+   # 2:   61              Inflow (Qt)
+   # 3:   71 Variation Intial Exstenc
+   # 4:   91             Outflow (Qt)
+   # 5:  101     Use For Animals (Qt)
+   # 6:  111     Use For Same Product
+   # 7:  121                   Losses
+   # 8:  131 Reemployment Same Sector  (remove it)
+   
+   fs_elements <- c("51", "61", "71", "91", "101", "111", "121", "131")
+   
+   elemKeys = elemKeys[parent %in% fs_elements,
+                       paste0(children, collapse = ", ")]
+   
+   # code                  description
+   # 1: 5141                     Food [t]
+   # 2: 5164 Tourist consumption [1000 t]
+   # 3: 5165     Industrial uses [1000 t]
+   
+   
+   sws_elements <- c("5141", "5164", "5165")
+   
+   elemKeys = c(strsplit(elemKeys, ", ")[[1]], sws_elements)
+   ##itemKeys = GetCodeList(domain = "suafbs", dataset = "sua", "measuredItemFbsSua")
+   itemKeys = primaryInvolvedDescendents[primaryInvolvedDescendents!="2351f"]
+   
+   key = DatasetKey(domain = "suafbs", dataset = "sua_unbalanced", dimensions = list(
+       geographicAreaM49 = Dimension(name = "geographicAreaM49", keys = areaKeys),
+       measuredElementSuaFbs = Dimension(name = "measuredElementSuaFbs", keys = elemKeys),
+       measuredItemFbsSua = Dimension(name = "measuredItemFbsSua", keys = itemKeys),
+       timePointYears = Dimension(name = "timePointYears", keys = timeKeys)
+   ))
+   
+   message("Reading SUA data...")
+   
+   ## This gets the values for all countries, all elements which are children of the
+   ## element classes listed above, all CPCs in suafbs and all years between those
+   ## specified by the user.
+   
+   ##!! 3 warnings about things that need to be changed !!#
+   data = elementCodesToNames(data = GetData(key), itemCol = "measuredItemFbsSua",
+                              elementCol = "measuredElementSuaFbs")
+   
+   
+   
+   data[measuredElementSuaFbs=="stock",measuredElementSuaFbs:="stockChange"]
+   
+   
+   
+   ## Add all the missing PRODUCTION row
+   prod=data[measuredElementSuaFbs=="production", .( geographicAreaM49, timePointYears ,measuredItemFbsSua)]
+   ##all=unique(data[ ,.( geographicAreaM49, timePointYears ,measuredItemParentCPC)])
+   
+   ##------------------------------------------------------------
+   timePointYears=key@dimensions$timePointYears@keys
+   
+   geographicAreaM49=key@dimensions$geographicAreaM49@keys
+   
+   
+   
+   all1=merge(timePointYears, primaryInvolvedDescendents)
+   setnames(all1, c("x","y"),c("timePointYears","measuredItemFbsSua"))
+   
+   
+   all2=merge(geographicAreaM49, primaryInvolvedDescendents)
+   setnames(all2, c("x","y"),c("geographicAreaM49","measuredItemFbsSua"))
+   all1=data.table(all1)
+   all2=data.table(all2)
+   
+   all=merge(all1, all2, by="measuredItemFbsSua", allow.cartesian = TRUE)
+   ##------------------------------------------------------------
+   
+   noProd=setdiff(all,prod)
+   noProd[,":="(c("measuredElementSuaFbs","Value","flagObservationStatus","flagMethod"), list("production",NA_real_,"M","u"))]
+   data=rbind(data,noProd)
+   
+   
+   
+   
+   setnames(data, "measuredItemFbsSua", "measuredItemFbsSua")
+   
+   end.time <- Sys.time()
+   
+
+   
+   time.taken <- end.time - start.time
+   
+   
+   
+   ##dataOLD=dataOLD[timePointYears %in% c("2000","2001","2002","2003","2004","2005","2006","2007","2008","2009"),]
+   
+   ##data=rbind(dataOLD, data)
+   
 ##-------------------------------------------------------------------------------------------------------------------------------------
 ## Processed data (OUTPUT)
-## Restrict the complete imputation keys:
+## Restrict the complete imputation keys in ordert to pull only PRODUCTION:
 completeImputationKey@dimensions$measuredElement@keys=c("5510")
 completeImputationKey@dimensions$measuredItemCPC@keys=primaryInvolvedDescendents
 
 dataProcessed=GetData(completeImputationKey)
-dataProcessed=expandYear(dataProcessed)
+dataProcessed[,timePointYears:=as.numeric(timePointYears)]
+
 dataProcessed=dataProcessed[,oldFAOSTATdata:=Value]
-dataProcessed[timePointYears %in% c("1991","1996","2001", "2006","2011"),
+
+##Artificially protect production data between the time window 2000-2009.
+
+dataProcessed[timePointYears %in% c(2000:2010),
               ":="(c("flagObservationStatus","flagMethod"), list("E","h"))]
+dataProcessed=expandYear(dataProcessed,newYear=2016)
 
 dataProcessed=removeInvalidFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
 dataProcessed=removeNonProtectedFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
 
 setnames(dataProcessed, "measuredItemCPC", "measuredItemChildCPC")
-##At the moment we have SUA data for the time range 2000-2013
-dataProcessed=dataProcessed[timePointYears %in% c(2000:2013)]
-##-------------------------------------------------------------------------------------------------------------------------------------
-data=data[measuredItemSuaFbs %in% primaryInvolvedDescendents]
-data=data[!is.na(measuredElementSuaFbs),]
-setnames(data,"measuredItemSuaFbs","measuredItemParentCPC")
+##At the moment we have SUA data for the time range 2000-2015 (I pulled data from QA)
+dataProcessed=dataProcessed[timePointYears %in% c(2000:2015)]
+##     ##-------------------------------------------------------------------------------------------------------------------------------------
+##     ## data:SUA 
+##     data=data[measuredItemSuaFbs %in% primaryInvolvedDescendents]
+##     data=data[!is.na(measuredElementSuaFbs),]
+##     
+##     ##change the name of the ITEM columns: parents
+##     setnames(data,"measuredItemSuaFbs","measuredItemParentCPC")
+     
+     ##-----------------------------------------------------------------------------------------------------------------------
+     ## data:SUA (if I pulled data from SWS (the name of the ITEM column is different))
+     data=data[measuredItemFbsSua %in% primaryInvolvedDescendents]
+     data=data[!is.na(measuredElementSuaFbs),]
+     
+     ##change the name of the ITEM columns: parents
+     setnames(data,"measuredItemFbsSua","measuredItemParentCPC")
 
 
-#tree=tree[geographicAreaM49 %in% c("380", "764", "276","840", "484", "686","800", "152","704" )]
-##tree=tree[geographicAreaM49 %in% c("368", "288","716","384","32" )]
-##tree=tree[geographicAreaM49 %in% c("320", "203","112","191","56", "604" )]
+##-----------------------------------------------------------------------------------------------------------------------
+#Experiments of subsets of COUNTRIES:
 
-##tree=tree[geographicAreaM49 %in% c("144", "32","288","710" )]
-tree=tree[geographicAreaM49 %in% c("380" )]
+tree=tree[geographicAreaM49 %in% c("454", "686",  "1248", "360", "392", "484")]
+##-----------------------------------------------------------------------------------------------------------------------
+
 levels=unique(tree[, processingLevel])
 allCountries=unique(tree[, geographicAreaM49])
 data[,timePointYears:=as.numeric(timePointYears)]
@@ -241,24 +326,35 @@ allLevels=list()
 
 for(lev in (seq(levels)-1))  {
     
+    ##Loop by level
     treeCurrentLevel=tree[processingLevel==lev]
     finalByCountry=list()
     
+    
+    
     for(geo in   seq_along(allCountries)){
+        
+        ##Loop by country    
         currentGeo=allCountries[geo]
-    ##Subset the data    
+    ##Subset the data (SUA)    
     currentData=data[geographicAreaM49==currentGeo]
+    ##Tresform time in a numeric variabible:
     currentData[,timePointYears:=as.numeric(timePointYears)]
     treeCurrentLevel[,timePointYears:=as.numeric(timePointYears)]
+    
     currentDataProcessed=dataProcessed[geographicAreaM49==currentGeo]
     currentDataProcessed[,timePointYears:=as.numeric(timePointYears)]
    
-    ## Calculate share
+    ## Calculate share down up:
     dataMergeTree=calculateShareDownUp(data=currentData,tree=treeCurrentLevel,
                                        params=params, printNegativeAvailability=TRUE)
     
     inputOutputdata= merge(dataMergeTree,currentDataProcessed, by=c("geographicAreaM49","measuredItemChildCPC","timePointYears"),all.y=TRUE) 
  
+    
+    
+    ##inputOutputdata[shareDownUp=="NaN",shareDownUp:=0]
+    
     inputOutputdata=calculateProcessingShare(inputOutputdata, printSharesGraterThan1=TRUE, param=params)
     ##-------------------------------------------------------------------------------------------------------------------------------------    
     
@@ -290,13 +386,14 @@ for(lev in (seq(levels)-1))  {
     protected=protected[,protectedComb]
     
     
-    data[geographicAreaM49==currentGeo & !(flagComb %in% protected) & measuredElementSuaFbs=="production", ":="(c("Value","flagObservationStatus","flagMethod"),list("NA","M","u"))]
+    data[geographicAreaM49==currentGeo & !(flagComb %in% protected) & measuredElementSuaFbs=="production" & newImputation!=0,
+         ":="(c("Value","flagObservationStatus","flagMethod"),list(newImputation,"I","e"))]
     
     ##filter=!is.na(data[,newImputation]) & data[,measuredElementSuaFbs=="production"] & data[,flagComb] %in% protected
     
-    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(newImputation), Value:=newImputation]     
-    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(newImputation), flagObservationStatus:="I"]
-    data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(newImputation), flagMethod:="e"]
+#   data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(newImputation), Value:=newImputation]     
+#   data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(newImputation), flagObservationStatus:="I"]
+#   data[geographicAreaM49==currentGeo & measuredElementSuaFbs=="production" & !flagComb %in% protected & !is.na(newImputation), flagMethod:="e"]
     }
     
     if(oldData){
@@ -324,14 +421,15 @@ for(lev in (seq(levels)-1))  {
 
 
 ##-------------------------------------------------------------------------------------------------------------------------------------    
+##-------------------------------------------------------------------------------------------------------------------------------------   
+##All the commodities flagged as "secondLoop"
 
-##Beer, margarine and tallow
 parent=unique(tree[measuredItemChildCPC %in% secondLoop, measuredItemParentCPC])
 tree=tree[measuredItemChildCPC %in% secondLoop]
 tree=tree[measuredItemParentCPC %in% parent]
 tree[,processingLevel:=NULL]
 
-## now we have just one level and it is necessary to overwrite che old processingLvels
+## now we have just one level and it is necessary to overwrite the old processingLvels
 levels=findProcessingLevel(tree,"measuredItemParentCPC","measuredItemChildCPC")
 setnames(levels, "temp","measuredItemParentCPC")
 tree=merge(tree, levels, by="measuredItemParentCPC", all.x=TRUE)
@@ -358,11 +456,11 @@ setnames(dataProcessedsecondLoop, "measuredItemCPC", "measuredItemChildCPC")
 
 
 
-##At the moment we have SUA data for the time range 2000-2013
+##At the moment we have SUA data for the time range 2000-2015
 
-dataProcessedsecondLoop=dataProcessedsecondLoop[timePointYears %in% c(2000:2013)]
+dataProcessedsecondLoop=dataProcessedsecondLoop[timePointYears %in% c(2000:2015)]
 ##-------------------------------------------------------------------------------------------------------------------------------------   
-##tree=tree[geographicAreaM49 %in% c("380", "764", "484")]
+tree=tree[geographicAreaM49 %in% c("454", "686", "1248", "360", "392", "484")]
 
 levels=unique(tree[, processingLevel])
 allCountries=unique(tree[, geographicAreaM49])
@@ -385,7 +483,7 @@ finalByCountrysecondLoop=list()
         
         dataMergeTree=calculateShareDownUp(data=currentData,tree=treeCurrentLevel, params=params,printNegativeAvailability=TRUE)
         final= merge(dataMergeTree,currentDataProcessed, by=c("geographicAreaM49","measuredItemChildCPC","timePointYears"),all.y=TRUE) 
-        final=calculateProcessingShare(final,printSharesGraterThan1=TRUE)
+        final=calculateProcessingShare(final,printSharesGraterThan1=TRUE, param = params)
         ##-------------------------------------------------------------------------------------------------------------------------------------    
         
         ##final[, meanProcessingShare:=mean(processingShare, na.rm = TRUE), by=c("geographicAreaM49","measuredItemChildCPC","measuredItemParentCPC")]
@@ -397,7 +495,9 @@ finalByCountrysecondLoop=list()
         }
     allLevelssecondLoop=rbindlist(finalByCountrysecondLoop)
 ##-------------------------------------------------------------------------------------------------------------------------------------    
-
+##-------------------------------------------------------------------------------------------------------------------------------------   
+    
+    
 output=rbindlist(allLevels)
 output=output[,.(geographicAreaM49,measuredItemChildCPC,timePointYears,measuredItemParentCPC,availability,processingShare,Value,flagObservationStatus,flagMethod,oldFAOSTATdata,newImputation)]
 
@@ -445,6 +545,7 @@ SaveData(domain = sessionKey@domain,
          dataset = sessionKey@dataset,
          data =  imputed)
 
+##-------------------------------------------------------------------------------------------------------------------------------------    
 ##-------------------------------------------------------------------------------------------------------------------------------------    
 outputSecondLoop=allLevelssecondLoop[,.(geographicAreaM49,measuredItemChildCPC,timePointYears,measuredItemParentCPC,availability,processingShare,Value,flagObservationStatus,flagMethod,oldFAOSTATdata,newImputation)]
 

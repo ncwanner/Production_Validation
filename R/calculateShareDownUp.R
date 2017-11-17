@@ -26,18 +26,36 @@ dataMergeTree=merge(data,tree, by=c(params$parentVar, params$geoVar,params$yearV
 
 
 ##Simple availability that we interpret as FOOD PROCESSING
+##dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
+##                                    ifelse(measuredElementSuaFbs == params$productionCode, 1,
+##                                    ifelse(measuredElementSuaFbs == params$importCode, 1,
+##                                    ifelse(measuredElementSuaFbs == params$exportCode , -1, 
+##                                    ifelse(measuredElementSuaFbs == params$stockCode, -1,
+##                                    ifelse(measuredElementSuaFbs == params$foodCode, -1,
+##                                    ifelse(measuredElementSuaFbs == params$feedCode , -1,
+##                                    ifelse(measuredElementSuaFbs == params$wasteCode, -1,
+##                                    ifelse(measuredElementSuaFbs == params$seedCode, -1,
+##                                    ifelse(measuredElementSuaFbs == params$industrialCode, -1,
+##                                    ifelse(measuredElementSuaFbs == params$touristCode, -1, 0))))))))))),
+##              by = c(params$geoVar,params$yearVar,params$parentVar,params$childVar)]
+
+
+
+
+##Simple availability that we interpret as FOOD PROCESSING
 dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
-                                    ifelse(measuredElementSuaFbs == params$productionCode, 1,
-                                    ifelse(measuredElementSuaFbs == params$importCode, 1,
-                                    ifelse(measuredElementSuaFbs == params$exportCode , -1, 
-                                    ifelse(measuredElementSuaFbs == params$stockCode, -1,
-                                    ifelse(measuredElementSuaFbs == params$foodCode, -1,
-                                    ifelse(measuredElementSuaFbs == params$feedCode , -1,
-                                    ifelse(measuredElementSuaFbs == params$wasteCode, -1,
-                                    ifelse(measuredElementSuaFbs == params$seedCode, -1,
-                                    ifelse(measuredElementSuaFbs == params$industrialCode, -1,
-                                    ifelse(measuredElementSuaFbs == params$touristCode, -1, 0))))))))))),
+                                       ifelse(measuredElementSuaFbs == params$productionCode, 1,
+                                       ifelse(measuredElementSuaFbs == params$importCode, 1,
+                                       ifelse(measuredElementSuaFbs == params$exportCode , -1,0)))), 
+                                  ##     ifelse(measuredElementSuaFbs == params$stockCode, -1,
+                                  ##     ifelse(measuredElementSuaFbs == params$foodCode, -1,
+                                  ##     ifelse(measuredElementSuaFbs == params$feedCode , -1,
+                                  ##     ifelse(measuredElementSuaFbs == params$wasteCode, -1,
+                                  ##     ifelse(measuredElementSuaFbs == params$seedCode, -1,
+                                  ##     ifelse(measuredElementSuaFbs == params$industrialCode, -1,
+                                  ##     ifelse(measuredElementSuaFbs == params$touristCode, -1, 0))))))))))),
               by = c(params$geoVar,params$yearVar,params$parentVar,params$childVar)]
+
 
 ##-------------------------------------------------------------------------------------------------------
 ##Deviate the negative agailability to be manually checked
@@ -46,16 +64,16 @@ if(printNegativeAvailability){
 nagativeAvailability=dataMergeTree[availability<1]
 nagativeAvailability=nagativeAvailability[,.(measuredItemParentCPC,	geographicAreaM49, availability,timePointYears)]
 nagativeAvailability=unique(nagativeAvailability)
-directory= "C:/Users/Rosa/Desktop/DERIVATIVES/negativeAvailability/"
+directory= "C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/nagativeAvailability/"
 dir.create(paste0(directory, lev), recursive=TRUE)
 write.csv(nagativeAvailability, paste0(directory,lev, "/",currentGeo, "nagativeAvailability",".csv"), sep=";",row.names = F)
 }
 ####------------------------------------------------------------------------------------------------------  
 
 dataMergeTree=dataMergeTree[,c(params$parentVar,  params$geoVar, params$yearVar, params$childVar, params$extractVar,   
-                              params$level, params$availVar), with=FALSE] 
+                              params$level, params$availVar, params$shareOldSystem), with=FALSE] 
 dataMergeTree = dataMergeTree[, list(availability = mean(get(params$availVar), na.rm = TRUE)),
-                              by = c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level)]
+                              by = c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level, params$shareOldSystem)]
 
 #dataMergeTree[, params$availVar := mean(get(params$availVar), na.rm = TRUE),
 #                              by = c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level)]
@@ -66,11 +84,14 @@ dataMergeTree = dataMergeTree[, list(availability = mean(get(params$availVar), n
 dataMergeTree[get(params$availVar)<1,params$availVar:=0]				
 
 dataMergeTree[,availabilitieChildEquivalent:=get(params$availVar)* get(params$extractVar)]
-dataMergeTree[, sumAvail:=sum(availabilitieChildEquivalent), by=c(params$childVar,params$yearVar,params$geoVar)]
+dataMergeTree[, sumAvail:=sum(availabilitieChildEquivalent), by=c(params$childVar,params$yearVar,params$geoVar, params$shareOldSystem)]
 
-dataMergeTree[,params$shareDownUp:=NA]
+dataMergeTree[,params$shareDownUp:=NA_real_]
 
 dataMergeTree[,params$shareDownUp:=availabilitieChildEquivalent/sumAvail]
+
+dataMergeTree[!is.na(get(params$shareOldSystem)),params$shareDownUp:=get(params$shareOldSystem)]
+
 dataMergeTree[,availabilitieChildEquivalent:=NULL]
 dataMergeTree[,sumAvail:=NULL]
 

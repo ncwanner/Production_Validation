@@ -19,14 +19,15 @@ data[, processingShare:=(((get(param$value)/get(param$extractVar))*get(param$sha
 data[,param$processingShare:= (( get(params$value)/get (param$extractVar) )* get(param$shareDownUp) )/get((param$availVar))]    
     
 
-
-
+##data[flagObservationStatus=="E" & flagMethod=="h" & get(param$processingShare)>1.02, processingShare:=1]
+##if processing share are Inf, it means that the availability is 0, so the share must be zero as well.
+data[processingShare==Inf,processingShare:=0 ]
 ##-------------------------------------------------------------------------------------------------------
-##Deviate the negative agailability to be manually checked
+##Deviate processing share greater than ONE
 if(printSharesGraterThan1){
 
 processingShareGraterThan1=data[processingShare>1]
-directory= "C:/Users/Rosa/Desktop/DERIVATIVES/unfeasibleProcessingshare/"
+directory= "C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/unfeasibleProcessingshare/"
 dir.create(paste0(directory, lev), recursive=TRUE)
 write.csv(processingShareGraterThan1, paste0(directory,lev, "/",currentGeo, "processingShareGraterThan1",".csv"), sep=";",row.names = F)
 }
@@ -57,6 +58,7 @@ data[,processingShareFlagMethod:="u"]
 
 data[!is.na(processingShare),processingShareFlagObservationStatus:="T"]
 data[!is.na(processingShare),processingShareFlagMethod:="-"]
+data[processingShare=="NaN", processingShare:=NA_real_]
 
 ##Remove series with no data
 counts = data[, sum(!is.na(processingShare)),

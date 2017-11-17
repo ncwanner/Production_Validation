@@ -55,6 +55,7 @@ defaultProcessedItemParams=function(){
         level = "processingLevel",
         availVar = "availability",
         shareDownUp="shareDownUp",
+        shareOldSystem="share",
         processingShare="processingShare",
         value="Value"
         
