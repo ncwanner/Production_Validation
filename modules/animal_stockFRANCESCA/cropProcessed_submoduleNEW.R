@@ -33,7 +33,7 @@ suppressMessages({
 sessionKey = swsContext.datasets[[1]]
 oldData=FALSE
 
-#lastYear=
+batchNumber=12
 
 
 load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/zeroWeight.RData")
@@ -50,7 +50,7 @@ completeImputationKey@dimensions$timePointYears@keys=c("2000","2001","2002",
 
 
 
-completeImputationKey@dimensions$geographicAreaM49@keys=c("454", "686", "1248", "360", "392", "484")
+completeImputationKey@dimensions$geographicAreaM49@keys=c("454", "686", "1248", "716","360", "392", "484")
 
 ##-------------------------------------------------------------------------------------------------------------------------------------
 ## Get default 
@@ -75,8 +75,11 @@ secondLoop=ReadDatatable("processed_item")[multiple_level==TRUE,measured_item_cp
 ##tree=getTree()
  
 
-##load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeTest6countries00_15_final.RData") 
-load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeToUploadSWS_v02.RData") 
+load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeTest6SharesAllComm22-11.RData") 
+##load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeToUploadSWS_v02.RData") 
+
+
+
 
 levels=findProcessingLevel(tree,"measuredItemParentCPC","measuredItemChildCPC")
 setnames(levels, "temp","measuredItemParentCPC")
@@ -203,7 +206,7 @@ primaryInvolvedDescendents=getChildren( commodityTree = treeRestricted,
    
    elemKeys = c(strsplit(elemKeys, ", ")[[1]], sws_elements)
    ##itemKeys = GetCodeList(domain = "suafbs", dataset = "sua", "measuredItemFbsSua")
-   itemKeys = primaryInvolvedDescendents[primaryInvolvedDescendents!="2351f"]
+   itemKeys = primaryInvolvedDescendents
    
    key = DatasetKey(domain = "suafbs", dataset = "sua_unbalanced", dimensions = list(
        geographicAreaM49 = Dimension(name = "geographicAreaM49", keys = areaKeys),
@@ -228,17 +231,20 @@ primaryInvolvedDescendents=getChildren( commodityTree = treeRestricted,
    
    
    
-   ## Add all the missing PRODUCTION row
+   ## Add all the missing PRODUCTION row: if the production of a derived product does not exist it even if it is created by this 
+   ## routine cannot be stored in the SUA table and consequently all the commodities that belongs to its descendents are not estimates
+   ## or are estimated using only the TRADE and neglecting an important part of the supply components.
+   
    prod=data[measuredElementSuaFbs=="production", .( geographicAreaM49, timePointYears ,measuredItemFbsSua)]
    ##all=unique(data[ ,.( geographicAreaM49, timePointYears ,measuredItemParentCPC)])
    
    ##------------------------------------------------------------
+   ## all time point years
    timePointYears=key@dimensions$timePointYears@keys
-   
+   ## all countries
    geographicAreaM49=key@dimensions$geographicAreaM49@keys
    
-   
-   
+   ##I have to build table containing the complete data key ( I have called it: all) 
    all1=merge(timePointYears, primaryInvolvedDescendents)
    setnames(all1, c("x","y"),c("timePointYears","measuredItemFbsSua"))
    
@@ -249,21 +255,20 @@ primaryInvolvedDescendents=getChildren( commodityTree = treeRestricted,
    all2=data.table(all2)
    
    all=merge(all1, all2, by="measuredItemFbsSua", allow.cartesian = TRUE)
+   ## the object all contais a complete key (all countries, all years, all items) for the production element
+   ## To avoid duplicates I select just those row that are not already included into the SUA table
+   noProd=setdiff(all,prod)
+   ##I add the value and flags columns:
+   noProd[,":="(c("measuredElementSuaFbs","Value","flagObservationStatus","flagMethod"), list("production",NA_real_,"M","u"))]
+   
+   ## I add this empty rows into the SUA table
+   data=rbind(data,noProd)
    ##------------------------------------------------------------
    
-   noProd=setdiff(all,prod)
-   noProd[,":="(c("measuredElementSuaFbs","Value","flagObservationStatus","flagMethod"), list("production",NA_real_,"M","u"))]
-   data=rbind(data,noProd)
-   
-   
-   
-   
+ 
    setnames(data, "measuredItemFbsSua", "measuredItemFbsSua")
-   
+  
    end.time <- Sys.time()
-   
-
-   
    time.taken <- end.time - start.time
    
    
@@ -273,19 +278,20 @@ primaryInvolvedDescendents=getChildren( commodityTree = treeRestricted,
    ##data=rbind(dataOLD, data)
    
 ##-------------------------------------------------------------------------------------------------------------------------------------
-## Processed data (OUTPUT)
+## Processed data (OUTPUT). I pull the data from the aproduction domain. Baasically I am pulling the already existing 
+## production data,
+   
 ## Restrict the complete imputation keys in ordert to pull only PRODUCTION:
 completeImputationKey@dimensions$measuredElement@keys=c("5510")
 completeImputationKey@dimensions$measuredItemCPC@keys=primaryInvolvedDescendents
 
 dataProcessed=GetData(completeImputationKey)
 dataProcessed[,timePointYears:=as.numeric(timePointYears)]
-
 dataProcessed=dataProcessed[,oldFAOSTATdata:=Value]
 
 ##Artificially protect production data between the time window 2000-2009.
 
-dataProcessed[timePointYears %in% c(2000:2010),
+dataProcessed[timePointYears %in% c(2000:2019),
               ":="(c("flagObservationStatus","flagMethod"), list("E","h"))]
 dataProcessed=expandYear(dataProcessed,newYear=2016)
 
@@ -304,7 +310,7 @@ dataProcessed=dataProcessed[timePointYears %in% c(2000:2015)]
 ##     setnames(data,"measuredItemSuaFbs","measuredItemParentCPC")
      
      ##-----------------------------------------------------------------------------------------------------------------------
-     ## data:SUA (if I pulled data from SWS (the name of the ITEM column is different))
+     ## data:SUA (if I pulled data from SWS (the name of the ITEM column is different: measuredItemFbsSua))
      data=data[measuredItemFbsSua %in% primaryInvolvedDescendents]
      data=data[!is.na(measuredElementSuaFbs),]
      
@@ -313,9 +319,10 @@ dataProcessed=dataProcessed[timePointYears %in% c(2000:2015)]
 
 
 ##-----------------------------------------------------------------------------------------------------------------------
-#Experiments of subsets of COUNTRIES:
+#Experiments of subsets of COUNTRIES: 
 
-tree=tree[geographicAreaM49 %in% c("454", "686",  "1248", "360", "392", "484")]
+## I am currently using those 7 countries for the FBS experiment:
+tree=tree[geographicAreaM49 %in% c("454", "686",  "1248", "716","360", "392", "484")]
 ##-----------------------------------------------------------------------------------------------------------------------
 
 levels=unique(tree[, processingLevel])
@@ -334,17 +341,22 @@ for(lev in (seq(levels)-1))  {
     
     for(geo in   seq_along(allCountries)){
         
-        ##Loop by country    
-        currentGeo=allCountries[geo]
+    ##Loop by country    
+    currentGeo=allCountries[geo]
     ##Subset the data (SUA)    
     currentData=data[geographicAreaM49==currentGeo]
-    ##Tresform time in a numeric variabible:
+    ##Tresform TIME in a numeric variabible:
     currentData[,timePointYears:=as.numeric(timePointYears)]
     treeCurrentLevel[,timePointYears:=as.numeric(timePointYears)]
     
+    ## Subset PRODUCTION data
     currentDataProcessed=dataProcessed[geographicAreaM49==currentGeo]
     currentDataProcessed[,timePointYears:=as.numeric(timePointYears)]
    
+    ## To compute the PRODUCTION I need to evaluate how much (which percentage) of 
+    ## the parent commodity availability is allocated in the productive process associate
+    ## to a specific child item.
+        
     ## Calculate share down up:
     dataMergeTree=calculateShareDownUp(data=currentData,tree=treeCurrentLevel,
                                        params=params, printNegativeAvailability=TRUE)
@@ -460,7 +472,7 @@ setnames(dataProcessedsecondLoop, "measuredItemCPC", "measuredItemChildCPC")
 
 dataProcessedsecondLoop=dataProcessedsecondLoop[timePointYears %in% c(2000:2015)]
 ##-------------------------------------------------------------------------------------------------------------------------------------   
-tree=tree[geographicAreaM49 %in% c("454", "686", "1248", "360", "392", "484")]
+tree=tree[geographicAreaM49 %in% c("454", "686", "1248", "716","360", "392", "484")]
 
 levels=unique(tree[, processingLevel])
 allCountries=unique(tree[, geographicAreaM49])
@@ -520,6 +532,8 @@ imputed[, PROTECTED:=FALSE]
 imputed[flagComb %in% protected, PROTECTED:=TRUE]
 imputed[PROTECTED==TRUE,newImputation:=oldFAOSTATdata]
 toPlot=imputed
+write.csv(toPlot, paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch",batchNumber,"\\toPlot",batchNumber,".csv"), row.names=FALSE)
+
 
 ## Save back
 imputed[,newImputation:=NULL]
@@ -570,6 +584,9 @@ imputedSecondLoop[, PROTECTED:=FALSE]
 imputedSecondLoop[flagComb %in% protected, PROTECTED:=TRUE]
 imputedSecondLoop[PROTECTED==TRUE,newImputation:=oldFAOSTATdata]
 toPlotSecondLoop=imputedSecondLoop
+
+write.csv(toPlotSecondLoop, paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch",batchNumber,"\\toPlotSecondLoop",batchNumber,".csv"), row.names=FALSE)
+
 
 ## Save back second loop
 imputedSecondLoop[,newImputation:=NULL]

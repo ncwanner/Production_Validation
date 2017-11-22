@@ -15,7 +15,7 @@ calculateProcessingShare=function(data, printSharesGraterThan1=FALSE, param){
 stopifnot(c(param$geoVar, param$yearVar, param$childVar, param$parentVar,
             param$extractVar, param$shareDownUp ,params$value, param$availVar) %in% colnames(data))
 
-data[, processingShare:=(((get(param$value)/get(param$extractVar))*get(param$shareDownUp))/get( param$availVar ))]
+##data[, processingShare:=(((get(param$value)/get(param$extractVar))*get(param$shareDownUp))/get( param$availVar ))]
 data[,param$processingShare:= (( get(params$value)/get (param$extractVar) )* get(param$shareDownUp) )/get((param$availVar))]    
     
 

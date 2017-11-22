@@ -25,7 +25,7 @@ dataMergeTree=merge(data,tree, by=c(params$parentVar, params$geoVar,params$yearV
 
 
 
-##Simple availability that we interpret as FOOD PROCESSING
+##Simple availability that we interpret as FOOD PROCESSING: here I am using all the components
 ##dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
 ##                                    ifelse(measuredElementSuaFbs == params$productionCode, 1,
 ##                                    ifelse(measuredElementSuaFbs == params$importCode, 1,
@@ -42,7 +42,7 @@ dataMergeTree=merge(data,tree, by=c(params$parentVar, params$geoVar,params$yearV
 
 
 
-##Simple availability that we interpret as FOOD PROCESSING
+##Simple availability that we interpret as FOOD PROCESSING: this availability is based only on PRODUCTION, IMPORT and EXPORT
 dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
                                        ifelse(measuredElementSuaFbs == params$productionCode, 1,
                                        ifelse(measuredElementSuaFbs == params$importCode, 1,
@@ -70,33 +70,43 @@ write.csv(nagativeAvailability, paste0(directory,lev, "/",currentGeo, "nagativeA
 }
 ####------------------------------------------------------------------------------------------------------  
 
+## I keep just the columns I need, note I am excluding the Element column because I am interested into te AVAILABITLITY
+## I do not need all the components (prod, import, export, tourism, industial, stock... ) anymore. 
 dataMergeTree=dataMergeTree[,c(params$parentVar,  params$geoVar, params$yearVar, params$childVar, params$extractVar,   
                               params$level, params$availVar, params$shareOldSystem), with=FALSE] 
+## At this point we still have the availabilities repeated for each element of the original SUA table.
+## For example if an Item X entered in the SUA table through 4 elements (prod, export, feed and stock), 
+## we still have 4 rows with same availability
 dataMergeTree = dataMergeTree[, list(availability = mean(get(params$availVar), na.rm = TRUE)),
                               by = c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level, params$shareOldSystem)]
 
-#dataMergeTree[, params$availVar := mean(get(params$availVar), na.rm = TRUE),
-#                              by = c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level)]
+
 
 ## In order to continue runnung the module even if some availability are lower than 0
-## we make the assumption that:
-
+## we make the assumption that: if the availability is equal to ZERO (or negative), it means that
+## the productive process of its derived products cannot be activated (in any case it is the case
+## to check the intial SUA table because there might be somethig wrong) 
 dataMergeTree[get(params$availVar)<1,params$availVar:=0]				
 
+## Express the whole availabilty of each parent in terms of child equivalent:
 dataMergeTree[,availabilitieChildEquivalent:=get(params$availVar)* get(params$extractVar)]
+## Sum of the availabilities express in terms of child eq. by child
 dataMergeTree[, sumAvail:=sum(availabilitieChildEquivalent), by=c(params$childVar,params$yearVar,params$geoVar, params$shareOldSystem)]
 
+## I create the column that has to be populated
 dataMergeTree[,params$shareDownUp:=NA_real_]
-
 dataMergeTree[,params$shareDownUp:=availabilitieChildEquivalent/sumAvail]
 
+## We are currently using a version of the commodity-tree containing the shares coming from the old system,
+## if the share exists I am keeping the one stored in the old system table instead of the one endogenously computed.
 dataMergeTree[!is.na(get(params$shareOldSystem)),params$shareDownUp:=get(params$shareOldSystem)]
 
+## Delete the columns I do not need anymore
 dataMergeTree[,availabilitieChildEquivalent:=NULL]
 dataMergeTree[,sumAvail:=NULL]
 
 return(dataMergeTree)
 
-return(params)
+
 }
 
