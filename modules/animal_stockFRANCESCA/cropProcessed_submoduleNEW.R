@@ -1,3 +1,6 @@
+
+
+
 suppressMessages({
     library(data.table)
     library(faosws)
@@ -33,7 +36,7 @@ suppressMessages({
 sessionKey = swsContext.datasets[[1]]
 oldData=FALSE
 
-batchNumber=12
+batchNumber=101
 
 
 load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/zeroWeight.RData")
@@ -74,12 +77,13 @@ secondLoop=ReadDatatable("processed_item")[multiple_level==TRUE,measured_item_cp
 
 ##tree=getTree()
  
+## I am using the last tree Cristina sent me (the one containing updated shares for Japan as well)
 
-load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeTest6SharesAllComm22-11.RData") 
-##load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeToUploadSWS_v02.RData") 
+##load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeTest6SharesAllComm22-11.RData") 
+load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\treeTestAllSharesJapancopied.RData") 
 
-
-
+#tree=tree[!is.na(extractionRate)]
+#tree[share=="NaN", share:=NA_real_]
 
 levels=findProcessingLevel(tree,"measuredItemParentCPC","measuredItemChildCPC")
 setnames(levels, "temp","measuredItemParentCPC")
@@ -266,7 +270,7 @@ primaryInvolvedDescendents=getChildren( commodityTree = treeRestricted,
    ##------------------------------------------------------------
    
  
-   setnames(data, "measuredItemFbsSua", "measuredItemFbsSua")
+   ##setnames(data, "measuredItemFbsSua", "measuredItemFbsSua")
   
    end.time <- Sys.time()
    time.taken <- end.time - start.time
@@ -290,13 +294,17 @@ dataProcessed[,timePointYears:=as.numeric(timePointYears)]
 dataProcessed=dataProcessed[,oldFAOSTATdata:=Value]
 
 ##Artificially protect production data between the time window 2000-2009.
+dataProcessed[timePointYears<2010,flagObservationStatus:="E"] 
+dataProcessed[timePointYears<2010,flagMethod:="h"] 
 
-dataProcessed[timePointYears %in% c(2000:2019),
-              ":="(c("flagObservationStatus","flagMethod"), list("E","h"))]
 dataProcessed=expandYear(dataProcessed,newYear=2016)
 
 dataProcessed=removeInvalidFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
 dataProcessed=removeNonProtectedFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
+
+
+
+
 
 setnames(dataProcessed, "measuredItemCPC", "measuredItemChildCPC")
 ##At the moment we have SUA data for the time range 2000-2015 (I pulled data from QA)
@@ -311,6 +319,8 @@ dataProcessed=dataProcessed[timePointYears %in% c(2000:2015)]
      
      ##-----------------------------------------------------------------------------------------------------------------------
      ## data:SUA (if I pulled data from SWS (the name of the ITEM column is different: measuredItemFbsSua))
+     
+     ## I keep only the item theat I need: processed Items and all those items in them trees
      data=data[measuredItemFbsSua %in% primaryInvolvedDescendents]
      data=data[!is.na(measuredElementSuaFbs),]
      
@@ -357,15 +367,25 @@ for(lev in (seq(levels)-1))  {
     ## the parent commodity availability is allocated in the productive process associate
     ## to a specific child item.
         
-    ## Calculate share down up:
+    ## Calculate share down up. Please note that currentData contains the SUA table.
     dataMergeTree=calculateShareDownUp(data=currentData,tree=treeCurrentLevel,
                                        params=params, printNegativeAvailability=TRUE)
     
+    ## Here I merge the SUA table (already merged with tree), with the PRODUCTION DATA
+    ## This merge produces many NA because currentDataProcessed contains all the derived item (and not just
+    ## those at the level of the loop)
     inputOutputdata= merge(dataMergeTree,currentDataProcessed, by=c("geographicAreaM49","measuredItemChildCPC","timePointYears"),all.y=TRUE) 
  
     
     
-    ##inputOutputdata[shareDownUp=="NaN",shareDownUp:=0]
+    inputOutputdata[shareDownUp=="NaN",shareDownUp:=0]
+    
+    
+    ##test the tree coming from Cristina and the use of old PROCESSING SHARES:
+#    load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\processingTreeTest6AllComm.RData") 
+#    setnames(pTree, "timePointYearsSP", "timePointYears")
+#    pTree[, timePointYears:=as.numeric(timePointYears)]
+    
     
     inputOutputdata=calculateProcessingShare(inputOutputdata, printSharesGraterThan1=TRUE, param=params)
     ##-------------------------------------------------------------------------------------------------------------------------------------    
@@ -384,13 +404,17 @@ for(lev in (seq(levels)-1))  {
     updateData=inputOutputdata[,.(geographicAreaM49, timePointYears, measuredItemChildCPC, newImputation)]
     updateData[, newImputation:=sum(newImputation,na.rm = TRUE), by=c("geographicAreaM49", "timePointYears", "measuredItemChildCPC")]
     updateData=unique(updateData)
+    
+    
     ##I change the column names bacause the commodities that now are children will be parent in the next loop
     setnames(updateData,"measuredItemChildCPC","measuredItemParentCPC")
+    
+    ##I merge the new results into the SUA table
     data=merge(data,updateData, by=c("geographicAreaM49", "timePointYears", "measuredItemParentCPC"), all.x=TRUE)
     ## Olnly non-protected production figures have to be overwritten:
 
     if(!oldData){
-    data[,flagComb:=paste(flagObservationStatus,flagMethod,sep=";")]   
+        data[,flagComb:=paste(flagObservationStatus,flagMethod,sep=";")]   
     
     flagValidTable=copy(flagValidTable)
     flagValidTable=flagValidTable[Protected==TRUE,]
@@ -398,7 +422,7 @@ for(lev in (seq(levels)-1))  {
     protected=protected[,protectedComb]
     
     
-    data[geographicAreaM49==currentGeo & !(flagComb %in% protected) & measuredElementSuaFbs=="production" & newImputation!=0,
+    data[geographicAreaM49==currentGeo & !(flagComb %in% protected) & measuredElementSuaFbs=="production" & !is.na(newImputation),
          ":="(c("Value","flagObservationStatus","flagMethod"),list(newImputation,"I","e"))]
     
     ##filter=!is.na(data[,newImputation]) & data[,measuredElementSuaFbs=="production"] & data[,flagComb] %in% protected
@@ -431,87 +455,14 @@ for(lev in (seq(levels)-1))  {
     
 }
 
-
-##-------------------------------------------------------------------------------------------------------------------------------------    
-##-------------------------------------------------------------------------------------------------------------------------------------   
-##All the commodities flagged as "secondLoop"
-
-parent=unique(tree[measuredItemChildCPC %in% secondLoop, measuredItemParentCPC])
-tree=tree[measuredItemChildCPC %in% secondLoop]
-tree=tree[measuredItemParentCPC %in% parent]
-tree[,processingLevel:=NULL]
-
-## now we have just one level and it is necessary to overwrite the old processingLvels
-levels=findProcessingLevel(tree,"measuredItemParentCPC","measuredItemChildCPC")
-setnames(levels, "temp","measuredItemParentCPC")
-tree=merge(tree, levels, by="measuredItemParentCPC", all.x=TRUE)
-
-allCountries=unique(tree[, geographicAreaM49])
-data[,timePointYears:=as.numeric(timePointYears)]
-
-##-------------------------------------------------------------------------------------------------------------------------------------   
-completeImputationKey@dimensions$measuredElement@keys=c("5510")
-completeImputationKey@dimensions$measuredItemCPC@keys=secondLoop
-
-dataProcessedsecondLoop=GetData(completeImputationKey)
-dataProcessedsecondLoop=expandYear(dataProcessedsecondLoop)
-dataProcessedsecondLoop=dataProcessedsecondLoop[,oldFAOSTATdata:=Value]
-
-##Some values have been artificially protected in order to activate the imputation process
-dataProcessedsecondLoop[timePointYears %in% c("1991","1996","2001", "2006","2011"),
-              ":="(c("flagObservationStatus","flagMethod"), list("E","h"))]
-
-dataProcessedsecondLoop=removeInvalidFlag(dataProcessedsecondLoop, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
-dataProcessedsecondLoop=removeNonProtectedFlag(dataProcessedsecondLoop, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
-
-setnames(dataProcessedsecondLoop, "measuredItemCPC", "measuredItemChildCPC")
+#-------------------------------------------------------------------------------------------------------------------------------------    
+#-------------------------------------------------------------------------------------------------------------------------------------    
 
 
-
-##At the moment we have SUA data for the time range 2000-2015
-
-dataProcessedsecondLoop=dataProcessedsecondLoop[timePointYears %in% c(2000:2015)]
-##-------------------------------------------------------------------------------------------------------------------------------------   
-tree=tree[geographicAreaM49 %in% c("454", "686", "1248", "716","360", "392", "484")]
-
-levels=unique(tree[, processingLevel])
-allCountries=unique(tree[, geographicAreaM49])
-
-data[,timePointYears:=as.numeric(timePointYears)]
-
-
-treeCurrentLevel=tree[processingLevel==0]
-##setnames(treeCurrentLevel,"timePointYearsSP","timePointYears")
-    
-finalByCountrysecondLoop=list()
-    for(geo in   seq_along(allCountries)){
-        currentGeo=allCountries[geo]
-        
-        currentData=data[geographicAreaM49==currentGeo]
-        currentData[,timePointYears:=as.numeric(timePointYears)]
-        treeCurrentLevel[,timePointYears:=as.numeric(timePointYears)]
-        currentDataProcessed=dataProcessed[geographicAreaM49==currentGeo]
-        currentDataProcessed[,timePointYears:=as.numeric(timePointYears)]
-        
-        dataMergeTree=calculateShareDownUp(data=currentData,tree=treeCurrentLevel, params=params,printNegativeAvailability=TRUE)
-        final= merge(dataMergeTree,currentDataProcessed, by=c("geographicAreaM49","measuredItemChildCPC","timePointYears"),all.y=TRUE) 
-        final=calculateProcessingShare(final,printSharesGraterThan1=TRUE, param = params)
-        ##-------------------------------------------------------------------------------------------------------------------------------------    
-        
-        ##final[, meanProcessingShare:=mean(processingShare, na.rm = TRUE), by=c("geographicAreaM49","measuredItemChildCPC","measuredItemParentCPC")]
-        
-        ##final[is.na(processingShare)&!is.na(meanProcessingShare),processingShare:=meanProcessingShare ]
-        final[, newImputation:=availability*processingShare*extractionRate]
-        
-        finalByCountrysecondLoop[[geo]]=final
-        }
-    allLevelssecondLoop=rbindlist(finalByCountrysecondLoop)
-##-------------------------------------------------------------------------------------------------------------------------------------    
-##-------------------------------------------------------------------------------------------------------------------------------------   
-    
-    
 output=rbindlist(allLevels)
-output=output[,.(geographicAreaM49,measuredItemChildCPC,timePointYears,measuredItemParentCPC,availability,processingShare,Value,flagObservationStatus,flagMethod,oldFAOSTATdata,newImputation)]
+output=output[,.(geographicAreaM49,measuredItemChildCPC,timePointYears,
+                 measuredItemParentCPC,availability,processingShare,Value,
+                 flagObservationStatus,flagMethod,oldFAOSTATdata,newImputation)]
 
 ## This passage is to sum up the production of a derived commodities coming from more than one parent
 finalOutput = output[,  list(newImputation = sum(newImputation, na.rm = TRUE)),
@@ -561,6 +512,88 @@ SaveData(domain = sessionKey@domain,
 
 ##-------------------------------------------------------------------------------------------------------------------------------------    
 ##-------------------------------------------------------------------------------------------------------------------------------------    
+##-------------------------------------------------------------------------------------------------------------------------------------    
+##-------------------------------------------------------------------------------------------------------------------------------------   
+##All the commodities flagged as "secondLoop"
+
+## I keep from the tree just those line where the ITEMS are classified as "second loop" 
+## 
+
+parent=unique(tree[measuredItemChildCPC %in% secondLoop, measuredItemParentCPC])
+tree=tree[measuredItemChildCPC %in% secondLoop]
+tree=tree[measuredItemParentCPC %in% parent]
+tree[,processingLevel:=NULL]
+
+## now we have just one level and it is necessary to overwrite the old processingLvels
+levels=findProcessingLevel(tree,"measuredItemParentCPC","measuredItemChildCPC")
+setnames(levels, "temp","measuredItemParentCPC")
+tree=merge(tree, levels, by="measuredItemParentCPC", all.x=TRUE)
+
+allCountries=unique(tree[, geographicAreaM49])
+data[,timePointYears:=as.numeric(timePointYears)]
+
+##-------------------------------------------------------------------------------------------------------------------------------------   
+completeImputationKey@dimensions$measuredElement@keys=c("5510")
+completeImputationKey@dimensions$measuredItemCPC@keys=secondLoop
+
+dataProcessedsecondLoop=GetData(completeImputationKey)
+dataProcessedsecondLoop=expandYear(dataProcessedsecondLoop,newYear=2016)
+dataProcessedsecondLoop=dataProcessedsecondLoop[,oldFAOSTATdata:=Value]
+
+##Some values have been artificially protected in order to activate the imputation process
+dataProcessedsecondLoop[timePointYears %in% c("1991","1996","2001", "2006","2011"),
+                        ":="(c("flagObservationStatus","flagMethod"), list("E","h"))]
+
+dataProcessedsecondLoop=removeInvalidFlag(dataProcessedsecondLoop, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
+dataProcessedsecondLoop=removeNonProtectedFlag(dataProcessedsecondLoop, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
+
+setnames(dataProcessedsecondLoop, "measuredItemCPC", "measuredItemChildCPC")
+
+
+
+##At the moment we have SUA data for the time range 2000-2015
+
+dataProcessedsecondLoop=dataProcessedsecondLoop[timePointYears %in% c(2000:2015)]
+##-------------------------------------------------------------------------------------------------------------------------------------   
+tree=tree[geographicAreaM49 %in% c("454", "686", "1248", "716","360", "392", "484")]
+
+levels=unique(tree[, processingLevel])
+allCountries=unique(tree[, geographicAreaM49])
+
+data[,timePointYears:=as.numeric(timePointYears)]
+
+
+treeCurrentLevel=tree[processingLevel==0]
+##setnames(treeCurrentLevel,"timePointYearsSP","timePointYears")
+
+finalByCountrysecondLoop=list()
+for(geo in   seq_along(allCountries)){
+    currentGeo=allCountries[geo]
+    
+    currentData=data[geographicAreaM49==currentGeo]
+    currentData[,timePointYears:=as.numeric(timePointYears)]
+    treeCurrentLevel[,timePointYears:=as.numeric(timePointYears)]
+    currentDataProcessed=dataProcessed[geographicAreaM49==currentGeo]
+    currentDataProcessed[,timePointYears:=as.numeric(timePointYears)]
+    
+    dataMergeTree=calculateShareDownUp(data=currentData,tree=treeCurrentLevel, params=params,printNegativeAvailability=TRUE)
+    final= merge(dataMergeTree,currentDataProcessed, by=c("geographicAreaM49","measuredItemChildCPC","timePointYears"),all.y=TRUE) 
+    final=calculateProcessingShare(final,printSharesGraterThan1=TRUE, param = params)
+    ##-------------------------------------------------------------------------------------------------------------------------------------    
+    
+    ##final[, meanProcessingShare:=mean(processingShare, na.rm = TRUE), by=c("geographicAreaM49","measuredItemChildCPC","measuredItemParentCPC")]
+    
+    ##final[is.na(processingShare)&!is.na(meanProcessingShare),processingShare:=meanProcessingShare ]
+    final[, newImputation:=availability*processingShare*extractionRate]
+    
+    finalByCountrysecondLoop[[geo]]=final
+}
+allLevelssecondLoop=rbindlist(finalByCountrysecondLoop)
+##-------------------------------------------------------------------------------------------------------------------------------------    
+##-------------------------------------------------------------------------------------------------------------------------------------   
+
+
+
 outputSecondLoop=allLevelssecondLoop[,.(geographicAreaM49,measuredItemChildCPC,timePointYears,measuredItemParentCPC,availability,processingShare,Value,flagObservationStatus,flagMethod,oldFAOSTATdata,newImputation)]
 
 ## This passage is to sum up the production of a derived commodities coming from more than one parent
@@ -607,7 +640,7 @@ imputedSecondLoop=imputedSecondLoop[,.(measuredElement,geographicAreaM49, measur
 imputedSecondLoop=imputedSecondLoop[measuredItemCPC %in% secondLoop]
 
 ##The first save back should exclude those commodities imputed in the second round
-imputedSecondLoop=imputedSecondLoop[!measuredItemCPC %in% secondLoop]
+
 
 SaveData(domain = sessionKey@domain,
          dataset = sessionKey@dataset,

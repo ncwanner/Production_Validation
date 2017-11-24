@@ -99,7 +99,7 @@ dataMergeTree[,params$shareDownUp:=availabilitieChildEquivalent/sumAvail]
 
 ## We are currently using a version of the commodity-tree containing the shares coming from the old system,
 ## if the share exists I am keeping the one stored in the old system table instead of the one endogenously computed.
-dataMergeTree[!is.na(get(params$shareOldSystem)),params$shareDownUp:=get(params$shareOldSystem)]
+##dataMergeTree[!is.na(get(params$shareOldSystem)),params$shareDownUp:=get(params$shareOldSystem)]
 
 ## Delete the columns I do not need anymore
 dataMergeTree[,availabilitieChildEquivalent:=NULL]
