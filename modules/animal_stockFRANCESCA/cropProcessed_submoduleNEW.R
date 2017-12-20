@@ -36,7 +36,7 @@ suppressMessages({
 sessionKey = swsContext.datasets[[1]]
 oldData=FALSE
 
-batchNumber=101
+batchNumber=105
 
 
 load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/zeroWeight.RData")
@@ -340,7 +340,7 @@ allCountries=unique(tree[, geographicAreaM49])
 data[,timePointYears:=as.numeric(timePointYears)]
 
 allLevels=list()
-
+start.time <- Sys.time()
 for(lev in (seq(levels)-1))  {
     
     ##Loop by level
@@ -386,8 +386,9 @@ for(lev in (seq(levels)-1))  {
 #    setnames(pTree, "timePointYearsSP", "timePointYears")
 #    pTree[, timePointYears:=as.numeric(timePointYears)]
     
-    
+   
     inputOutputdata=calculateProcessingShare(inputOutputdata, printSharesGraterThan1=TRUE, param=params)
+
     ##-------------------------------------------------------------------------------------------------------------------------------------    
     
     ##inputOutputdata[, meanProcessingShare:=mean(processingShare, na.rm = TRUE), by=c("geographicAreaM49","measuredItemChildCPC","measuredItemParentCPC")]
@@ -455,6 +456,8 @@ for(lev in (seq(levels)-1))  {
     
 }
 
+
+end.time <- Sys.time()
 #-------------------------------------------------------------------------------------------------------------------------------------    
 #-------------------------------------------------------------------------------------------------------------------------------------    
 
@@ -502,7 +505,9 @@ imputed=imputed[flagObservationStatus=="I" & flagMethod=="e"]
 imputed=imputed[,.(measuredElement,geographicAreaM49, measuredItemCPC,
                    timePointYears,Value,flagObservationStatus,flagMethod)]
 ##Save back only those commodities that
-imputed=imputed[measuredItemCPC %in% processedCPC]
+
+## I comment the filter for the Save operation: not just the processe
+##imputed=imputed[measuredItemCPC %in% processedCPC]
 ##The first save back should exclude those commodities imputed in the second round
 imputed=imputed[!measuredItemCPC %in% secondLoop]
 
@@ -537,6 +542,8 @@ completeImputationKey@dimensions$measuredElement@keys=c("5510")
 completeImputationKey@dimensions$measuredItemCPC@keys=secondLoop
 
 dataProcessedsecondLoop=GetData(completeImputationKey)
+
+dataProcessedsecondLoop[,timePointYears:=as.numeric(timePointYears)]
 dataProcessedsecondLoop=expandYear(dataProcessedsecondLoop,newYear=2016)
 dataProcessedsecondLoop=dataProcessedsecondLoop[,oldFAOSTATdata:=Value]
 
