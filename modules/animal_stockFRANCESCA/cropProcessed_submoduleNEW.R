@@ -32,12 +32,14 @@ suppressMessages({
         GetTestEnvironment(baseUrl = SETTINGS[["server"]],
                            token = SETTINGS[["token"]])
         
+        batchNumber=120
+        dir.create(paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch", batchNumber), recursive=TRUE)
+        
     }
 sessionKey = swsContext.datasets[[1]]
 oldData=FALSE
 
-batchNumber=118
-dir.create(paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch", batchNumber), recursive=TRUE)
+
 
 
 
@@ -48,7 +50,7 @@ processed47=c("22249.01", "22241.01" ,"22254"  ,  "22253"  ,  "22110.02", "26110
               "21631.02" ,"2166"   ,  "21691.14" ,"01491.02" ,"21691.02")
 
 
-load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/zeroWeightLast.RData")
+#load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/zeroWeightLast.RData")
 
 #load("C:/Users/Rosa/Favorites/Github/sws_project/faoswsProduction/ProcessedSubmoduleSupportFiles/primaryInvolvedDescendents.RData")
 
@@ -99,33 +101,58 @@ processedCPC=ReadDatatable("processed_item")[,measured_item_cpc]
 ##tree=fread("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\fullTree2exportTEST_Francesca.csv") 
 
 
-load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\fullTree2export_v02nocuts.RData")
+##areaKeys=GetCodeList(domain = "suafbs", dataset = "ess_fbs_commodity_tree", "geographicAreaM49")[,code]
+geoImputationSelection = swsContext.computationParams$imputation_country_selection
+sessionCountry=getQueryKey("geographicAreaM49", sessionKey)
+selectedCountry =
+    switch(geoImputationSelection,
+           "session" = sessionCountry,
+           "all" = completeImputationKey@dimensions$geographicAreaM49@keys)
+
+startYear=swsContext.computationParams$startYear
+imputationStartYear=swsContext.computationParams$startImputation
+endYear=swsContext.computationParams$endYear
+
+areaKeys=selectedCountry
+timeKeys=as.character(c(startYear:endYear))
+itemKeysParent=GetCodeList(domain = "suafbs", dataset = "ess_fbs_commodity_tree", "measuredItemParentCPC")[,code]
+itemKeysChild=GetCodeList(domain = "suafbs", dataset = "ess_fbs_commodity_tree", "measuredItemChildCPC")[,code]
+##The only element I need from the tree is the "extraction rate"
+elemKeys=c("5423")
+
+keyTree = DatasetKey(domain = "suafbs", dataset = "ess_fbs_commodity_tree", dimensions = list(
+    geographicAreaM49 = Dimension(name = "geographicAreaM49", keys = areaKeys),
+    measuredElementSuaFbs = Dimension(name = "measuredElementSuaFbs", keys = elemKeys),
+    measuredItemParentCPC = Dimension(name = "measuredItemParentCPC", keys = itemKeysParent),
+    measuredItemChildCPC = Dimension(name = "measuredItemChildCPC", keys = itemKeysChild),
+    timePointYears = Dimension(name = "timePointYears", keys = timeKeys)
+))
 
 
 
-tree=tree2export
-tree=tree[variable=="extractionRate"]
 
-setnames(tree, "value", "extractionRate")
-tree[,flagObservationStatus:=NULL ]
+##load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\fullTree2export_v02nocuts.RData")
+##tree=tree2export
+#tree=tree[timePointYears>1999]
+
+
+tree=GetData(keyTree)
+setnames(tree, "Value", "extractionRate")
+tree[,flag_obs_status_v2:=NULL ]
 tree[,flagMethod:=NULL ]
-tree[,variable:=NULL ]
-
-
-setnames(tree, "timePointYears", "timePointYearsSP")
-tree=tree[timePointYearsSP>1999]
+tree[,measuredElementSuaFbs:=NULL ]
 
 tree=tree[!is.na(extractionRate)]
 
 #tree=tree[!is.na(extractionRate)]
 #tree[share=="NaN", share:=NA_real_]
-uniqueLevels = tree[, .N, by = c("geographicAreaM49", "timePointYearsSP")]
+uniqueLevels = tree[, .N, by = c("geographicAreaM49", "timePointYears")]
 uniqueLevels[, N := NULL]
 levels=list()
 treeLevels=list()
 for (i in seq_len(nrow(uniqueLevels))) {
 filter=uniqueLevels[i, ]
-treeCurrent=tree[filter, , on = c("geographicAreaM49", "timePointYearsSP")]
+treeCurrent=tree[filter, , on = c("geographicAreaM49", "timePointYears")]
 levels=findProcessingLevel(treeCurrent,"measuredItemParentCPC","measuredItemChildCPC")
 setnames(levels, "temp","measuredItemParentCPC")
 treeLevels[[i]]= merge(treeCurrent, levels, by=c("measuredItemParentCPC"), all.x=TRUE)
@@ -138,7 +165,7 @@ tree=rbindlist(treeLevels)
 ##tree=merge(tree, levels, by="measuredItemParentCPC", all.x=TRUE)
 
     
-setnames(tree,"timePointYearsSP","timePointYears")
+##setnames(tree,"timePointYearsSP","timePointYears")
 
 ## Select all the commodity involved (what I need is just the dependence parent-child,
 ##all the possibilities, no country-year specific)
@@ -208,7 +235,7 @@ secondLoop=unique(multipleLevels[n!=1,measuredItemChildCPC])
 ##  # code                  description
 ##  # 1: 5141                     Food [t]
 ##  # 2: 5164 Tourist consumption [1000 t]
-##  # 3: 5165     Industrial uses [1000 t]
+##  # 3: 5165     Industrial uses [1000 t] 
 ##  
 ##  
 ##  sws_elements <- c("5141", "5164", "5165")
@@ -364,17 +391,17 @@ secondLoop=unique(multipleLevels[n!=1,measuredItemChildCPC])
 completeImputationKey@dimensions$measuredElement@keys=c("5510")
 completeImputationKey@dimensions$measuredItemCPC@keys=primaryInvolvedDescendents
 completeImputationKey@dimensions$geographicAreaM49@keys=areaKeys
-
+completeImputationKey@dimensions$timePointYears@keys=timeKeys
 
 dataProcessed=GetData(completeImputationKey)
 dataProcessed[,timePointYears:=as.numeric(timePointYears)]
 dataProcessed=dataProcessed[,oldFAOSTATdata:=Value]
 
 ##Artificially protect production data between the time window 2000-2009.
-dataProcessed[timePointYears<2010,flagObservationStatus:="E"] 
-dataProcessed[timePointYears<2010,flagMethod:="h"] 
+dataProcessed[timePointYears<imputationStartYear,flagObservationStatus:="E"] 
+dataProcessed[timePointYears<imputationStartYear,flagMethod:="h"] 
 
-dataProcessed=expandYear(dataProcessed,newYear=2016)
+dataProcessed=expandYear(dataProcessed,newYear=endYear)
 
 dataProcessed=removeInvalidFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
 dataProcessed=removeNonProtectedFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
@@ -451,7 +478,7 @@ for(lev in (seq(levels)-1))  {
         
     ## Calculate share down up. Please note that currentData contains the SUA table.
     dataMergeTree=calculateShareDownUp(data=currentData,tree=treeCurrentLevel,
-                                       params=params, printNegativeAvailability=TRUE,
+                                       params=params, printNegativeAvailability=FALSE,
                                        batchNumber=batchNumber)
     
     ## Here I merge the SUA table (already merged with tree), with the PRODUCTION DATA
@@ -470,7 +497,7 @@ for(lev in (seq(levels)-1))  {
 #    pTree[, timePointYears:=as.numeric(timePointYears)]
     
    
-    inputOutputdata=calculateProcessingShare(inputOutputdata, printSharesGraterThan1=TRUE, param=params, zeroWeightVector=zeroWeight)
+    inputOutputdata=calculateProcessingShare(inputOutputdata, printSharesGraterThan1=FALSE, param=params, zeroWeightVector=zeroWeight)
 
     ##-------------------------------------------------------------------------------------------------------------------------------------    
     
@@ -581,6 +608,8 @@ output=output[is.na(minProcessingLevel) | processingLevel==minProcessingLevel]
 ## The following lines create the dataset useful for validation purposes:
 ## I want to sum the newImputation into the totNewImputation, but I want to keep
 ## all the constributions to double check the final result
+
+if(CheckDebug()){
 output[,  totNewImputation := sum(newImputation, na.rm = TRUE),
        by =c ("geographicAreaM49","measuredItemChildCPC","timePointYears")]
 
@@ -603,6 +632,8 @@ fileForValidation2(outPutforValidation,   dir=directory)
            "23120.05", "23120.10", "23170.03", "23120.01", "23170.02", "23120.04", "23120.06", "23120.09", "21920", "23999.02")
   
   toBePubblished=c(processed47, flours)
+}
+  
   #fileForValidationP = fileForValidation[measured %in% toBePubblished]
   #
   #directoryP=paste0("C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/Batch",batchNumber,"/finalValidationOnlyItemsToPubblish")
@@ -641,9 +672,11 @@ imputed[flagComb %in% protected, PROTECTED:=TRUE]
 imputed[PROTECTED==TRUE,newImputation:=oldFAOSTATdata]
 toPlot=imputed
 ## This table is saved just to produce comparisond between batches: 
+
+if(CheckDebug()){
 write.csv(toPlot, paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch",batchNumber,"\\toPlot",batchNumber,".csv"), row.names=FALSE)
 plotResult(toPlot, batchNumber,toBePubblished)
-
+}
 
 ## ## This table is saved just to produce comparison between batches: 
 ## write.csv(toPlot, paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch",batchNumber,"\\toPlot",batchNumber,".csv"), row.names=FALSE)
