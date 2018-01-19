@@ -4,12 +4,13 @@
 ##' @param data data table containing all the columns to compute processingSharing
 ##' @param printSharesGraterThan1 It is TRUE if we want to save some 
 ##' @param params defaultProcessedItamParams parameters, object which contains the parameters  
+##' @param  printDirectory
 ##'
 ##' @export
 ##'
 
 
-calculateProcessingShare=function(data, printSharesGraterThan1=FALSE, param){
+calculateProcessingShare=function(data, printSharesGraterThan1=FALSE, param, zeroWeightVector, printDirectory=NULL){
                                   ##processingTree
     
 ##Check that data contains all the necessary columns    
@@ -28,17 +29,13 @@ data[,param$processingShare:= (( get(params$value)/get (param$extractVar) )* get
 ##data[flagObservationStatus=="E" & flagMethod=="h" & get(param$processingShare)>1.02, processingShare:=1]
 ##if processing share are Inf, it means that the availability is 0, so the share must be zero as well.
 data[processingShare==Inf,processingShare:=0 ]
-##-------------------------------------------------------------------------------------------------------
-##Deviate processing share greater than ONE
-if(printSharesGraterThan1){
 
-processingShareGraterThan1=data[processingShare>1]
-directory= "C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/unfeasibleProcessingshare/"
-dir.create(paste0(directory, lev), recursive=TRUE)
-write.csv(processingShareGraterThan1, paste0(directory,lev, "/",currentGeo, "processingShareGraterThan1",".csv"), sep=";",row.names = F)
-}
 
-##Attemt to use shares coming from the old system, with shares here we mean the share down up (processing shares)
+## Force the processing share not exceeding 1 
+
+data[processingShare>1,processingShare:=1 ]
+
+##Attempt to use shares coming from the old system, with shares here we mean the share down up (processing shares)
 ##data[!is.na(pShare), processingShare:=pShare]
 
 ##-------------------------------------------------------------------------------------------------------
@@ -64,7 +61,8 @@ processingShareParamenters$ensembleModels$defaultMixedModel=NULL
 data[,processingShareFlagObservationStatus:="M"]
 data[,processingShareFlagMethod:="u"]
 
-
+## I am flagging the just computed flags with a protected flag combination
+## in ordert to use them as training set to produce imputations
 data[!is.na(processingShare),processingShareFlagObservationStatus:="T"]
 data[!is.na(processingShare),processingShareFlagMethod:="-"]
 data[processingShare=="NaN", processingShare:=NA_real_]
@@ -78,6 +76,42 @@ data=data[counts, ,on=c(param$geoVar, param$childVar, param$parentVar)]
 
 ## impute processingSharing
 data=imputeVariable(data,processingShareParamenters)
+
+
+
+## Force the processing share not exceeding 1 
+data[processingShare>1,processingShare:=1 ]
+##-------------------------------------------------------------------------------------------------------
+data[,check:=NA_real_]
+data[!(measuredItemChildCPC %in% zeroWeightVector) & !(measuredItemChildCPC %in% secondLoop) , check:=sum(processingShare),
+     by=c("geographicAreaM49", "timePointYears","measuredItemParentCPC")]
+
+if(any(data[!is.na(check),check]>1)){
+    
+    warning("Some processing share are greater than ONE!!")
+}
+
+##Deviate processing share greater than ONE
+
+
+if(printSharesGraterThan1){
+    if(is.null(printDirectory)){
+        message("No validation files have been created, please specify the directory to allocate intermediate validation files")}
+    
+    else{
+    processingShareGraterThan1=data[processingShare>1]
+    if(nrow(processingShareGraterThan1)>1){
+    ##directory= paste0("C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/Batch",batchNumber)
+    dir.create(paste0(printDirectory, "/processingShareGraterThan1/",lev), recursive=TRUE)
+    
+    write.csv(processingShareGraterThan1, paste0(directory,"/processingShareGraterThan1/",lev, "/",currentGeo, "processingShareGraterThan1",".csv"), sep=";",row.names = F)
+}}}
+
+
+
+
+data[,check:=NULL]
+
 return(data)
 
 }
