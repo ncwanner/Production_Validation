@@ -2,16 +2,14 @@
 ##' that it is allocated in different productive processes.
 ##'
 ##' @param data data table containing all the columns to compute processingSharing
-##' @param printSharesGraterThan1 It is TRUE if we want to save some 
 ##' @param params defaultProcessedItamParams parameters, object which contains the parameters  
-##' @param  printDirectory
 ##'
 ##' @export
 ##'
 
 
-calculateProcessingShare=function(data, printSharesGraterThan1=FALSE, param, zeroWeightVector, printDirectory=NULL){
-                                  ##processingTree
+calculateProcessingShare=function(data, printSharesGraterThan1=FALSE, param){
+                                  
     
 ##Check that data contains all the necessary columns    
 stopifnot(c(param$geoVar, param$yearVar, param$childVar, param$parentVar,
@@ -90,25 +88,6 @@ if(any(data[!is.na(check),check]>1)){
     
     warning("Some processing share are greater than ONE!!")
 }
-
-##Deviate processing share greater than ONE
-
-
-if(printSharesGraterThan1){
-    if(is.null(printDirectory)){
-        message("No validation files have been created, please specify the directory to allocate intermediate validation files")}
-    
-    else{
-    processingShareGraterThan1=data[processingShare>1]
-    if(nrow(processingShareGraterThan1)>1){
-    ##directory= paste0("C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/Batch",batchNumber)
-    dir.create(paste0(printDirectory, "/processingShareGraterThan1/",lev), recursive=TRUE)
-    
-    write.csv(processingShareGraterThan1, paste0(directory,"/processingShareGraterThan1/",lev, "/",currentGeo, "processingShareGraterThan1",".csv"), sep=";",row.names = F)
-}}}
-
-
-
 
 data[,check:=NULL]
 

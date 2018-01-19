@@ -8,13 +8,15 @@
 ##' @param printNegativeAvailability It is TRUE if you want to produce csv file containing nagative availabilities
 ##' @param params computation parameters
 ##' @param printDirectory where intermidiate output should be saved in case printNegativeAvailability is TRUE
+##' @param useAllSUAcomponents Corrently the availability is computing just a subset of components, this
+##'                             parameter allows to use all the components
 ##'
 ##' @export
 ##'
 
 
 
-calculateShareDownUp=function(data,tree, printNegativeAvailability=FALSE , params, printDirectory=NULL)
+calculateShareDownUp=function(data,tree, printNegativeAvailability=FALSE , params, printDirectory=NULL, useAllSUAcomponents=FALSE)
 
 {
 ##Checks
@@ -22,27 +24,24 @@ stopifnot(c(params$parentVar,params$geoVar,params$yearVar,params$elementVarSUA,p
 stopifnot(c(params$parentVar,params$geoVar,params$yearVar,params$childVar,params$extractVar,  params$level) %in% colnames(tree))
     
 dataMergeTree=merge(data,tree, by=c(params$parentVar, params$geoVar,params$yearVar))
-##allow.cartesian = TRUE)
 
 
-
+if(useAllSUAcomponents){
 ##Simple availability that we interpret as FOOD PROCESSING: here I am using all the components
-## dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
-##                                     ifelse(measuredElementSuaFbs == params$productionCode, 1,
-##                                     ifelse(measuredElementSuaFbs == params$importCode, 1,
-##                                     ifelse(measuredElementSuaFbs == params$exportCode , -1, 
-##                                     ifelse(measuredElementSuaFbs == params$stockCode, -1,
-##                                     ifelse(measuredElementSuaFbs == params$foodCode, -1,
-##                                     ifelse(measuredElementSuaFbs == params$feedCode , -1,
-##                                     ifelse(measuredElementSuaFbs == params$wasteCode, -1,
-##                                     ifelse(measuredElementSuaFbs == params$seedCode, -1,
-##                                     ifelse(measuredElementSuaFbs == params$industrialCode, -1,
-##                                     ifelse(measuredElementSuaFbs == params$touristCode, -1, 0))))))))))),
-##               by = c(params$geoVar,params$yearVar,params$parentVar,params$childVar)]
-
-
-
-
+   dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
+                                       ifelse(measuredElementSuaFbs == params$productionCode, 1,
+                                       ifelse(measuredElementSuaFbs == params$importCode, 1,
+                                       ifelse(measuredElementSuaFbs == params$exportCode , -1, 
+                                       ifelse(measuredElementSuaFbs == params$stockCode, -1,
+                                       ifelse(measuredElementSuaFbs == params$foodCode, -1,
+                                       ifelse(measuredElementSuaFbs == params$feedCode , -1,
+                                       ifelse(measuredElementSuaFbs == params$wasteCode, -1,
+                                       ifelse(measuredElementSuaFbs == params$seedCode, -1,
+                                       ifelse(measuredElementSuaFbs == params$industrialCode, -1,
+                                       ifelse(measuredElementSuaFbs == params$touristCode, -1, 0))))))))))),
+                 by = c(params$geoVar,params$yearVar,params$parentVar,params$childVar)]
+}else{
+    
 ##Simple availability that we interpret as FOOD PROCESSING: this availability is based only on PRODUCTION, IMPORT and EXPORT
 dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
                                        ifelse(measuredElementSuaFbs == params$productionCode, 1,
@@ -59,7 +58,7 @@ dataMergeTree[, params$availVar := sum(ifelse(is.na(Value), 0, Value) *
 
 ##The validation process of the final output requests to check all the components of the SUA tables: I print also the whole 
 ## table with all the components and the resulting availability (row 74)
-
+}
 ##-------------------------------------------------------------------------------------------------------
 ##Deviate the negative agailability to be manually checked
 
@@ -125,8 +124,6 @@ if(any( dataMergeTree[!is.na(check),check]>1)){
     
     toCheck=dataMergeTree[dataMergeTree[!is.na(check),check]>1]
 }
-
-
 
 
 ## We are currently using a version of the commodity-tree containing the shares coming from the old system,
