@@ -54,8 +54,11 @@ suppressMessages({
     library(dplyr)
     library(sendmailR)
     library(faoswsStandardization)
-    library(faoswsModules)
+   
 })
+
+
+R_SWS_SHARE_PATH <- Sys.getenv("R_SWS_SHARE_PATH")
 
 if(CheckDebug()){
     
@@ -80,26 +83,54 @@ if(CheckDebug()){
 sessionKey = swsContext.datasets[[1]]
 oldData=FALSE
 
-############################################################################################################################
-##'  This are those commodity that are pubblished on FAOSTAT
+###########################################################################################################
+##Create a new directories in the share env to support the validation:
 
-processed47=c("22249.01", "22241.01" ,"22254"  ,  "22253"  ,  "22110.02", "26110",    "22251.01" ,"22251.02" ,"21521" ,   "22120"  ,  "22241.02",
-              "22212"  ,  "22222.01", "22211" ,   "22221.01" ,"21523"  ,  "22130.02" ,"22230.04", "22222.02" ,"22242.02", "22130.03", "22221.02",
-              "22242.01", "22252"  ,  "22230.01", "22249.02","01921.02" ,"0143"   ,  "23540"   , "2168" ,    "21691.12" ,"2167",
-              "21691.07" ,"21631.01" ,"2351f"  ,  "24310.01", "21700.02","2162",     "2165" ,    "2161"    , "24212.02" ,"21641.01" ,
-              "21631.02" ,"2166"   ,  "21691.14" ,"01491.02" ,"21691.02")
 
-##'   I build the key, always the same in the PRODUCTION sub modules:
-completeImputationKey=getCompleteImputationKey("production")
+dir_to_save <- file.path(R_SWS_SHARE_PATH, "processedItem","validation")
 
-##-------------------------------------------------------------------------------------------------------------------------------------
+ if(!file.exists(dir_to_save)){
+     dir.create(dir_to_save, recursive = TRUE)
+ }
+
+
+dir_to_save_plot <- file.path(R_SWS_SHARE_PATH, "processedItem","validation", "plot")
+
+if(!file.exists(dir_to_save_plot)){
+    dir.create(dir_to_save_plot, recursive = TRUE)
+}
+
+
+dir_to_save_SUA <- file.path(R_SWS_SHARE_PATH, "processedItem","validation", "SUA")
+
+if(!file.exists(dir_to_save_SUA)){
+    dir.create(dir_to_save_SUA, recursive = TRUE)
+}
+
+
+dir_to_save_output <- file.path(R_SWS_SHARE_PATH, "processedItem","validation", "output")
+
+if(!file.exists(dir_to_save_output)){
+    dir.create(dir_to_save_output, recursive = TRUE)
+}
+ 
+###########################################################################################################
+##'This are those commodity that are pubblished on FAOSTAT
+
+
+##'I build the key, always the same in the PRODUCTION sub modules:
+##completeImputationKey=getCompleteImputationKey("production")
+FBScountries=ReadDatatable("fbs_countries")[,code]
+
+##----------------------------------------------------------------------------------------------------------
 ##'  Get default parameters
 params = defaultProcessedItemParams()
-##-------------------------------------------------------------------------------------------------------------------------------------
+##---------------------------------------------------------------------------------------------------------
 ##'  Get the list of processed items to impute
 processedCPC=ReadDatatable("processed_item")[,measured_item_cpc]
+toBePubblished=ReadDatatable("processed_item")[faostat==TRUE,measured_item_cpc]
 
-############################################################################################################################
+#############################################################################################################
 ##'  Get the commodity tree from the TREE DATASET:
 ##'  The country dimention depends on the session: 
 geoImputationSelection = swsContext.computationParams$imputation_country_selection
@@ -107,14 +138,28 @@ sessionCountry=getQueryKey("geographicAreaM49", sessionKey)
 selectedCountry =
     switch(geoImputationSelection,
            "session" = sessionCountry,
-           "all" = completeImputationKey@dimensions$geographicAreaM49@keys)
+           "all" = FBScountries)
 ##'  The year dimention depends on the session: 
 startYear=swsContext.computationParams$startYear
 imputationStartYear=swsContext.computationParams$startImputation
 endYear=swsContext.computationParams$endYear
 
 areaKeys=selectedCountry
+
+##'Check on the consistency of startYear, andYear
+
+if(startYear>=endYear){
+    stop("You must select startYear lower than endYear")
+}
+
+
 timeKeys=as.character(c(startYear:endYear))
+
+if(!(imputationStartYear>=startYear & imputationStartYear<=endYear)){
+    stop("imputationStartYear must lie in the time window between startYear and EndYear")
+}
+
+
 
 ##'  I have to pull all the items in the parent and child columns:
 
@@ -123,21 +168,15 @@ itemKeysChild=GetCodeList(domain = "suafbs", dataset = "ess_fbs_commodity_tree",
 ##'  To save time I pull just the only element I need: "extraction rate" whose code is 5423
 elemKeys=c("5423")
 
-
-
 allCountries=areaKeys
-
 ##'  Seven Pilot countries
 ##   allCountries=c("454", "686", "1248", "716","360", "392", "484")
-
 
 finalByCountry=list()
 allLevels=list()
 
-
-logConsole1=file("logProcessed.txt",open = "w")
-sink(file = logConsole1, append = TRUE, type = c( "message"))
-
+#logConsole1=file("modules/processedItems/logProcessed.txt",open = "w")
+#sink(file = logConsole1, append = TRUE, type = c( "message"))
 
 ##'  Loop by country 
 ##'  
@@ -160,8 +199,10 @@ keyTree = DatasetKey(domain = "suafbs", dataset = "ess_fbs_commodity_tree", dime
 ))
 
 
-tree=faosws::GetData(keyTree)
+tree = try(setTimeOut({GetData(keyTree);},
+                   timeout=180, onTimeout="error"), silent = TRUE)
 
+if(!inherits(tree, "try-error")) {
 
 if(nrow(tree)<1)
 {message(paste0("The commodity-tree does not exist for the country: "), currentGeo)}else{
@@ -183,11 +224,7 @@ tree=tree[!is.na(extractionRate)]
 uniqueLevels = tree[, .N, by = c("geographicAreaM49", "timePointYears")]
 uniqueLevels[, N := NULL]
 levels=list()
-
 treeLevels=list()
-
-
-
 for (i in seq_len(nrow(uniqueLevels))) {
     filter=uniqueLevels[i, ]
     treeCurrent=tree[filter, , on = c("geographicAreaM49", "timePointYears")]
@@ -195,7 +232,6 @@ for (i in seq_len(nrow(uniqueLevels))) {
     setnames(levels, "temp","measuredItemParentCPC")
     treeLevels[[i]]= merge(treeCurrent, levels, by=c("measuredItemParentCPC"), all.x=TRUE)
 }
-
 tree=rbindlist(treeLevels)
 ##-------------------------------------------------------------------------------------------------------------------------------------
 ############################################################################################################################
@@ -215,7 +251,8 @@ primaryInvolvedDescendents=getChildren( commodityTree = treeRestricted,
                                         childColname = "measuredItemChildCPC",
                                         topNodes =primaryInvolved )
 
-
+##' For some countris (not included in the FBS country list) there are no processed commodities to be imputed,
+##' and the next steps cannot be run.
 if(length(primaryInvolvedDescendents)==0)
     {message("No primary commodity involved in this country")}else{
 
@@ -241,6 +278,7 @@ secondLoop=unique(multipleLevels[n!=1,measuredItemChildCPC])
 dataSuaRestricted=getSUADataRestricted()
 
 ##'  I am using elementCodesToNames2!!!!! because it has not been deployed yet the standardization package 
+##'  This function is upload into the package folder when I have created the plugin
 
 data = elementCodesToNames2(data = dataSuaRestricted, itemCol = "measuredItemFbsSua",
                             elementCol = "measuredElementSuaFbs")
@@ -279,10 +317,13 @@ all[,geographicAreaM49:=as.character(geographicAreaM49)]
 
 noProd=setdiff(all,prod)
 ##'  I add the value and flags columns:
-noProd[,":="(c("measuredElementSuaFbs","Value","flagObservationStatus","flagMethod"), list("production",NA_real_,"M","u"))]
+if(nrow(noProd>0)){
+noProd=data.table(noProd, measuredElementSuaFbs="production",Value=NA,flagObservationStatus="M",flagMethod="u" )
+
 
 ##'  I add this empty rows into the SUA table
 data=rbind(data,noProd)
+}
 ############################################################################################################################
 ##--------------------------------------------------------------------------------------------------------------------------
 ##'   Processed data (OUTPUT). I pull the data from the aproduction domain. Baasically I am pulling the already existing 
@@ -306,11 +347,11 @@ dataProcessed[,timePointYears:=as.numeric(timePointYears)]
 dataProcessed=dataProcessed[,oldFAOSTATdata:=Value]
 
 ##'  Artificially protect production data between the time window external to the range I have to produce imputations:
-dataProcessed[timePointYears<imputationStartYear,flagObservationStatus:="E"] 
-dataProcessed[timePointYears<imputationStartYear,flagMethod:="h"] 
+##dataProcessed[timePointYears<imputationStartYear,flagObservationStatus:="E"] 
+##dataProcessed[timePointYears<imputationStartYear,flagMethod:="h"] 
 dataProcessed=expandYear(dataProcessed,newYear=as.numeric(endYear))
 dataProcessed=removeInvalidFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
-dataProcessed=removeNonProtectedFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE)
+dataProcessed=removeNonProtectedFlag(dataProcessed, "Value", "flagObservationStatus", "flagMethod", normalised = TRUE, keepDataUntil =imputationStartYear)
 
 setnames(dataProcessed, "measuredItemCPC", "measuredItemChildCPC")
 ##'  At the moment we have SUA data for the time range 2000-2015 (I pulled data from QA)
@@ -439,6 +480,7 @@ for(lev in (seq_along(levels)-1))  {
                                     childColname = "measuredItemChildCPC",
                                     topNodes =secondLoop )
     
+    ##' Note that the so called "secondLoop" items are computed for each country separately:
     secondLoop=secondLoopChildren
     
     ##'   This passage is to sum up the productions of a derived commodities coming from more
@@ -464,7 +506,20 @@ for(lev in (seq_along(levels)-1))  {
     
     
 }
-}    
+}   
+
+## Save all the intermediate output country by country:
+    
+    
+if(!CheckDebug()){
+res_validationFile = try(write.csv(allLevels[[geo]], file=file.path(dir_to_save_output,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)
+    
+res_SUA = try(write.csv(data, file=file.path(dir_to_save_SUA,paste0(currentGeo,"SUA.csv")), row.names = FALSE), silent = TRUE)
+} 
+
+}else{message(paste0("TimeOut issues to GetData for country: ",currentGeo))}
+
+
 }
 
 end.time <- Sys.time()
@@ -500,15 +555,11 @@ if(CheckDebug()){
     
     directory=paste0("C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/Batch",batchNumber,"/finalValidation")
     dir.create(directory)
-    fileForValidation2(outPutforValidation,   dir=directory)
+    fileForValidation2(outPutforValidation,SUAdata=data ,  dir=directory)
     
     ##'  For validation purposes it is extremly important to produce validation files filtered for those 47
     ##'  commodies plut flours (that are upposed to be pubblished)
     
-    flours=c("23110","23170","23120", "23120.02", "23120.07", "23170.01", "23120.90", "23120.08", "23170.04", "23120.03",
-             "23120.05", "23120.10", "23170.03", "23120.01", "23170.02", "23120.04", "23120.06", "23120.09", "21920", "23999.02")
-    
-    toBePubblished=c(processed47, flours)
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------------    
@@ -522,7 +573,8 @@ finalOutput=output[,  list(newImputation = sum(newImputation, na.rm = TRUE)),
 #         flagObservationStatus,flagMethod,oldFAOSTATdata,newImputation, processingLevel)]
 
 #-------------------------------------------------------------------------------------------------------------------------------------    
-##'   I subset the output datatable in order to make comparison between  oldFAOSTATdata and newImputations (I keep just the Value and oldFAOSTATdata columns)
+##'   I subset the output datatable in order to make comparison between  oldFAOSTATdata (basically data already stored in the SWS)
+##'    and newImputations (I keep just the Value and oldFAOSTATdata columns)
 orig=output[,.(geographicAreaM49,measuredItemChildCPC,timePointYears,Value,oldFAOSTATdata,flagObservationStatus,flagMethod)]
 ##'   This subset of output is full of duplicated rows because each child can have more than one parents, and new imputations have been preduced
 ##'   for each of its parent. Each new imputations represent the contribution of one single parent item to the production of the derived item.
@@ -531,11 +583,11 @@ orig=orig[!duplicated(orig)]
 ##'   finalOutput contains all the newImputation (olready aggregated with respect to all the parent contribuions)
 imputed=merge(finalOutput,orig, by=c("geographicAreaM49", "measuredItemChildCPC","timePointYears"), allow.cartesian = TRUE)
 
-##'   Only M,u figures are overwritten by the new imputations.
+##' Only M,u figures are overwritten by the new imputations.
 imputed[flagObservationStatus=="M" & flagMethod=="u" & !is.na(newImputation), ":="(c("Value", "flagObservationStatus", "flagMethod"), list(newImputation,"I","e"))]
 
 #-------------------------------------------------------------------------------------------------------------------------------------    
-##'   The column PROTECTED is created just to PLOT the output and distinguish between new imputations and protected figures.
+##' The column PROTECTED is created just to PLOT the output and distinguish between new imputations and protected figures.
 imputed[,flagComb:=paste(flagObservationStatus,flagMethod,sep=";")]   
 imputed[, PROTECTED:=FALSE]
 imputed[flagComb %in% protected, PROTECTED:=TRUE]
@@ -545,12 +597,11 @@ toPlot=imputed
 
 if(CheckDebug()){
     write.csv(toPlot, paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch",batchNumber,"\\toPlot",batchNumber,".csv"), row.names=FALSE)
-    plotResult(toPlot, batchNumber,toBePubblished)
 }
 
-##'   This table is saved just to produce comparison between batches: 
-## write.csv(toPlot, paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch",batchNumber,"\\toPlot",batchNumber,".csv"), row.names=FALSE)
-##'   plotResult(toPlot, batchNumber, toBePubblished)
+##Plots goes directly to the shared folder
+
+res_plot = try(plotResult(toPlot, toPubblish=toBePubblished, pathToSave= dir_to_save_plot))
 #-------------------------------------------------------------------------------------------------------------------------------------    
 ##'   Save back
 
@@ -580,8 +631,13 @@ SaveData(domain = sessionKey@domain,
 ## Initiate email
 from = "sws@fao.org"
 to = swsContext.userEmail
-subject = "Derive-Pruduct imputation plug-in has correctly run"
-body = "The plug-in has saved the Production imputation in your session"
+subject = "Derived-Products imputation plugin has correctly run"
+body = paste0("The plug-in has saved the Production imputation in your session.",
+                  "You can browse charts and intermediate csv files in the shared folder: ",
+                  dir_to_save)
+
 
 sendmail(from = from, to = to, subject = subject, msg = body)
-paste0("Email sent to ", swsContext.userEmail)
+
+
+print("The plugin ran successfully!")
