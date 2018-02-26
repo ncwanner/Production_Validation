@@ -101,11 +101,6 @@ if(!file.exists(dir_to_save_plot)){
 }
 
 
-dir_to_save_SUA <- file.path(R_SWS_SHARE_PATH, "processedItem","validation", "SUA")
-
-if(!file.exists(dir_to_save_SUA)){
-    dir.create(dir_to_save_SUA, recursive = TRUE)
-}
 
 
 dir_to_save_output <- file.path(R_SWS_SHARE_PATH, "processedItem","validation", "output")
@@ -114,6 +109,13 @@ if(!file.exists(dir_to_save_output)){
     dir.create(dir_to_save_output, recursive = TRUE)
 }
  
+
+
+dir_to_save_recovery<- file.path(R_SWS_SHARE_PATH, "processedItem","validation", "recovery")
+
+if(!file.exists(dir_to_save_recovery)){
+    dir.create(dir_to_save_recovery, recursive = TRUE)
+}
 ###########################################################################################################
 ##'This are those commodity that are pubblished on FAOSTAT
 
@@ -174,7 +176,7 @@ allCountries=areaKeys
 
 finalByCountry=list()
 allLevels=list()
-
+forValidationFile=list()
 #logConsole1=file("modules/processedItems/logProcessed.txt",open = "w")
 #sink(file = logConsole1, append = TRUE, type = c( "message"))
 
@@ -275,6 +277,7 @@ secondLoop=unique(multipleLevels[n!=1,measuredItemChildCPC])
 ##'  Get SUA data from QA: all components are stored in the SWS
 ##'  Note Restricted means that I am pulling only the components I need in this submodule: PRODUCTION, STOCK, SEED, TRADE
 
+
 dataSuaRestricted=getSUADataRestricted()
 
 ##'  I am using elementCodesToNames2!!!!! because it has not been deployed yet the standardization package 
@@ -317,7 +320,7 @@ all[,geographicAreaM49:=as.character(geographicAreaM49)]
 
 noProd=setdiff(all,prod)
 ##'  I add the value and flags columns:
-if(nrow(noProd>0)){
+if(nrow(noProd)>0){
 noProd=data.table(noProd, measuredElementSuaFbs="production",Value=NA,flagObservationStatus="M",flagMethod="u" )
 
 
@@ -505,18 +508,60 @@ for(lev in (seq_along(levels)-1))  {
     allLevels[[geo]]=allLevelsByCountry
     
     
-}
-}   
+    
+    
 
+   
+
+
+## create an intermediate set of data to be saved in a shared folder 
+    
+    forValidationFile[[geo]]=    allLevels[[geo]][,.(geographicAreaM49, measuredItemChildCPC, timePointYears, 
+                        measuredItemParentCPC ,extractionRate  ,processingLevel,processingShare,
+                        availability ,shareDownUp ,newImputation, minProcessingLevel)]  
+   
+    forValidationFile[[geo]]= nameData("suafbs", "ess_fbs_commodity_tree", forValidationFile[[geo]])
+   # forValidationFile[[geo]][,timePointYears:=as.numeric(timePointYears)]
+    
+    dataLabel=copy(data)
+    dataLabel=dataLabel[geographicAreaM49==currentGeo]
+    setnames(dataLabel,  "measuredItemParentCPC", "measuredItemChildCPC")
+    dataLabel=nameData("suafbs", "ess_fbs_commodity_tree", dataLabel)
+    dataLabel[,timePointYears_description:=NULL]
+    
+ 
+    
+    forValidationFile[[geo]]=merge(dataLabel,forValidationFile[[geo]], by=c("geographicAreaM49","measuredItemChildCPC",
+                                                                            "measuredItemChildCPC_description",
+                                                                            "geographicAreaM49_description",
+                                                                            "timePointYears") , all.x = TRUE, all.y = TRUE)
+   
+    
+    
+    
+    forValidationFile[[geo]]=forValidationFile[[geo]][,.(geographicAreaM49,geographicAreaM49_description,timePointYears,
+                                measuredItemChildCPC,measuredItemChildCPC_description , measuredItemParentCPC,measuredItemParentCPC_description,
+                                measuredElementSuaFbs ,Value, flagObservationStatus, flagMethod, availability ,extractionRate,  processingLevel, newImputation, 
+                                shareDownUp,minProcessingLevel)]
+    
+  
 ## Save all the intermediate output country by country:
-    
-    
-if(!CheckDebug()){
-res_validationFile = try(write.csv(allLevels[[geo]], file=file.path(dir_to_save_output,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)
-    
-res_SUA = try(write.csv(data, file=file.path(dir_to_save_SUA,paste0(currentGeo,"SUA.csv")), row.names = FALSE), silent = TRUE)
-} 
 
+if(!CheckDebug()){
+    
+    
+res_recovery = try(write.csv(allLevels[[geo]], file=file.path(dir_to_save_recovery,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)    
+    
+res_validationFile = try(write.csv(forValidationFile[[geo]], file=file.path(dir_to_save_output,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)
+
+
+    
+} 
+}    
+} 
+    
+    
+    
 }else{message(paste0("TimeOut issues to GetData for country: ",currentGeo))}
 
 
@@ -601,7 +646,11 @@ if(CheckDebug()){
 
 ##Plots goes directly to the shared folder
 
+if(!CheckDebug()){
+
 res_plot = try(plotResult(toPlot, toPubblish=toBePubblished, pathToSave= dir_to_save_plot))
+
+}
 #-------------------------------------------------------------------------------------------------------------------------------------    
 ##'   Save back
 
@@ -620,6 +669,12 @@ imputed= postProcessing(data =  imputed)
 imputed=imputed[flagObservationStatus=="I" & flagMethod=="e"]
 imputed=imputed[,.(measuredElement,geographicAreaM49, measuredItemCPC,
                    timePointYears,Value,flagObservationStatus,flagMethod)]
+
+##' ensure that just data after the imputationStartYear are saved back and I am not overwriting 
+##' protected figures
+##' 
+imputed=imputed[timePointYears>=imputationStartYear]
+ensureProtectedData(imputed, returnData = FALSE)
 
 
 SaveData(domain = sessionKey@domain,
