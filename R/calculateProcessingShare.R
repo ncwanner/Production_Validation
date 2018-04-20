@@ -80,16 +80,7 @@ data=imputeVariable(data,processingShareParamenters)
 ## Force the processing share not exceeding 1 
 data[processingShare>1,processingShare:=1 ]
 ##-------------------------------------------------------------------------------------------------------
-data[,check:=NA_real_]
-data[!(measuredItemChildCPC %in% zeroWeightVector) & !(measuredItemChildCPC %in% secondLoop) , check:=sum(processingShare),
-     by=c("geographicAreaM49", "timePointYears","measuredItemParentCPC")]
 
-if(any(data[!is.na(check),check]>1)){
-    
-    warning("Some processing share are greater than ONE!!")
-}
-
-data[,check:=NULL]
 
 return(data)
 

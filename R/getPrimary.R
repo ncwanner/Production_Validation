@@ -1,5 +1,5 @@
 ##' Function trace back to the primary item starting from an edge-item.
-##' It uses the commodity tree to go back level by level untill the fisrt one.
+##' It uses the commodity tree to go back level by level untill the first one.
 ##'
 ##' @param edge a CPC (or a vector of CPC codes) 
 ##' @param tree Commodity tree, data.table
@@ -24,7 +24,7 @@ getPrimary = function(edge, tree, standParams){
     
     editedTree = copy(origTree)
     ## Stop if we have a very flat tree:
-    if (max(tree$processingLevel) > 1) {
+    if (max(tree$processingLevel) >= 1) {
         for (i in 1:(max(tree$processingLevel) - 1)) {
             ## Roll down availability
             copyTree = copy(origTree)

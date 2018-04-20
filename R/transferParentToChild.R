@@ -111,11 +111,10 @@ transferParentToChild = function(parentData,
 
     ## Transfer the value from parent to child or the other way round.
     ##
-    ## TODO (Michael): Need to check what can be copied.
-    ##
     ## NOTE (Michael): I think everything should be copied except for protected
     ##                 data. An error should be thrown when both value are
     ##                 protected data.
+
     if(parentToChild){
 
         isMapped =
@@ -139,14 +138,24 @@ transferParentToChild = function(parentData,
                       transferMethodFlag))]
         ## NOTE (Michael): If share is zero, then the value of the child should
         ##                 be zero as well.
-        parentChildMergedData[
-            !nonZeroShare,
-            `:=`(c("Value_child",
-                   "flagObservationStatus_child",
-                   "flagMethod_child"),
-                 list(0,
-                      imputationObservationFlag,
-                      transferMethodFlag))]
+       ## parentChildMergedData[
+       ##     !nonZeroShare,
+       ##     `:=`(c("Value_child",
+       ##            "flagObservationStatus_child",
+       ##            "flagMethod_child"),
+       ##          list(0,
+       ##               imputationObservationFlag,
+       ##               transferMethodFlag))]
+        ## NOTE (Francesca): If the parent is (M,-) also the child must be (M,-), the series
+        ##                   must be closed.
+        
+        parentMdash= with(parentChildMergedData, flagObservationStatus_parent=="M" & flagMethod_parent=="-")
+        
+        parentChildMergedData[parentMdash,
+             `:=`(c("Value_child",
+                    "flagObservationStatus_child",
+                    "flagMethod_child"),
+                 list(NA,"M","-"))]
 
 
         setnames(parentChildMergedData,
@@ -183,6 +192,30 @@ transferParentToChild = function(parentData,
                  list(Value_child/share,
                       flagObservationStatus_child,
                       transferMethodFlag))]
+        
+        
+        ## NOTE (Francesca): If the child is (M,-) also the parent series must be (M,-), the series
+        ##                   must be closed.
+        
+        childMdash= with(parentChildMergedData, flagObservationStatus_child=="M" & flagMethod_child=="-")
+        
+        parentChildMergedData[childMdash,
+                              `:=`(c("Value_parent",
+                                     "flagObservationStatus_parent",
+                                     "flagMethod_parent"),
+                                   list(NA,"M","-"))]
+        
+        ## NOTE (Francesca): If the child is (M,-) also the parent must be (M,-), the series
+        ##                   must be closed.
+        
+        childMdash= with(parentChildMergedData, flagObservationStatus_child=="M" & flagMethod_child=="-")
+        
+        parentChildMergedData[childMdash,
+                              `:=`(c("Value_parent",
+                                     "flagObservationStatus_parent",
+                                     "flagMethod_parent"),
+                                   list(NA,"M","-"))]
+        
 
         setnames(parentChildMergedData,
                  old = c("measuredItemParentCPC",

@@ -124,7 +124,7 @@ ensureProductionOutputs = function(data,
                  suppressMessages({
                      ensureTimeSeriesImputed(data = dataCopy,
                                              key = c(areaVar, itemVar, elementVar),
-                                             returnData = FALSE,
+                                             returnData = TRUE,
                                              normalised = FALSE,
                                              getInvalidData = FALSE)
                  })

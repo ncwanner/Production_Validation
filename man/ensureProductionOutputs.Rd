@@ -5,7 +5,7 @@
 \title{Check Production Inputs}
 \usage{
 ensureProductionOutputs(data, processingParameters, formulaParameters,
-  testImputed = TRUE, testCalculated = TRUE, domain = "agriculture",
+  testImputed = FALSE, testCalculated = FALSE, domain = "agriculture",
   dataset = "aproduction", returnData = TRUE, normalised = TRUE)
 }
 \arguments{
