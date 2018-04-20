@@ -230,7 +230,7 @@ imputationResult = data.table()
 
 for(iter in seq(selectedMeatCode)){
     
-    try({
+    imputationProcess =    try({
     
     message("Processing livestock tree (", iter, " out of ",
             length(selectedMeatCode), ")")
