@@ -1,0 +1,211 @@
+\documentclass[nojss]{jss}
+\usepackage[sc]{mathpazo}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{breakurl}
+\usepackage{hyperref}
+\usepackage[ruled, vlined]{algorithm2e}
+\usepackage{mathtools}
+
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{mathrsfs}
+\usepackage[toc,page]{appendix}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{breqn}
+\usepackage[demo]{graphicx}% "demo" to make example compilable without .png-file
+
+\usepackage{lipsum}
+
+\usepackage{booktabs}
+\newcommand{\head}[1]{\textnormal{\textbf{#1}}}
+%% \usepackage{mathbbm}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+
+\title{\bf How to correclty run the Processed Item Imputation Plugin? }
+
+\author{Francesca Rosa\\ Food and Agriculture
+    Organization \\ of the United Nations\\}
+
+\Plainauthor{Francesca Rosa}
+
+\Plaintitle{faoswsImputation: How to correctly run the Processed Item Imputation Plugin?}
+
+\Shorttitle{Derived item production}
+
+\Abstract{
+
+  This document has been written to ensure that each user is able to autonomously run the plugin. The first session  explains how to set the requested parameters and clarifies the meaning of each requested parameter.
+The second session makes reference to those data tables (stored in the SWS) containing for each dimension the complete imputation key. It supports the users in case the complete imputation key has to be enlarged or reduced. It basically gives to the user the possibility to change the complete set of data the module has to work on, without modifying the \textbf{R} routines. The third session presents some intermediate files produced by the plugin and stored in a shared folder. Those files (both csv and pdf plots) have been created to support the validation process of the output. Finally, in the last session all the involved \textit{dataset} and \textit{data-table} are listed.
+  \\
+
+}
+
+
+\Keywords{plugin, guidelines, imputation key}
+\Plainkeywords{plugin, guidelines, imputation key}
+
+\Address{
+  Francesca Rosa\\
+  Economics and Social Statistics Division (ESS)\\
+  Economic and Social Development Department (ES)\\
+  Food and Agriculture Organization of the United Nations (FAO)\\
+  Viale delle Terme di Caracalla 00153 Rome, Italy\\
+  E-mail: \email{Francesca.Rosa@fao.org}\\
+  URL: \url{https://svn.fao.org/projects/SWS/RModules/faoswsProduction/}
+}
+
+\usepackage{Sweave}
+\begin{document}
+\input{howToUseIt-concordance}
+\SwaveParseOpstions
+
+
+\section {The plugin}
+
+The \textit{Derived Item imputation} sub-module is currently stored in the Statistical working system under the category \textit{Imputation}. 
+
+\includegraphics{plot/thePlugin.png}
+
+As usual the user is asked to create a new session querying the \textit{Agriculture Production} dataset in the \textit{Agriculture Production} domain.
+
+Choosing the \textit{DerivedItems_Imputation}, within the list of available plugins, the user is asked to set some basic parametersule in order to define the imputation key for the plugin execution.
+
+\includegraphics{plot/setParameters.png}
+
+\subsection{ Countries}
+The user is asked to declare on which countries the module has to run on. Thanks to this parameter the user can choose if apply the plugin to the countries already contained in the session ("\textit{Country in session}") or to produce imputations for all the country ("\textit{All countries}"). In this latter case the session will be enlarged to include all the FBS countries stored in the data table FBS_countries.
+
+\subsection{First year, Last year}
+
+The user can select the time-window on which the module has to work on. Embedded  in the \textbf{R} routines there are checks that block the sub-module execution if the user erroneously  types unfeasible time windows (e.g. first year greater than last year. )
+
+
+\subsection{Imputation process starts from}
+
+As already illustrated in depth in the document "\textit{ faoswsProduction: A sub-module for the imputation of missing time series data in the Statistical Working System - Processed items}" the module is using a complete time series to impute just a subset of it. In particular, since we do not dispose of broad set of official or semi-official data points, we had to artificially protect some figures. The module splits the time-series in two: the first part is used as training set to produce new imputations for the second part where all the non-protected figures are deleted and overwritten. This parameter controls the break-point. In the example reported in the following figure, we decided to use as training  set all the data up to 2009, this means that the \textit{imputation process starts from} 2010.
+Embedded in the \textbf{R} routines there are checks that block the sub-module execution if this parameter do not lie within the time-window specified through the \textit{start year} and \textit{end year}.
+
+\includegraphics{plot/PShareImpute.png}
+
+\section {Imputation key}
+
+\subsection{Item}
+The user has no possibility to choose which set of derived commodity is selected by the module for each country. The processed commodity to be imputed are stored in the SWS data table: 
+
+
+\includegraphics{plot/dataTable_processedItems.png}
+The last column, labeled "FAOSTAT", contains a check-box to highlight those items that have to be published on FAOSTAT.
+The country specific selection of the commodity occurs through the commodity tree which is pulled from the commodity tree dataset and can be browsed in the SWS.
+
+\subsection{Country}
+
+In  case the user wants to produce imputations of derived items for all the countries, the module picks this complete list from the data table \textit{FSB_countries}: 
+
+\includegraphics{plot/dataTable_processedItems.png}
+
+At the moment this list contains all the countries for which we dispose of a validated commodity tree. The existence of the commodity tree is a necessary condition to ensure that the Derived Item sub-module can be run.
+
+\subsection{Year}
+The year selection occurs only through the selection of the plugin parameters, already described in the sections
+1.2, 1.3 .
+
+\section {Validation Output}
+
+Since the plugin execution may last several hours (around 5 for all countries), the user receives an e-mail for advising  on the successfully execution. 
+Imputed figures are saved in the session and highlighted with a red sign (as usual). To facilitate the validation process some intermediate files are stored in the following shared folder: \textit{hqlprsws1.hq.un.fao.org }.
+
+In particular:
+
+\begin{itemize}
+\item{The \textit{plot} folder contains plots by commodity of all the final time-series obtained by the module. Protected and not protected figures can be recognize by the use of a different simbols (please check the legend on the top of the page). Each chart contains a comparison between the new imputations (\textit{Values}) and the corresponding data-points already stored in the SWS (\textit{oldData}).}
+\item{The \textit{output} folder contains a list of csv files (one for each country) containing both the parent SUA and the child new imputed production. In addition it is possible to browse and validat the resulting intermediate coefficients as the \textit{processing shares}, the \textit{availabilities} and the \textit{share down-up} produced by the module}.
+\item{The \textit{recovery} folder contains some intermediate csv files that are not useful for validation purposes. These files are stored in the shared folder to be used just in case the module fails and it is necessary to force the the restarting.}
+\end{itemize}
+
+\section {Data sources}
+
+This section is not directly useful to physically run the plugin, but it is important being aware about all the datasets involved in the process. In case some outliers or unfeasible figures are produced by the module (e.g. zero values due to negative primary availabilities) the user should know how to manual intervene  to quickly take action. 
+
+\subsection{SUA components}
+
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{Production} & Element: 5510  \\
+  \midrule
+  domain         & Agriculture Production     \\
+  dataset        & Agriculture Production  \\
+  \bottomrule[1.5pt]
+\end{tabular}
+
+\bigskip
+
+
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{trade} &  Element: 5525   \\
+  \midrule
+  domain         & Agriculture Production     \\
+  dataset        & Agriculture Production  \\
+  \bottomrule[1.5pt]
+\end{tabular}
+
+\bigskip
+
+The trade data source depends on the time window considered: in particular from 2013 onwards, data are pulled from the \textit{Total trade (CPC)} dataset, while data upto 2013 are pulled from FAOSTAT 1.
+
+
+\bigskip
+
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{Trade} &  Elements: 91-61   \\
+  \midrule
+  domain         & FAOStat 1    \\
+  dataset        &  Updated SUA 2013\\
+  \bottomrule[1.5pt]
+  \caption{\textit{Trade up to 2013}}
+ \end{tabular}
+
+\bigskip
+
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{Trade} &  Elements: 5610-5910   \\
+  \midrule
+  domain         & Trade     \\
+  dataset        & Totale trade (CPC)  \\
+  \bottomrule[1.5pt]
+  \caption{\textit{Trade from 2013 onwards}}
+ \end{tabular}
+ 
+ \bigskip
+ 
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{Stock Variation} &  Element: 5071   \\
+  \midrule
+  domain         & Stock     \\
+  dataset        & stocksdata  \\
+  \bottomrule[1.5pt]
+ 
+ \end{tabular}
+
+
+
+
+\subsection{Commodity tree}
+The commodity tree is pulled directly from the commodity tree dataset:
+
+\includegraphics{plot/commodityTree.png}
+
+
+\subsection{The output}
+
+The output is save back to the Agriculture Production dataset. In particular only the element-code 5510, corresponding to the \textit{PRODUCTION expressed in tons}, is saved in the session.
+
+\end{document}

@@ -1,0 +1,1053 @@
+\documentclass[nojss]{jss}
+\usepackage[sc]{mathpazo}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{breakurl}
+\usepackage{hyperref}
+\usepackage[ruled, vlined]{algorithm2e}
+\usepackage{mathtools}
+
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{mathrsfs}
+\usepackage[toc,page]{appendix}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{breqn}
+\usepackage[demo]{graphicx}% "demo" to make example compilable without .png-file
+
+\usepackage{lipsum}
+
+\usepackage{booktabs}
+\newcommand{\head}[1]{\textnormal{\textbf{#1}}}
+%% \usepackage{mathbbm}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+
+\title{\bf faoswsProduction: A sub-module for the imputation of missing time
+series data in the Statistical Working System - Processed items }
+
+\author{Francesca Rosa\\ Food and Agriculture
+    Organization \\ of the United Nations\\}
+
+\Plainauthor{Francesca Rosa}
+
+\Plaintitle{faoswsImputation: A sub-module for the imputation of missing time
+series data in the Statistical Working System - Processed items}
+
+\Shorttitle{Derived item production}
+
+\Abstract{
+
+  This vignette provides a detailed description of the usage of
+  functions in the \pkg{Processed commodities} package. \\
+
+}
+
+\Keywords{Imputation, Linear Mixed Model, Ensemble Learning}
+\Plainkeywords{Imputation, Linear Mixed Model, Commodity Tree, Processing Share}
+
+
+\usepackage{Sweave}
+\begin{document}
+\input{Derived-concordance}
+\SwaveParseOpstions
+
+
+\section {Introduction}
+Before analyzing the main steps of the \textit{derived item production sub-module}, it is important to identify the key items and elements involeved in this imputation process. 
+
+\subsection {Items}
+
+The FAO statistical division is currently collecting information of derived item production. This data is disseminated on FAOSTAT under the domains:
+
+\begin{enumerate}
+
+\item{\textbf{Crops processed} (FAOSTAT definition). Processed products of vegetal origin. Their parent products are found in the group 'Primary crops'. Production corresponds to the total output obtained from the processing of the input commodity in question (primary crops) during the calendar year. The quantity includes the output of home processing and of manufacturing industries and traditional processing. Data refer to total net production excluding processing losses, i.e. ex-factory or ex-establishment weight. As with the production of primary crops, it may occur that most of the output is obtained at the end of the calendar year and will be utilized during the following year. Olives picked towards the end of the year are immediately crushed after to avoid spoilage. Olive oil output therefore cannot enter the consumption during the same year. In these cases allocations to and from stocks (in the subsequent years) are made.Production data refer only to primary products while data for all other elements also include processed products derived there from, expressed in primary commodity equivalent." Source: \textit{FAO Statistics Division Derived commodities are those items whose production derives from a productive process}.
+}
+
+\item{ \textbf{Livestock processed} (FAOSTAT definition). "\textbf{Processed livestock} products from live animals. These are derived from primary livestock products from live animals, particularly dairy products, such as butter,cheese,and dried eggs. Production data refer only to primary products while data for all other elements also include processed products derived there from, expressed in primary commodity equivalent. \textit{Source: FAO. 2001. Food balance sheets. A handbook. Rome.} \textbf{Processed livestock} products from slaughtered animals	Derived from the processing of primary livestock products from slaughtered animals and include bacon, ham, sausages, canned meat, lard and tallow. Production data refer only to primary products while data for all other elements also include processed products derived there from, expressed in primary commodity equivalent. \textit{Source: FAO. 2001. Food balance sheets. A handbook. Rome.}	\textbf{Slaughter fats}	Edible and inedible unrendered fats which fall in the course of dressing the carcasses and are recovered from the discarded and fallen animals; guts, sweepings, hide trimmings etc. Source: FAO Statistics Division. \textbf{Total unrendered fat}	Includes slaughter fats and butchering fats (edible and inedible)." \textit{Source: FAO Statistics Division}}
+
+
+\end{enumerate}
+
+
+
+This data may be collected direcly from official sources like government agenicies (through questionnaires, surveys.. ) but where official data are not available, it may become necessary to consider alternative sources (commonly defined \textit{semi-official}) that may include industry groups, publications, or investigations conducted by product value chain experts.
+
+Even if FAO conducts a strong effort to collect a broad set of official and semi-official information on derived items, when no official and semi-official data are available, the only alternative is the model-based imputation of missing data. 
+
+The exigency to develop a systematic approach to estimate the production of derived items (where missing) is not only for dissemination purposes, indeed the starting point to produce the Food Balance Sheets (FBS) is the Supply and Utilization Account (SUA) equations associated to all the commodities classified through the CPC classification. In this prospective the existence of  reliable estimations of all the SUA components (or at the least of the main components: production and trade) results essential to evaluate the food component and consequently to compute the the final Dietary Energy Supply (DES) coming from each FBS item.
+
+The enstablished best practice developped in the \textit{ old methodology} framework was based on the so-called \textit{Crude Balancing} operation. The idea was to ensure that the total supply is enogh, at least, to cover the outflow. In other words a country characterized by a positive trade balance for a specific good (exports greater that imports) must have produced at the least the exceeding export amount of that specific good.
+
+This approach presents several shortcomes:
+\begin{itemize}
+
+\item {there are no constrains on the potential ammount of production of a derived items that can be produced. This component is estimated looking at the SUA equation of the processed item itself, while the production of a derived item should be linked to the availability of its parent commodity (or commodities).}
+\item { the new \text{food imputation module} contains many derived products classified as \textit{food residual}, it means that the food component is estimated using, once again, the imbalance between the total supply and the total utilizations which at this stage would be equal to zero if we had already used the same imbalance to compute the production component (which would have been estimated exactly equal to the trade imbalance).}
+\end{itemize}
+
+As mentioned above, the \textit{derived item production sub-module} is not working on all the CPC commodities, but on a specific subset.
+This subset includes those items that have been storically pubblished on FAOSTAT plus all flours that have been recognised very important for dissemination purposes. In addition all those commodies that in the \textit{food imputation module} are classified as \textit{food residual} are included in the \textit{derived item production} routine in order to be imputed indipendetly from the trade balance. This step ensures that the resulting SUA imbalances can still be allocated in the food components (if it is missing).
+
+The complete list of derived items explicily  included in the module is stored as a data table in the SWS: 
+
+
+\begin{tabular}{|l|c|r|p{1.7cm}|}
+  \hline
+   domain: & Agriculture Production\\
+  \hline
+   dataset: & processedItemTable\\
+  \hline
+\end{tabular}
+
+
+
+\includegraphics{processedDataTable.PNG}
+
+
+
+It is important to point out that the module is working on all the commodities involved in the tree of the items included in this list. This means that we may obtain production imputations also for commodities not explicitly included in the list (e.g. intermediate parent commodities, co-products \dots)
+
+For example the list includes: Skim milk of cow; Whey, fresh; Cheese from Skimmed cow Milk; Skim milk and whey powder (and other child-items coming from the Raw milk of cow tree), but the module produces production imputations also for Casein which was not originally included in the \texit{processed item list}.
+
+
+\includegraphics{plots/ex_moreThanItamInTheList.PNG}
+
+
+
+\section{Elements}
+
+The SWS \textit{agriculture production} domain contains production data for all the commodities involved in the FBS. The name of the domain may be misleading because it recalls only to the Crop production, but it actually contains information about livestock derived products (meat, eggs, milk) and crop derived items (oils, fibers, vegetable fats..)
+
+Associated to each item there are three variables composing the so-called \textit{triplet}. 
+The production imputation process is based on the concept of triplet. The triplet contains three elements linked through the relation:
+
+\begin{dmath*}
+output_{t}= input_{t} * productivity_{t}
+\end{dmath*}
+
+
+This identity is the basic equation to compute the production quantities (where missing) and to validate the output, since we can have an a priori information on feasible \textit{productivities} and/or \textit{inputs} associated to different productive processes.
+
+Several sub-modules have been developped in order to capture different feautres of several specific productive processes:
+
+\begin{itemize}
+\item Crop production imputation sub-module
+\item livestock sub-module
+\item milk and eggs 
+\item derived items
+\end{itemize}
+
+
+
+
+For example, the non-livestock sub-modules produces imputations for all crops\footnote{It is also improperly used for additional commodities as honey, bees\dots (The complete list of item can be browsed in the datatable \textit{fbs_production_comm_codes})}. The elements composing the triplet for \textbf{crop commodities} are: production, area harvested and yield.
+
+\bigskip
+
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{Generic Triplet} & \head{Specific Triplet} \\
+  \midrule
+  output       & production [t]      \\
+  input        & area harvested [ha] \\
+  productivity & yield [t/ha]        \\
+  \bottomrule[1.5pt]
+  \caption{\textit{Crop Item Production Triplet}}
+\end{tabular}
+
+\bigskip
+
+
+If just two out of three of the three elements composing the triplet are available, it is always possible to compute, as identity, the remaining one. In addition, it is possible to monitoring the trend of the three components separately. For example we may be interested in monitoring yield trend ensuring that it is feasible according to different typology of crops, different climate zones and level of technology.
+
+Equally, those commodities classified as \textit{livestock} commodities follow exactly  the same procedure, but the triplet is represented by:
+
+\bigskip
+
+
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{Generic Triplet} & \head{Specific Triplet} \\
+  \midrule
+  output       & production [t]      \\
+  input        & number of animal slaughterd [heads]\\
+  productivity & carcass weight [kg/heads]        \\
+  \bottomrule[1.5pt]
+   \caption{\textit{Livestock Item Production Triplet}}
+\end{tabular}
+
+
+\bigskip
+
+
+Derived items, in turn, have their specific triplet: 
+
+\bigskip
+
+
+\begin{tabular}{ccc}
+  \toprule[1.5pt]
+  \head{Generic Triplet} & \head{Specific Triplet} \\
+  \midrule
+  output       & production [t]      \\
+  input        & input [t]\\
+  productivity & extraction rate         \\
+  \bottomrule[1.5pt]
+\end{tabular}
+
+
+\bigskip
+
+
+While for boh livestock and non-livestock items we may dispose of a broad set of official and semiofficial data for at least two of the triplet elements, we generally do not dispose of this information for the major part of the derived items  included in the production imputation process.
+
+Even if the derived item submodule presents some peculiarities that make it quite different from other imputation-production sub-modules, and the role of the triplet may seem a secondary aspect of the developped methodology, we will try to reduce the computation of derived item production to the already well-known equation: 
+
+ \begin{dmath*}
+ Production_{t}=Input_{t}*ExtractionRate_{t}
+ \end{dmath*}
+
+
+\subsection{Input: Availability}
+We do not have official or semi-official data for \textit{Input}. Inputs must be computed from the Supply Utlization Account equation of the parent(s) items. 
+
+\begin{dmath*}
+Prod_{t}^{parent}+Imp_{t}^{parent}-StockVariation_{t}^{parent} = Export_{t}^{parent}+Food_{t}^{parent}+Seed_{t}^{parent}+Feed_{t}^{parent}+Loos_{t}^{parent}+TouristConsumption_{t}^{parent}+IndustrialUtilizations_{t}^{parent}
+\end{dmath*}
+
+It results particularly important to point out that \textbf{not all the SUA components} are used by the \textit{derived item imputation sub-module} to compute the available input.
+In particular we use a rescricted equaton where only the following components are considered:
+
+\begin{dmath*}
+Prod_{t}^{parent}+Imp_{t}^{parent}-StockVariation_{t}^{parent} = Export_{t}^{parent}+Seed_{t}^{parent}
+\end{dmath*}
+
+
+The imputation process is based on the hypothesis that, at all levels, the quantity of each commodity not allocated to any of the utilizations reported in the supply-utilization account equation (not exported, not wasted, not used for food, seed, feed, industrial utilization and tourism consumption) is completly allocated in several productive processes to be transformed in \textit{other goods} (precisesly processed commodities). The choice to use only a sub-set of the parent SU A components is not completly correct: in theory we should have taken into account all the components to properly estimate the taxtit{availability}. The problem is that we do not dispose of the \textit{food} component yet and the food componet for the \textit{food residual} items needs figures for production.
+
+In addition we tried to include in the module only those components that are more stable and already \textit{validated} in the time-window used to build the new imputations.
+
+This approximation of the \textit{imbalance} which is supposed to be positive at primary level, is interpreted as the \textit{availability}. In other words we define the input as the amount of primary goods that it is not used as it is, but which is involved as \textit{input} in one or more productive processes. 
+
+\subsection{ Productivity: Extraction rate}
+The \textit{extraction rate} plays the role of the productivity.
+It indicates the quantity of derived item that can be obtained from one unit of input. It is a technical coefficient associated to each parent-child combination. It is country specific because it depends on the efficiency of the production system and it is   time specific since it evolves in time and reflects the improvements in the level of technology.  It is important to highlight that it cannot be associate to a single commodity (as the productivity of other typology of items: crop-yield can be associated to wheat or barley and may vary across countries and evolve along time), but it can be associated to parent-child combinations. That's why it is stored directly in the commodity tree where each row contains the parent-child relationship between all the CPC items. In other words extaction rates can be associated to a productive processes and not to single commodities.
+
+The \textit{extraction rate} is the component that summarises the overall level of technology, as mentioned it can be interpreted as a Technical Conversion Factor (TCF). Extraction rates are treated as exogenous coefficients. We currenty do not have a method to update the table of extraction rates. Extraction rates have been inherit from the old system up to 2013 whose figures have been re-used in 2014 and 2015.
+
+
+
+\subsection{ Output: Production}
+The overall output is the \textit{Production}, out target variable. \textit{Production} is stored in \textit{Agriculture production} dataset in the SWS. It is identified by the code 5510 for all the derived commodities and it is always measured in tons.
+
+
+  \section{Methodology}
+  
+  Lets's start with a simple concrete example: we want to compute the production of \textit{Orange juice} in Algeria in 2010. In this case   the total ammount of the processed commodity derived from one single parent: \textit{Oranges}
+  
+  \includegraphics{plots/Algeria_OrangeJuice.png}
+  
+  Since the final goal of this process consists in producing production imputations for \textit{Orange juice} in Algeria, let's try to build   the triplet elements for this commodity in order to use the general formula:
+  
+  \begin{dmath*}
+  output=input*productivity
+  \end{dmath*}
+ 
+  \begin{enumerate}
+         \item{  \textbf{Input}:
+  
+             \begin{dmath*}
+              input= availability_{parent}
+             \end{dmath*}
+The parent availability is equal to the SUA imbalance at primary level. The following table contains the Supply and Utilization components of the parent commotidy (in this example: \textit{Oranges}). The \textbf{inpunt} to produce \textit{Orange juice} is the availability of \textit{Oranges}.  
+
+
+\begin{Schunk}
+\begin{Soutput}
+   measuredElementSuaFbs measuredItemFbsSua geographicAreaM49 timePointYears
+1:                  loss              01323                12           2000
+2:               tourist              01323                12           2000
+3:            production              01323                12           2000
+4:                  seed              01323                12           2000
+5:               imports              01323                12           2000
+6:               exports              01323                12           2000
+          Value flagObservationStatus flagMethod
+1: 214195.25841                     I          e
+2:      0.15750                     I          e
+3: 299583.00000                                -
+4:     26.79525                     I          e
+5:     19.00000                     T          -
+6:      0.00000                                -
+\end{Soutput}
+\end{Schunk}
+
+
+            \begin{dmath*}
+            Avaiability_{t}^{parent}=Prod_{t}^{parent}+Imp_{t}^{parent}-StockVariation_{t}^{parent} - Export_{t}^{parent}-Seed_{t}^{parent}
+            \end{dmath*}
+
+            For example: we report the algebric passages to the manually compute the \textit{Orange availabilty} availabilities in Algeria in 2000. These figures are reported in the next table in the column \textit{availability}.
+             \begin{dmath*}
+             Avaiability_{2000}^{parent}=299583    +  19 - 26.79525  \\
+             \end{dmath*}
+             
+             \begin{dmath*}
+             Avaiability_{2000}^{parent}=299575.2
+             \end{dmath*}
+             }
+  
+    
+\begin{Schunk}
+\begin{Soutput}
+    Parent    Child Year processingShare FlagObs FlagMeth availability
+ 1:  01323 21431.01 2000      0.04000358       T        -     299575.2
+ 2:  01323 21431.01 2001      0.04000334       T        -     327055.7
+ 3:  01323 21431.01 2002      0.04000304       T        -     362772.4
+ 4:  01323 21431.01 2003      0.04000281       T        -     389412.7
+ 5:  01323 21431.01 2004      0.04000256       T        -     417135.3
+ 6:  01323 21431.01 2005      0.04000252       T        -     435521.5
+ 7:  01323 21431.01 2006      0.04000248       T        -     474999.5
+ 8:  01323 21431.01 2007      0.04000222       T        -     495001.5
+ 9:  01323 21431.01 2008      0.04000211       T        -     505969.4
+10:  01323 21431.01 2009      0.04000165       T        -     635244.9
+11:  01323 21431.01 2010      0.04000172       I        e     594591.3
+12:  01323 21431.01 2011      0.04000189       I        e     823245.0
+13:  01323 21431.01 2012      0.04000183       I        e     821848.9
+14:  01323 21431.01 2013      0.04000177       I        e     918023.8
+15:  01323 21431.01 2014      0.04000171       I        e     981898.8
+16:  01323 21431.01 2015      0.04000164       I        e    1024758.3
+    extractionRate     Value
+ 1:           0.65  7789.652
+ 2:           0.65  8504.158
+ 3:           0.65  9432.800
+ 4:           0.65 10125.440
+ 5:           0.65 10846.212
+ 6:           0.65 11324.274
+ 7:           0.65 12350.754
+ 8:           0.65 12870.754
+ 9:           0.65 13155.896
+10:           0.65 16517.047
+11:           0.65        NA
+12:           0.65        NA
+13:           0.65        NA
+14:           0.65        NA
+15:           0.65        NA
+16:           0.65        NA
+\end{Soutput}
+\begin{Soutput}
+[1] 0.04000358
+\end{Soutput}
+\begin{Soutput}
+[1] 0.04000334
+\end{Soutput}
+\end{Schunk}
+  
+  \item{ \textbf{Productivity}: the extraction rate is stored in the commodity tree. We report an extraction of the commodity-tree
+  
+\begin{Schunk}
+\begin{Soutput}
+    geographicAreaM49 timePointYears Parent    Child extractionRate
+ 1:                12           2000  01323 21431.01           0.65
+ 2:                12           2001  01323 21431.01           0.65
+ 3:                12           2002  01323 21431.01           0.65
+ 4:                12           2003  01323 21431.01           0.65
+ 5:                12           2004  01323 21431.01           0.65
+ 6:                12           2005  01323 21431.01           0.65
+ 7:                12           2006  01323 21431.01           0.65
+ 8:                12           2007  01323 21431.01           0.65
+ 9:                12           2008  01323 21431.01           0.65
+10:                12           2009  01323 21431.01           0.65
+11:                12           2010  01323 21431.01           0.65
+12:                12           2011  01323 21431.01           0.65
+13:                12           2012  01323 21431.01           0.65
+14:                12           2013  01323 21431.01           0.65
+15:                12           2014  01323 21431.01           0.65
+16:                12           2015  01323 21431.01           0.65
+17:                12           2016  01323 21431.01           0.65
+\end{Soutput}
+\end{Schunk}
+  
+ }
+ 
+ The \textit{extraction rate} for \textit{Orange juice} in \textit{Algeria} is constant over time, its interpretation is: starting from 100 tons of \textit{oranges}, 65 tons of \textit{Orange juice} are obtained.
+  
+  \item{ \textbf{Output} is our target element since the final purpose of this process is to compute the processed item productions:
+  
+\begin{dmath*}
+Output_{t}^{child}=Input_{t}^{parent} * productivity_{t}^{(parent;child)}
+\end{dmath*}
+
+Where:
+
+\begin{dmath*}
+Input_{t}^{parent}=Availability_{t}^{(parent, child)}* ProcessingShare_{t}^{(parent;child)}
+\end{dmath*}
+ }
+ 
+ \begin{dmath*}
+Productivity_{t}^{(parent,child)}=ExtractionRate_{t}^{parent,child)}
+\end{dmath*}
+ }
+ 
+
+ 
+ \begin{dmath*}
+ Output_{t}^{child}=Availability_{t}^{parent} * ProcessingShare_{t}^{(parent;child)} *ExtractionRate_{t}{(parent;child)}
+\end{dmath*}
+ 
+\end{enumerate}
+  
+Using the previous formula we can proceed computing the \textit{Orange juice} productions, but we still miss a passage since we do not have   introduced the \textit{Processing Share} yet.
+  
+  
+ Generally speaking, the \textit{processing shares} are the ratios that allow to split the total parent availability to its different parts allocated to different processed items. Indeed it is possible that a primary item might be involved in more than one productive process leading to different processed  items. This choice depends not only on the country's preferences and exigencies but mainly from the existence of a consolidated productive system. That's why the dynamic in the time of processing shares is quite rigid especially for industrialized country where the productive   processes are tied to the existence of a consolidated industry. In those countries it will be preferred to keep more or less constant the   availability of input, for example importing when it is not enough.
+  
+We decided to derive this information from the past time series of both  Availability and Production.
+  
+  \begin{dmath*}
+  ProcessingShare^{(parent;child)}=\frac{prod_{child}'}{availability_{parent}}
+  \end{dmath*}
+  
+  Where $prod_{child}'$ represents the total child production expressed in parent equivalent, which is:
+  
+  
+  
+  \begin{dmath*}
+  prod_{child}'=\frac{prod_{child}}{extractionRate}
+  \end{dmath*}
+  
+  
+  
+  The formula highlights that it is possibile to compute \textit{processing shares} as long as we dispose of official-semioffiacial child   production data. We decided to protect all (official, semi-ufficial, estimated \dots) available figures for processed commodites up to 2009 \footnote{This is a parameter that the user can explicitly set in running the derived-imputation plugin in the SWS. This means that is not fix to 2009.} in order to build a \textit{processing share } time-series.
+  
+  
+\includegraphics{plots/PShareImpute.png}
+
+
+
+
+
+  The following table reports, in a more userfriendly format the \textit{processing shares} that up to 2009 are algebrically computed from protected (or artificially protected) figures of both parent-availabilities and child-productions.
+ 
+ The over-all approach to impute the \textit{processing shares} between 2010 and 2015 is once again\footnote{The ensemble approach is widly applied in the Agriculture Production domain to impute missing data. In particular it has been developped to estimate the triplet of Crop items and it has finally applied also in the livestock sub-module.} the \textit{ensemble approach}.
+ 
+\begin{tabular}{cccccc}
+  \hline
+  Parent&Child&year&Processing Share& flagObs & flagMeth \\
+  \hline
+  Oranges& Orange juice     &   2000   &      0.04000358  & T & - \\  
+  Oranges& Orange juice     &   2001   &     0.04000334   & T & - \\  
+  Oranges& Orange juice     &   2002   &     0.04000304   & T & - \\  
+  Oranges& Orange juice     &   2003   &      0.04000281  & T & - \\  
+  Oranges& Orange juice     &   2004   &     0.04000256   & T & - \\  
+  Oranges& Orange juice     &   2005   &      0.04000252  & T & - \\  
+  Oranges& Orange juice     &   2006   &      0.04000248  & T & - \\  
+  Oranges& Orange juice     &   2007   &     0.04000222   & T & - \\  
+  Oranges& Orange juice     &   2008   &      0.04000211  & T & - \\  
+  Oranges& Orange juice     &   2009   &      0.04000165  & T & - \\  
+  Oranges& Orange juice     &   2010   &     0.04000172   & I & e \\  
+  Oranges& Orange juice     &   2011   &     0.04000189   & I & e \\  
+  Oranges& Orange juice     &   2012   &     0.04000183   & I & e \\  
+  Oranges& Orange juice     &   2013   &     0.04000177   & I & e \\  
+  Oranges& Orange juice     &   2014   &      0.04000171  & I & e \\  
+  Oranges& Orange juice     &   2015   &      0.04000164  & I & e \\  
+  \hline
+    %\caption{Processing Share table - Algeria, Organge juice}
+  \end{tabular}
+  
+
+In the analyzed example the \textit{processing share} series is extremly smooth up to 2009. The inputed values mantain the same constant trend.
+  
+  
+  \subsection{Multiple parents items}
+In the previous section it has been presentented a very simple example where the \textit{child} commodity is entirely produced from one single parent-commodity. 
+
+The formula to compute \textit{processing shares} is:
+
+ \begin{dmath*}
+  ProcessingShare^{(parent;child)}=\frac{prod_{child}'}{availability_{parent}}
+  \end{dmath*}
+  
+  It involes the $prod_{child}'$ which is the observed child-production expressed in parent-equivalent. 
+  
+  In this specific example (which represents a very common situation) to express the \textit{child-production} in terms of parent equivalet it is sufficient to divide the \textit{child-production} by the \textit{extraction rate}.
+What if the child commodity could have been obtained from more than one parent?
+
+In case one child have more than one parent, we should be able to split the overall child production in its different components obtained from different productive processes.
+  
+ In other words we should be able to identify the portion of child production that has to be \textit{standardized} on each of its different parent commodities.
+  
+  
+
+Suppose that  we want to compute the production of \textit{fruit prepared n.e.s.} in Algeria in 2010. We know, from the commodity-tree that this   processed item has two parent-commodities.
+%  
+%  
+%  % <<load-libraries, cache=FALSE, echo=FALSE>>=
+%  % 
+%  % library(data.table)
+%  % load("C:\\Users\\Rosa\\Favorites\\Github\\sws_project\\faoswsProduction\\ProcessedSubmoduleSupportFiles\\fullTree2export_v02nocuts.RData"%  )
+%  % 
+%  % 
+%  % tree=tree2export
+%  % tree=tree[variable=="extractionRate"]
+%  % 
+%  % setnames(tree, "value", "extractionRate")
+%  % tree[,flagObservationStatus:=NULL ]
+%  % tree[,flagMethod:=NULL ]
+%  % tree[,variable:=NULL ]
+%  % 
+%  % 
+%  % 
+%  % tree=tree[timePointYears>1999]
+%  % tree=tree[geographicAreaM49=="12" & timePointYears=="2010" & measuredItemChildCPC=="F0623"]
+%  % print(tree)
+%  % 
+%  % @
+%  
+ \includegraphics{plots/Algeria_ex.png}
+  
+  The total production of \textit{fruit prepared n.e.s.} comes from two productive processes. We have to separatly compute the production-component  coming from Dates and from Figs. In this prospective we should identify a rule to determine how much of \textit{fruit prepared n.e.s.} comes from \textit{Dates} and how much from \textit{Figs}.
+  
+This rule is based on the availabilties of both \textit{Dates} and \textit{Figs} and establishes that the child-production is allocated on its  different parents proportionally to its parent-availabilities:
+
+
+\begin{dmath*}
+  share^{(Fruit prepared n.e.s.;Dates)}=\frac{availability_{Dates}}{availability_{Dates}+availability_{Figs}}
+ \end{dmath*}
+
+
+Generalizing the previous example, supposing that a processed commodities is obtained from $n$ productive processes, the child-commodity have $n$ parents:
+
+ \includegraphics{plots/n_parents.png}
+
+The generalisized formula is:
+
+\begin{dmath*}
+  share^{(child)}_{i}=\frac{availability_{parent_{i}}}{\sum_{i=1}^{n}availability_{i}}
+\end{dmath*}
+  
+  
+  On the other hand just a small percentage of the total availability of both Dates and Figs have been used   to produce \textit{fruit prepared n.e.s.}, then we have to compute the \textit{processing shares} as describes above.
+  
+  The following tables show \textit{processing shares} for both \textit{Dates} and \textit{Figs}.
+  
+  \begin{tabular}{cccccc}
+    \hline
+    Parent       &Child                     &year      &Processing Share       & flagObs & flagMeth \\
+    \hline
+    Dates         & fruit prepared n.e.s     &   2000   &     0.02786568        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2001   &     0.04337616        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2002   &     0.04443857        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2003   &     0.04786766        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2004   &     0.04245302        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2005   &     0.05476584        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2006   &     0.05869542        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2007   &     0.05402774        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2008   &     0.05069266        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2009   &     0.04639765        & T & - \\  
+    Dates         & fruit prepared n.e.s     &   2010   &     0.05314685        & I & e \\  
+    Dates         & fruit prepared n.e.s     &   2011   &     0.05318194        & I & e \\  
+    Dates         & fruit prepared n.e.s     &   2012   &     0.05412407        & I & e \\  
+    Dates         & fruit prepared n.e.s     &   2013   &     0.05506621        & I & e \\  
+    Dates         & fruit prepared n.e.s     &   2014   &     0.05600835        & I & e \\  
+    Dates         & fruit prepared n.e.s     &   2014   &     0.05695049        & I & e \\  
+    
+  
+    \hline
+  \end{tabular}
+  
+ 
+ 
+ % <<load-libraries, cache=FALSE, echo=TRUE>>=
+ % 
+ % load("C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/Batch117/output.RData")
+ % 
+ % output[geographicAreaM49=="12" & measuredItemChildCPC=="F0623" & timePointYears=="2000"]
+ % 
+ % ((9120/0.8)*(354806.2/(354806.2+54299.2)))/354806.2
+ % 
+ % @
+ 
+ \begin{tabular}{cccccc}
+   \hline
+   Parent       &Child                     &year      &Processing Share       & flagObs & flagMeth \\
+   \hline
+   Figs         & fruit prepared n.e.s     &   2000   &     0.02786568        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2001   &     0.04337616        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2002   &     0.04443857        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2003   &     0.04786766        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2004   &     0.04245302        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2005   &     0.05476584        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2006   &     0.05869542        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2007   &     0.05402774        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2008   &     0.05069266        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2009   &     0.04639765        & T & -\\  
+   Figs         & fruit prepared n.e.s     &   2010   &     0.05315988        & I & e\\ 
+   \hline
+ \end{tabular}
+
+  
+  \begin{dmath*}
+  Prod^{fruits prepared}=[availability^{Dates}*ProcessingShare^{(fruits prepared;Dates)}*ExtractionRate]+[availability^{Figs}*ProcessingShare^{(fruits prepared;figs)}*ExtractionRate]
+  \end{dmath*}
+  
+  
+ % Add the manual computation of shares: \footnote{
+ % Please note that the shares are exactly the same for both the parent untill 2009, untill processed item commodities are available
+ % }
+
+
+% Add another example with more than one parents and DIFFERENT extraction rates.
+
+
+\subsection{The multiple level processed commodities}
+
+The module is built to work level by level, computing at first the productions of processed items directly obtained from \textbm{primary} items and going down in the tree-hierarchy to impute the production of all the processed commodities.
+
+In the second (..and following) round of the loop, the processed items just computed, become \textit{parent-commodties}, and their availabilities are than re-computed including the just imputed production values.
+
+This approach is based on the idea that, even if a processed commodity can be obtain from several productive processes (so from different parents), we assume that all the productive processes leading to a specific processed item, occurs at the same processing level of the commodity tree. 
+
+This assumption is true most of time.
+Some commodities present very complex commodity tree and can be obtained not only as result of many productive processes, but at many different levels of the commodity tree.
+
+
+The adopted strategy consists in approximating the total availability of parent-commodities with the sum of its components belonging to the highst level in the hyerachy. It is important to highlight that this is an approximation and in many cases we are not properly computing the parent-availability and consequently the child-production.
+
+\begin{appendices}
+
+\begin{Schunk}
+\begin{Soutput}
+-------------------------------------------
+   Item              Item Labels           
+---------- --------------------------------
+  23110         Wheat and meslin flour     
+
+  23120          Other cereal flours       
+
+  23170       Other vegetable flours and   
+                        meals              
+
+ 22249.01   Butter and Ghee of Sheep Milk  
+
+ 22241.01         Butter of Cow Milk       
+
+  22254       Cheese from milk of goats,   
+                  fresh or processed       
+
+  22253       Cheese from milk of sheep,   
+                  fresh or processed       
+
+ 22110.02         Skim Milk of Cows        
+
+  26110         Raw silk (not thrown)      
+
+ 22251.01     Cheese from Whole Cow Milk   
+
+ 22251.02    Cheese from Skimmed Cow Milk  
+
+  21521           Pig fat, rendered        
+
+  22120              Cream, fresh          
+
+ 22241.02         Ghee from Cow Milk       
+
+  22212       Skim milk and whey powder    
+
+ 22222.01       Whole Milk, Condensed      
+
+  22211           Whole milk powder        
+
+ 22221.01       Whole Milk, Evaporated     
+
+  21523                 Tallow             
+
+ 22130.02              Dry Whey            
+
+ 22230.04           Dry Buttermilk         
+
+ 22222.02        Skim Milk, Condensed      
+
+ 22242.02      Ghee, from Buffalo Milk     
+
+ 22130.03            Whey, Fresh           
+
+ 22221.02       Skim Milk, Evaporated      
+
+ 22242.01       Butter of Buffalo Milk     
+
+  22252      Cheese from milk of buffalo,  
+                  fresh or processed       
+
+ 22230.01              Yoghurt             
+
+ 22249.02        Butter of Goat Milk       
+
+ 01921.02        Cotton lint, ginned       
+
+   0143               Cottonseed           
+
+  23540     Molasses (from beet, cane and  
+                        maize)             
+
+   2168             Cottonseed oil         
+
+ 21691.12           Oil of Linseed         
+
+   2167               Olive oil            
+
+ 21691.07         Oil of Sesame Seed       
+
+ 21631.01     Sunflower-seed oil, crude    
+
+  2351f                   NA               
+
+ 24310.01       Beer of Barley, malted     
+
+ 21700.02      Margarine and Shortening    
+
+   2162             Groundnut oil          
+
+   2165                Palm oil            
+
+   2161             Soya bean oil          
+
+ 24212.02                Wine              
+
+ 21641.01   Rapeseed or canola oil, crude  
+
+ 21631.02     Safflower-seed oil, crude    
+
+   2166              Coconut oil           
+
+ 21691.14         Oil of Palm Kernel       
+
+ 01491.02            Palm kernels          
+
+ 21691.02            Oil of Maize          
+
+ 01930.04        Tea nes (herbal tea)      
+
+ 01990.01    Vegetable products, fresh or  
+                       dry nes             
+
+  02293           Raw milk of camel        
+
+  17400              Ice and snow          
+
+ 23912.01         Coffee Substitutes       
+
+  21182     Bovine meat, salted, dried or  
+                        smoked             
+
+  21183       Other meat and edible meat   
+            offal, salted, in brine, dried 
+             or smoked; edible flours and  
+             meals of meat or meat offal   
+
+ 21184.01   Sausages and similar products  
+              of meat, offal or blood of   
+                    beef and veal          
+
+ 21184.02   Sausages and similar products  
+            of meat, offal or blood of pig 
+
+  21185      Extracts and juices of meat,  
+            fish, crustaceans, molluscs or 
+             other aquatic invertebrates   
+
+ 21189.04         Liver Preparations       
+
+ 21189.05      Fatty Liver Preparations    
+
+  21313            Potatoes, frozen        
+
+ 21319.01         Sweet Corn, Frozen       
+
+  21321              Tomato juice          
+
+  21329         Other vegetable juices     
+
+ 21330.90   Other vegetables provisionally 
+                      preserved            
+
+  21340         Vegetables, pulses and     
+            potatoes, preserved by vinegar 
+                    or acetic acid         
+
+ 21393.01          Dried Mushrooms         
+
+ 21393.90       Vegetables, Dehydrated     
+
+ 21397.01          Canned Mushrooms        
+
+ 21399.01         Paste of Tomatoes        
+
+ 21399.02   Tomatoes, Peeled (O/T vinegar) 
+
+ 21399.03      Sweet Corn, Prepared or     
+                      Preserved            
+
+  21411                Raisins             
+
+  21412              Plums, dried          
+
+ 21419.01          Apricots, Dried         
+
+ 21419.02            Figs, Dried           
+
+  21422            Almonds, shelled        
+
+  21423           Hazelnuts, shelled       
+
+  21424          Cashew nuts, shelled      
+
+ 21429.01        Brazil Nuts, Shelled      
+
+ 21429.02          Walnuts, Shelled        
+
+ 21429.07        Coconuts, Desiccated      
+
+ 21431.01            Orange Juice          
+
+ 21431.02     Orange Juice, Concentrated   
+
+  21432            Grapefruit juice        
+
+ 21432.01   Grapefruit Juice, Concentrated 
+
+  21433            Pineapple juice         
+
+ 21433.01        Juice of Pineapples,      
+                     Concentrated          
+
+  21434              Grape juice           
+
+ 21435.01            Apple Juice           
+
+ 21435.02     Apple Juice, Concentrated    
+
+ 21439.01         Juice of Tangerine       
+
+ 21439.02           Juice of Lemon         
+
+ 21439.03     Lemon Juice, Concentrated    
+
+ 21439.04     Juice of Citrus Fruit nes    
+
+ 21439.05   Citrus Juice, Concentrated nes 
+
+ 21439.07    Juice of plum, concentrated   
+
+ 21439.08           Juice of Mango         
+
+  21491     Pineapples, otherwise prepared 
+                     or preserved          
+
+ 21495.01        Prepared Groundnuts       
+
+ 21495.02           Peanut Butter          
+
+ 21499.01             Mango Pulp           
+
+  21522         Poultry fat, rendered      
+
+  21673         Oil of olive residues      
+
+ 21700.01          Liquid Margarine        
+
+ 22251.03            Whey Cheese           
+
+ 22251.04          Processed Cheese        
+
+ 23912.02          Coffee Extracts         
+
+  22270     Ice cream and other edible ice 
+
+ 23140.03         Breakfast Cereals        
+
+ 23140.08        Cereal Preparations       
+
+  23180        Mixes and doughs for the    
+             preparation of bakers' wares  
+
+ 23210.03      Other Fructose and Syrup    
+
+ 23210.04        Sugar and Syrups nes      
+
+ 23210.05        Glucose and Dextrose      
+
+ 23210.06              Lactose             
+
+ 23490.01   Bread and other bakers wares,  
+                         nec               
+
+  23520             Refined sugar          
+
+  23530     Refined cane or beet sugar, in 
+             solid form, containing added  
+               flavouring or colouring     
+            matter; maple sugar and maple  
+                        syrup              
+
+ 23670.01        Sugar Confectionery       
+
+ 23670.02      Fruit, Nuts, Peel, Sugar    
+                      Preserved            
+
+  23710     Uncooked pasta, not stuffed or 
+                  otherwise prepared       
+
+  23911        Coffee, decaffeinated or    
+                       roasted             
+
+ 23991.01            Infant Food           
+
+ 23991.02       Homogenized Vegetable      
+                     Preparations          
+
+ 23991.03     Homogenized Cooked Fruit,    
+                       Prepared            
+
+ 23991.04   Homogenized Meat Preparations  
+
+ 23993.01            Egg Albumin           
+
+ 23993.02            Eggs, Liquid          
+
+ 23993.03            Eggs, Dried           
+
+ 23995.01             Soya Sauce           
+
+ 23999.01            Malt Extract          
+
+ 23999.02    Food Preparations of Flour,   
+                 Meal or Malt Extract      
+
+  24220       Vermouth and other wine of   
+             fresh grapes flavoured with   
+             plats or aromatic substances  
+
+ 24230.02      Rice-Fermented Beverages    
+
+ 24230.03     Cider and other fermented    
+                      beverages            
+
+  24490      Other non-alcoholic caloric   
+                      beverages            
+
+  F0020                 bread              
+
+  F0022                 pastry             
+
+  F0235             prepared nuts          
+
+  F0262            olives preserved        
+
+  F0472     vegetables preserved nes (o/t  
+                       vinegar)            
+
+  F0473           vegetables frozen        
+
+  F0475     vegetables preserved (frozen)  
+
+  F0665         cocoa powder and cake      
+
+  F0666         chocolate products nes     
+
+  F0875     beef and veal preparations nes 
+
+  F1042         pig meat preparations      
+
+  F1061       poultry meat preparations    
+
+  F1172           meat prepared n.e.       
+
+  F1232         food preparations n.e.     
+
+  F1275       hydrogenated oils and fats   
+
+ 23170.04          Flour of Fruits         
+
+ 23170.03          Flour of Pulses         
+
+ 23170.02   Flour of Roots and Tubers nes  
+
+ 23170.01          Flour of Cassava        
+
+ 23120.90        Flour of Cereals nes      
+
+ 23120.10        Flour of Mixed Grain      
+
+ 23120.09         Flour of Triticale       
+
+ 23120.08           Flour of Fonio         
+
+ 23120.07         Flour of Buckwheat       
+
+ 23120.06          Flour of Sorghum        
+
+ 23120.05          Flour of Millet         
+
+ 23120.04            Flour of Rye          
+
+ 23120.03           Flour of Maize         
+
+ 23120.02       Barley Flour and Grits     
+
+ 23120.01           Flour of Rice          
+
+  21920     Flours and meals of oil seeds  
+             or oleaginous fruits, except  
+                   those of mustard        
+
+ 39130.02            Maize Gluten          
+
+ 23220.04          Starch of Maize         
+
+  24110      Undenatured ethyl alcohol of  
+               an alcoholic strength by    
+             volume of 80% vol or higher   
+
+   2413      Undenatured ethyl alcohol of  
+               an alcoholic strength by    
+             volume of less than 80% vol;  
+             spirits, liqueurs and other   
+                 spirituous beverages      
+
+ 39120.02            Bran of Rice          
+
+ 22130.01          Whey, Condensed         
+
+  F1243         fat preparations n.e.      
+
+ 21529.03      Animal Oils and Fats nes    
+
+  34120       Industrial monocarboxylic    
+             fatty acids; acid oils from   
+                      refining/n           
+
+  34550      Animal or vegetable fats and  
+              oils and their fractions,    
+             chemically modified, except   
+                 those hydrogenated,       
+                  inter-esterified,        
+            re-esterified or elaidinized;  
+                 inedible mixtures or      
+              preparations of animal or    
+               vegetable fats or oils/n    
+
+ 39130.04        Gluten Feed and Meal      
+
+ 21691.10           Stillingia oil         
+-------------------------------------------
+\end{Soutput}
+\end{Schunk}
+
+ 
+\end{document}

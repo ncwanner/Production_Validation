@@ -1,0 +1,8 @@
+Quitting from lines 163-179 (README_cropProd.Rmd) 
+Error in parse(text = x, srcfile = src) : 
+  <text>:17:0: unexpected end of input
+15:             if(nrow(formulaTable) > 1)
+16:                 stop("Imputation should only use one formula")
+   ^
+Calls: <Anonymous> ... <Anonymous> -> parse_all -> parse_all.character -> parse
+Execution halted
