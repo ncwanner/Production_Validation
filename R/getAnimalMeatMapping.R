@@ -18,9 +18,17 @@ getAnimalMeatMapping = function(R_SWS_SHARE_PATH,
     ##       colClasses = "character")
 
     ## New file which contains the animal group code
-    mapping = fread(paste0(R_SWS_SHARE_PATH,
-                           "/kao/production/animal_parent_child_mapping.csv"),
-                    colClasses = "character")
+  
+    mapping=ReadDatatable("animal_parent_child_mapping")
+    setnames(mapping,c("measured_item_parent_cpc",
+                                      "measured_element_parent",
+                                      "measured_item_child_cpc",
+                                      "measured_element_child"),
+             c("measuredItemParentCPC",
+               "measuredElementParent",
+               "measuredItemChildCPC",
+               "measuredElementChild"))
+    
     if(onlyMeatChildren)
         mapping =
             subset(mapping,
