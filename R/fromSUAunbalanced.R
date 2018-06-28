@@ -1,6 +1,8 @@
 ##' # Imputation  Processed Commodities
 ##'
 ##' **Author: Francesca Rosa**
+##' Modified by NW to include al SUA components for availability and reverted function elementToCodes2
+##' back to its original version
 ##'
 ##' **Description:**
 ##'
