@@ -316,8 +316,10 @@ for(geo in   seq_along(allCountries)){
             
             ##'  I am using elementCodesToNames2!!!!! because it has not been deployed yet the standardization package 
             ##'  This function is upload into the package folder when I have created the plugin
+            ##'  
+            ##'  NW: changed back to elementCodestoNames (apparently function has been updated)
             
-            data = elementCodesToNames2(data = dataSuaRestricted, itemCol = "measuredItemFbsSua",
+            data = elementCodesToNames(data = dataSuaRestricted, itemCol = "measuredItemFbsSua",
                                         elementCol = "measuredElementSuaFbs")
             
             ##'  Add all the missing PRODUCTION row: if the production of a derived product does not exist it even if it is created by this 
@@ -434,8 +436,9 @@ for(geo in   seq_along(allCountries)){
                 ##'  to a specific child item.
                 
                 ##'  Calculate share down up. Please note that currentData contains the SUA table.
+                ##'  NW: use all SUA components
                 dataMergeTree=calculateShareDownUp(data=data,tree=treeCurrentLevel,
-                                                   params=params, printNegativeAvailability=FALSE)
+                                                   params=params, printNegativeAvailability=FALSE,useAllSUAcomponents=TRUE))
                 
                 
                 ##'  Here I merge the SUA table (already merged with tree), with the PRODUCTION DATA
