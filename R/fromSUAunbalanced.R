@@ -134,10 +134,6 @@ FBSItems=ReadDatatable("fbs_tree")[,item_sua_fbs]
 ##----------------------------------------------------------------------------------------------------------
 ##'  Get default parameters
 params = defaultProcessedItemParams()
-##---------------------------------------------------------------------------------------------------------
-##'  Get the list of processed items to impute
-processedCPC=ReadDatatable("processed_item")[,measured_item_cpc]
-toBePubblished=ReadDatatable("processed_item")[faostat==TRUE,measured_item_cpc]
 
 #############################################################################################################
 ##'  Get the commodity tree from the TREE DATASET:
@@ -148,10 +144,12 @@ selectedCountry =
     switch(geoImputationSelection,
            "session" = sessionCountry,
            "all" = FBScountries)
-geoImputationSelection = swsContext.computationParams$Items
+##---------------------------------------------------------------------------------------------------------
+##'  Get the list of processed items to impute
+ItemImputationSelection = swsContext.computationParams$Items
 sessionItems=getQueryKey("measuredItemFbsSua", sessionKey)
-selectedItems =
-    switch(geoImputationSelection,
+sessionItems =
+    switch(ItemImputationSelection,
            "session" = sessionItems,
            "all" = FBSItems)
 
@@ -206,15 +204,21 @@ for(geo in   seq_along(allCountries)){
     currentGeo=allCountries[geo]
     ##'  Subset the data (SUA)    
     
-    
+    if(ItemImputationSelection=="session") {
+        
+        # Select only those parent items from the session
+        itemKeysParent = itemKeysParent[itemKeysParent%in%sessionItems]
+        itemKeysChild = itemKeysChild[itemKeysChild%in%sessionItems]
+        
+    }
     
     message(paste0("Pull commodity tree for country: ", currentGeo)  )  
     
     keyTree = DatasetKey(domain = "suafbs", dataset = "ess_fbs_commodity_tree2", dimensions = list(
         geographicAreaM49 = Dimension(name = "geographicAreaM49", keys = currentGeo),
         measuredElementSuaFbs = Dimension(name = "measuredElementSuaFbs", keys = elemKeys),
-        measuredItemParentCPC_tree = Dimension(name = "measuredItemParentCPC_tree", keys = selectedItems),
-        measuredItemChildCPC_tree = Dimension(name = "measuredItemChildCPC_tree", keys = selectedItems),
+        measuredItemParentCPC_tree = Dimension(name = "measuredItemParentCPC_tree", keys = itemKeysParent),
+        measuredItemChildCPC_tree = Dimension(name = "measuredItemChildCPC_tree", keys = itemKeysChild),
         timePointYears = Dimension(name = "timePointYears", keys = timeKeys)
     ))
     
