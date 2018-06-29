@@ -134,6 +134,8 @@ FBSItems=ReadDatatable("fbs_tree")[,item_sua_fbs]
 ##----------------------------------------------------------------------------------------------------------
 ##'  Get default parameters
 params = defaultProcessedItemParams()
+processedCPC=ReadDatatable("processed_item")[,measured_item_cpc]
+toBePubblished=ReadDatatable("processed_item")[faostat==TRUE,measured_item_cpc]
 
 #############################################################################################################
 ##'  Get the commodity tree from the TREE DATASET:
@@ -266,6 +268,10 @@ for(geo in   seq_along(allCountries)){
         treeRestricted=tree[,.(measuredItemParentCPC,measuredItemChildCPC,processingLevel)]
         treeRestricted=treeRestricted[with(treeRestricted, order(measuredItemChildCPC))]
         treeRestricted=treeRestricted[!duplicated(treeRestricted)]
+        
+        if(ItemImputationSelection=="session") {
+            processedCPC = processedCPC[processedCPC%in%sessionItems]
+        }
         
         ##'  Get all the primary starting from the processed item (stored in the data.table: processed_item )
         primaryInvolved=getPrimary(processedCPC, treeRestricted, params)
