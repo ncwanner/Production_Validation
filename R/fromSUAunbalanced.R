@@ -59,6 +59,10 @@ suppressMessages({
     
 })
 
+top48FBSCountries = c(4,24,50,68,104,120,140,144,148,1248,170,178,218,320,
+                      324,332,356,360,368,384,404,116,408,450,454,484,508,
+                      524,562,566,586,604,608,716,646,686,762,834,764,800,
+                      854,704,231,887,894,760,862,860)
 
 R_SWS_SHARE_PATH <- Sys.getenv("R_SWS_SHARE_PATH")
 
@@ -78,8 +82,8 @@ if(CheckDebug()){
                        token = SETTINGS[["token"]])
     
     batchNumber=1001
-    dir.create(paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch", batchNumber), recursive=TRUE)
-    dir=paste0("C:\\Users\\Rosa\\Desktop\\ProcessedCommodities\\BatchExpandedItems\\Batch", batchNumber)
+    dir.create(paste0("C:/Work/SWS/FBS/Production/DerivedProduction/Output/Batch", batchNumber), recursive=TRUE)
+    dir=paste0("C:/Work/SWS/FBS/Production/DerivedProduction/Output/Batch", batchNumber)
     
 }
 sessionKey = swsContext.datasets[[1]]
@@ -145,7 +149,8 @@ selectedCountry =
            "all" = FBScountries)
 ##'  The year dimention depends on the session: 
 startYear=swsContext.computationParams$startYear
-imputationStartYear=swsContext.computationParams$startImputation
+imputationStartYear = startYear
+# imputationStartYear=swsContext.computationParams$startImputation
 endYear=swsContext.computationParams$endYear
 
 areaKeys=selectedCountry
@@ -174,7 +179,7 @@ elemKeys=c("5423")
 
 allCountries=areaKeys
 ##'  Seven Pilot countries
-##   allCountries=c("454", "686", "1248", "716","360", "392", "484")
+allCountries=c("454", "686", "1248", "716","360", "392", "484")
 
 
 allLevels=list()
@@ -440,7 +445,7 @@ for(geo in   seq_along(allCountries)){
                 ##'  Calculate share down up. Please note that currentData contains the SUA table.
                 ##'  NW: use all SUA components
                 dataMergeTree=calculateShareDownUp(data=data,tree=treeCurrentLevel,
-                                                   params=params, printNegativeAvailability=FALSE,useAllSUAcomponents=TRUE))
+                                                   params=params, printNegativeAvailability=TRUE,useAllSUAcomponents=TRUE)
                 
                 
                 ##'  Here I merge the SUA table (already merged with tree), with the PRODUCTION DATA
@@ -632,9 +637,10 @@ if(CheckDebug()){
     outPutforValidation=outPutforValidation[,.(geographicAreaM49,measuredItemChildCPC, timePointYears, measuredItemParentCPC, extractionRate,
                                                processingLevel ,availability,shareDownUp,processingShare,newImputation, totNewImputation)]
     
-    directory=paste0("C:/Users/Rosa/Desktop/ProcessedCommodities/BatchExpandedItems/Batch",batchNumber,"/finalValidation")
-    dir.create(directory)
-    fileForValidation2(outPutforValidation,SUAdata=data ,  dir=directory)
+    directory=paste0("C:/Work/SWS/FBS/Production/DerivedProduction/Output/Batch",batchNumber,"/finalValidation")
+    # dir.create(directory)
+    # fileForValidation2(outPutforValidation,SUAdata=data ,  dir=directory)
+    write.csv(outPutforValidatoin,"outPutforValidation.csv")
     
     ##'  For validation purposes it is extremly important to produce validation files filtered for those 47
     ##'  commodies plut flours (that are upposed to be pubblished)
@@ -695,27 +701,25 @@ imputed[,flagComb:=NULL]
 imputed[,PROTECTED:=NULL]
 
 imputed[,measuredElement:="5510"]
-setnames(imputed, "measuredItemChildCPC", "measuredItemCPC")
 
 imputed= removeInvalidDates(data = imputed, context = sessionKey)
 imputed= postProcessing(data =  imputed) 
 
 imputed=imputed[flagObservationStatus=="I" & flagMethod=="e"]
-imputed=imputed[,.(measuredElement,geographicAreaM49, measuredItemCPC,
+imputed=imputed[,.(measuredElement,geographicAreaM49, measuredItemChildCPC,
                    timePointYears,Value,flagObservationStatus,flagMethod)]
 
 ##' ensure that just data after the imputationStartYear are saved back and I am not overwriting 
 ##' protected figures
 ##' 
 imputed=imputed[timePointYears>=imputationStartYear]
-ensureProtectedData(imputed, returnData = FALSE)
-
+ensureProtectedData2(imputed, returnData = FALSE)
+setnames(imputed, "measuredElement", "measuredElementSuaFbs")
+setnames(imputed, "measuredItemChildCPC", "measuredItemFbsSua")
 
 SaveData(domain = sessionKey@domain,
          dataset = sessionKey@dataset,
-         data =  imputed)
-
-
+         data =  imputed[!geographicAreaM49%in%top48FBSCountries])
 
 ## Initiate email
 from = "sws@fao.org"
