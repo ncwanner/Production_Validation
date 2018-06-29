@@ -129,6 +129,7 @@ if(!file.exists(dir_to_save_recovery)){
 ##'I build the key, always the same in the PRODUCTION sub modules:
 ##completeImputationKey=getCompleteImputationKey("production")
 FBScountries=ReadDatatable("fbs_countries")[,code]
+FBSItems=ReadDatatable("fbs_tree")[,item_sua_fbs]
 
 ##----------------------------------------------------------------------------------------------------------
 ##'  Get default parameters
@@ -147,6 +148,13 @@ selectedCountry =
     switch(geoImputationSelection,
            "session" = sessionCountry,
            "all" = FBScountries)
+geoImputationSelection = swsContext.computationParams$Items
+sessionItems=getQueryKey("measuredItemFbsSua", sessionKey)
+selectedItems =
+    switch(geoImputationSelection,
+           "session" = sessionItems,
+           "all" = FBSItems)
+
 ##'  The year dimention depends on the session: 
 startYear=swsContext.computationParams$startYear
 imputationStartYear = startYear
@@ -205,8 +213,8 @@ for(geo in   seq_along(allCountries)){
     keyTree = DatasetKey(domain = "suafbs", dataset = "ess_fbs_commodity_tree2", dimensions = list(
         geographicAreaM49 = Dimension(name = "geographicAreaM49", keys = currentGeo),
         measuredElementSuaFbs = Dimension(name = "measuredElementSuaFbs", keys = elemKeys),
-        measuredItemParentCPC_tree = Dimension(name = "measuredItemParentCPC_tree", keys = itemKeysParent),
-        measuredItemChildCPC_tree = Dimension(name = "measuredItemChildCPC_tree", keys = itemKeysChild),
+        measuredItemParentCPC_tree = Dimension(name = "measuredItemParentCPC_tree", keys = selectedItems),
+        measuredItemChildCPC_tree = Dimension(name = "measuredItemChildCPC_tree", keys = selectedItems),
         timePointYears = Dimension(name = "timePointYears", keys = timeKeys)
     ))
     
