@@ -80,7 +80,7 @@ if(CheckDebug()){
     GetTestEnvironment(baseUrl = SETTINGS[["server"]],
                        token = SETTINGS[["token"]])
     
-    dir=paste0("C:/Work/SWS/FBS/Production/DerivedProduction/Output/Batch", batchNumber)
+    dir=paste0("C:/Work/SWS/FBS/Production/DerivedProduction/Output/")
     
 }
 sessionKey = swsContext.datasets[[1]]
@@ -90,7 +90,7 @@ sessionKey = swsContext.datasets[[1]]
 ##Create a new directories in the share env to support the validation:
 
 
-dir_to_save <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output"
+dir_to_save <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
 
 # if(!file.exists(dir_to_save)){
 #     dir.create(dir_to_save, recursive = TRUE)
@@ -98,7 +98,7 @@ dir_to_save <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Outp
 
 
 # dir_to_save_plot <- file.path(R_SWS_SHARE_PATH, "processedItem", paste0("validation", gsub("/", "_",swsContext.username)),"plot")
-dir_to_save_plot <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Plot/"
+dir_to_save_plot <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Plot"
 
 if(!file.exists(dir_to_save_plot)){
     dir.create(dir_to_save_plot, recursive = TRUE)
@@ -108,7 +108,7 @@ if(!file.exists(dir_to_save_plot)){
 
 
 # dir_to_save_output <- file.path(R_SWS_SHARE_PATH, "processedItem",paste0("validation", gsub("/", "_",swsContext.username)), "output")
-dir_to_save_output <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output"
+dir_to_save_output <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
 
 if(!file.exists(dir_to_save_output)){
     dir.create(dir_to_save_output, recursive = TRUE)
@@ -117,7 +117,7 @@ if(!file.exists(dir_to_save_output)){
 
 
 # dir_to_save_recovery<- file.path(R_SWS_SHARE_PATH, "processedItem",paste0("validation", gsub("/", "_",swsContext.username)), "recovery")
-dir_to_save_recovery <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Recovery"
+dir_to_save_recovery <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Recovery/"
 
 if(!file.exists(dir_to_save_recovery)){
     dir.create(dir_to_save_recovery, recursive = TRUE)
@@ -655,10 +655,10 @@ if(CheckDebug()){
     outPutforValidation=outPutforValidation[,.(geographicAreaM49,measuredItemChildCPC, timePointYears, measuredItemParentCPC, extractionRate,
                                                processingLevel ,availability,shareDownUp,processingShare,newImputation, totNewImputation)]
     
-    directory="//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
+    # directory="//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
     # dir.create(directory)
     # fileForValidation2(outPutforValidation,SUAdata=data ,  dir=directory)
-    write.csv(outPutforValidation,"C:/Work/SWS/FBS/Production/DerivedProduction/Output/Batch/1001/finalValidation/outPutforValidation.csv")
+    write.csv(outPutforValidation,"C:/Work/SWS/FBS/Production/DerivedProduction/Output/outPutforValidation.csv")
     
     ##'  For validation purposes it is extremly important to produce validation files filtered for those 47
     ##'  commodies plut flours (that are upposed to be pubblished)
@@ -699,7 +699,8 @@ toPlot=imputed
 ##'   This table is saved just to produce comparisond between batches: 
 
 if(CheckDebug()){
-    write.csv(toPlot, "C:/Work/SWS/FBS/Production/DerivedProduction/Output/Batch/1001/finalValidation/toPlot.csv", row.names=FALSE)
+    write.csv(toPlot, "C:/Work/SWS/FBS/Production/DerivedProduction/Output/toPlot.csv", row.names=FALSE)
+  res_plot = try(plotResult(toPlot, toPubblish=toBePubblished, pathToSave= "C:/Work/SWS/FBS/Production/DerivedProduction/Output/Plots"))
 }
 
 ##Plots goes directly to the shared folder
