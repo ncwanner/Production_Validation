@@ -607,9 +607,9 @@ for(geo in   seq_along(allCountries)){
             if(!CheckDebug()){
                 
                 
-                res_recovery = try(write.csv(allLevels[[geo]], file=file.path(dir_to_save_recovery,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)    
+                try(write.csv(allLevels[[geo]], file=file.path(dir_to_save_recovery,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)    
                 
-                res_validationFile = try(write.csv(forValidationFile[[geo]], file=file.path(dir_to_save_output,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)
+                try(write.csv(forValidationFile[[geo]], file=file.path(dir_to_save_output,paste0(currentGeo,".csv")), row.names = FALSE), silent = TRUE)
                 
                 
                 
