@@ -90,15 +90,17 @@ sessionKey = swsContext.datasets[[1]]
 ##Create a new directories in the share env to support the validation:
 
 
-dir_to_save <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
+#dir_to_save <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
+dir_to_save <- file.path(R_SWS_SHARE_PATH, "processedItem_SUA",paste0("validation", gsub("/", "_",swsContext.username)))
 
-# if(!file.exists(dir_to_save)){
-#     dir.create(dir_to_save, recursive = TRUE)
-# }
+if(!file.exists(dir_to_save)){
+    dir.create(dir_to_save, recursive = TRUE)
+}
 
 
 # dir_to_save_plot <- file.path(R_SWS_SHARE_PATH, "processedItem", paste0("validation", gsub("/", "_",swsContext.username)),"plot")
-dir_to_save_plot <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Plot"
+dir_to_save_plot <- file.path(R_SWS_SHARE_PATH, "processedItem_SUA", paste0("validation", gsub("/", "_",swsContext.username)),"plot")
+# dir_to_save_plot <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Plot"
 
 if(!file.exists(dir_to_save_plot)){
     dir.create(dir_to_save_plot, recursive = TRUE)
@@ -108,7 +110,9 @@ if(!file.exists(dir_to_save_plot)){
 
 
 # dir_to_save_output <- file.path(R_SWS_SHARE_PATH, "processedItem",paste0("validation", gsub("/", "_",swsContext.username)), "output")
-dir_to_save_output <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
+#dir_to_save_output <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Output/"
+
+dir_to_save_output <- file.path(R_SWS_SHARE_PATH, "processedItem_SUA",paste0("validation", gsub("/", "_",swsContext.username)), "output")
 
 if(!file.exists(dir_to_save_output)){
     dir.create(dir_to_save_output, recursive = TRUE)
@@ -117,7 +121,8 @@ if(!file.exists(dir_to_save_output)){
 
 
 # dir_to_save_recovery<- file.path(R_SWS_SHARE_PATH, "processedItem",paste0("validation", gsub("/", "_",swsContext.username)), "recovery")
-dir_to_save_recovery <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Recovery/"
+# dir_to_save_recovery <- "//hqfile4/ESS/Team_working_folder/B_C/3. SUA_FBS/Validation/Recovery/"
+dir_to_save_recovery<- file.path(R_SWS_SHARE_PATH, "processedItem_SUA",paste0("validation", gsub("/", "_",swsContext.username)), "recovery")
 
 if(!file.exists(dir_to_save_recovery)){
     dir.create(dir_to_save_recovery, recursive = TRUE)
