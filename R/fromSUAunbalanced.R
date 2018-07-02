@@ -57,7 +57,7 @@ suppressMessages({
     library(faoswsStandardization)
     
 })
-
+# 
 top48FBSCountries = c(4,24,50,68,104,120,140,144,148,1248,170,178,218,320,
                       324,332,356,360,368,384,404,116,408,450,454,484,508,
                       524,562,566,586,604,608,716,646,686,762,834,764,800,
@@ -162,8 +162,8 @@ sessionItems =
 
 ##'  The year dimention depends on the session: 
 startYear=swsContext.computationParams$startYear
-imputationStartYear = startYear
-# imputationStartYear=swsContext.computationParams$startImputation
+# imputationStartYear = startYear
+imputationStartYear=swsContext.computationParams$startImputation
 endYear=swsContext.computationParams$endYear
 
 areaKeys=selectedCountry
@@ -304,7 +304,7 @@ for(geo in   seq_along(allCountries)){
             ##'  Note Restricted means that I am pulling only the components I need in this submodule: PRODUCTION, STOCK, SEED, TRADE
             
             
-            dataSuaRestricted=getSUADataRestricted()
+            # dataSuaRestricted=getSUADataRestricted()
             
             ############################################################################################################################
             ## Get from SUA
@@ -321,7 +321,7 @@ for(geo in   seq_along(allCountries)){
             
             itemKeys = primaryInvolvedDescendents
             itemDim = Dimension(name = "measuredItemFbsSua", keys = itemKeys)
-            timeDim = Dimension(name = "timePointYears", keys = as.character(c("2014", "2015", "2016")))
+            timeDim = Dimension(name = "timePointYears", keys = timeKeys)
             sua_un_key = DatasetKey(domain = "suafbs", dataset = "sua_unbalanced",
                                dimensions = list(
                                    geographicAreaM49 = geoDim,
@@ -331,8 +331,8 @@ for(geo in   seq_along(allCountries)){
             )
             sua_unbalancedData = GetData(sua_un_key)
             ############################################################################################################################            
-            dataSuaRestricted=dataSuaRestricted[timePointYears<2014]
-            dataSuaRestricted=rbind(dataSuaRestricted,sua_unbalancedData )
+            # dataSuaRestricted=dataSuaRestricted[timePointYears<2014]
+            # dataSuaRestricted=rbind(dataSuaRestricted,sua_unbalancedData )
             ############################################################################################################################
             
             
@@ -341,8 +341,10 @@ for(geo in   seq_along(allCountries)){
             ##'  
             ##'  NW: changed back to elementCodestoNames (apparently function has been updated)
             
-            data = elementCodesToNames(data = dataSuaRestricted, itemCol = "measuredItemFbsSua",
-                                        elementCol = "measuredElementSuaFbs")
+            # data = elementCodesToNames(data = dataSuaRestricted, itemCol = "measuredItemFbsSua",
+            #                             elementCol = "measuredElementSuaFbs")
+            data = elementCodesToNames(data = sua_unbalancedData, itemCol = "measuredItemFbsSua",
+                                       elementCol = "measuredElementSuaFbs")
             
             ##'  Add all the missing PRODUCTION row: if the production of a derived product does not exist it even if it is created by this 
             ##'  routine cannot be stored in the SUA table and consequently all the commodities that belongs to its descendents are not estimates
@@ -402,7 +404,7 @@ for(geo in   seq_along(allCountries)){
             ## 
             ## dataProcessed=GetData(dataProcessedImputationKey)
             
-            dataProcessed=dataSuaRestricted[measuredElementSuaFbs=="5510"]
+            dataProcessed=sua_unbalancedData[measuredElementSuaFbs=="5510"]
             setnames(dataProcessed,c("measuredElementSuaFbs","measuredItemFbsSua"),c("measuredElement","measuredItemCPC"))
             dataProcessed[,timePointYears:=as.numeric(timePointYears)]
             dataProcessed=dataProcessed[,benchmark_Value:=Value]
@@ -692,6 +694,7 @@ imputed[,flagComb:=paste(flagObservationStatus,flagMethod,sep=";")]
 imputed[, PROTECTED:=FALSE]
 imputed[flagComb %in% protected, PROTECTED:=TRUE]
 imputed[PROTECTED==TRUE,newImputation:=benchmark_Value]
+imputed[geographicAreaM49%in%top48FBSCountries]
 toPlot=imputed
 ##'   This table is saved just to produce comparisond between batches: 
 
@@ -735,7 +738,7 @@ setnames(imputed, "measuredItemChildCPC", "measuredItemFbsSua")
 
 SaveData(domain = sessionKey@domain,
          dataset = sessionKey@dataset,
-         data =  imputed[!geographicAreaM49%in%top48FBSCountries])
+         data =  imputed[geographicAreaM49%in%top48FBSCountries])
 
 ## Initiate email
 from = "sws@fao.org"
