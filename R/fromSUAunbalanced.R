@@ -142,6 +142,8 @@ params = defaultProcessedItemParams()
 processedCPC=ReadDatatable("processed_item")[,measured_item_cpc]
 toBePubblished=ReadDatatable("processed_item")[faostat==TRUE,measured_item_cpc]
 
+Validation = swsContext.computationParams$Validation
+
 #############################################################################################################
 ##'  Get the commodity tree from the TREE DATASET:
 ##'  The country dimention depends on the session: 
@@ -705,7 +707,7 @@ if(CheckDebug()){
 
 ##Plots goes directly to the shared folder
 
-if(!CheckDebug()){
+if(!CheckDebug() & Validation==1){
     
     res_plot = try(plotResult(toPlot, toPubblish=toBePubblished, pathToSave= dir_to_save_plot))
     
