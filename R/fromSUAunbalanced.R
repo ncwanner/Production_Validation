@@ -142,8 +142,6 @@ params = defaultProcessedItemParams()
 processedCPC=ReadDatatable("processed_item")[,measured_item_cpc]
 toBePubblished=ReadDatatable("processed_item")[faostat==TRUE,measured_item_cpc]
 
-Validation = swsContext.computationParams$Validation
-
 #############################################################################################################
 ##'  Get the commodity tree from the TREE DATASET:
 ##'  The country dimention depends on the session: 
@@ -153,6 +151,10 @@ selectedCountry =
     switch(geoImputationSelection,
            "session" = sessionCountry,
            "all" = FBScountries)
+selectedCountry = selectedCountry[!selectedCountry%in%top48FBSCountries]
+
+Validation_Param = swsContext.computationParams$Validation
+
 ##---------------------------------------------------------------------------------------------------------
 ##'  Get the list of processed items to impute
 ItemImputationSelection = swsContext.computationParams$Items
@@ -696,7 +698,7 @@ imputed[,flagComb:=paste(flagObservationStatus,flagMethod,sep=";")]
 imputed[, PROTECTED:=FALSE]
 imputed[flagComb %in% protected, PROTECTED:=TRUE]
 imputed[PROTECTED==TRUE,newImputation:=benchmark_Value]
-imputed[geographicAreaM49%in%top48FBSCountries]
+# imputed[geographicAreaM49%in%top48FBSCountries]
 toPlot=imputed
 ##'   This table is saved just to produce comparisond between batches: 
 
@@ -707,7 +709,7 @@ if(CheckDebug()){
 
 ##Plots goes directly to the shared folder
 
-if(!CheckDebug() & Validation==1){
+if(!CheckDebug() & Validation_Param==1){
     
     res_plot = try(plotResult(toPlot, toPubblish=toBePubblished, pathToSave= dir_to_save_plot))
     
@@ -740,7 +742,7 @@ setnames(imputed, "measuredItemChildCPC", "measuredItemFbsSua")
 
 SaveData(domain = sessionKey@domain,
          dataset = sessionKey@dataset,
-         data =  imputed[geographicAreaM49%in%top48FBSCountries])
+         data =  imputed[!geographicAreaM49%in%top48FBSCountries])
 
 ## Initiate email
 from = "sws@fao.org"
